@@ -394,3 +394,53 @@ export interface GeneralSettings {
 export const settingsApi = {
   getGeneral: () => fetchAPI<GeneralSettings>("/settings/general"),
 }
+
+// Reader types
+export interface ReaderBookFile {
+  id: number
+  bookId: number
+  editionId?: number
+  path: string
+  relativePath: string
+  size: number
+  format: string
+  quality: string
+  hash: string
+  addedAt: string
+  bookTitle?: string
+  authorName?: string
+  coverUrl?: string
+}
+
+export interface ReadingProgress {
+  id?: number
+  bookFileId: number
+  userId?: number
+  position: string // EPUB CFI
+  percentage: number
+  updatedAt?: string
+}
+
+export interface SaveProgressInput {
+  position: string
+  percentage: number
+}
+
+// Reader API
+export const readerApi = {
+  getBookFile: (id: number) => fetchAPI<ReaderBookFile>(`/reader/${id}`),
+
+  getContentUrl: (id: number) => {
+    const apiKey = getStoredApiKey()
+    const base = `${API_BASE}/reader/${id}/content`
+    return apiKey ? `${base}?key=${encodeURIComponent(apiKey)}` : base
+  },
+
+  getProgress: (id: number) => fetchAPI<ReadingProgress>(`/reader/${id}/progress`),
+
+  saveProgress: (id: number, data: SaveProgressInput) =>
+    fetchAPI<ReadingProgress>(`/reader/${id}/progress`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+}

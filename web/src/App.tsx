@@ -6,6 +6,7 @@ import { AuthorList } from "./components/authors"
 import { BookList } from "./components/books"
 import { MetadataSearch } from "./components/metadata"
 import { SettingsGeneral } from "./components/settings"
+import { Reader } from "./components/reader"
 import { Button } from "./components/ui"
 
 interface HealthResponse {
@@ -28,6 +29,7 @@ type Tab = "library" | "authors" | "books" | "search" | "settings" | "system"
 function AppContent() {
   const { isAuthenticated, isLoading: authLoading, logout, user } = useAuth()
   const [activeTab, setActiveTab] = useState<Tab>("library")
+  const [readingBookFileId, setReadingBookFileId] = useState<number | null>(null)
 
   const health = useQuery<HealthResponse>({
     queryKey: ["health"],
@@ -56,6 +58,16 @@ function AppContent() {
   // Show login page if not authenticated
   if (!isAuthenticated) {
     return <LoginPage />
+  }
+
+  // Show reader in fullscreen mode
+  if (readingBookFileId !== null) {
+    return (
+      <Reader
+        bookFileId={readingBookFileId}
+        onClose={() => setReadingBookFileId(null)}
+      />
+    )
   }
 
   return (
@@ -140,7 +152,7 @@ function AppContent() {
         {activeTab === "books" && (
           <div id="books-panel" role="tabpanel" aria-labelledby="books-tab">
             <h2 className="text-2xl font-bold mb-6">Books</h2>
-            <BookList />
+            <BookList onOpenReader={setReadingBookFileId} />
           </div>
         )}
 

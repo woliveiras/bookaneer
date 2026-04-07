@@ -45,6 +45,7 @@ This software:
 - Is designed to organize and read ebooks you already own
 - Integrates with standard protocols (Newznab/Torznab, OPDS) used by many legitimate services
 - Does not host, distribute, or provide access to copyrighted content
+- **Does not circumvent or remove DRM** — files with DRM protection will not open
 
 **Users are solely responsible for ensuring their use of this software complies with all applicable copyright laws in their jurisdiction.**
 

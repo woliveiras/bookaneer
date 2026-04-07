@@ -27,6 +27,7 @@ import (
 	"github.com/woliveiras/bookaneer/internal/core/book"
 	"github.com/woliveiras/bookaneer/internal/core/library"
 	"github.com/woliveiras/bookaneer/internal/core/qualityprofile"
+	"github.com/woliveiras/bookaneer/internal/core/reader"
 	"github.com/woliveiras/bookaneer/internal/core/rootfolder"
 	"github.com/woliveiras/bookaneer/internal/core/series"
 	"github.com/woliveiras/bookaneer/internal/database"
@@ -182,6 +183,11 @@ func run() error {
 
 	libraryHandler := handler.NewLibraryHandler(libraryScanner)
 	libraryHandler.Register(protected)
+
+	// Reader service (EPUB serving + reading progress)
+	readerSvc := reader.New(db)
+	readerHandler := handler.NewReaderHandler(readerSvc)
+	readerHandler.Register(protected)
 
 	// Metadata providers (OpenLibrary + GoogleBooks)
 	httpClient := &http.Client{Timeout: 30 * time.Second}
