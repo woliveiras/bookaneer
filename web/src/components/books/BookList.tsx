@@ -77,7 +77,7 @@ export function BookList({ authorId }: BookListProps) {
             />
           ))}
         </div>
-      ) : data?.records.length === 0 ? (
+      ) : !data?.records?.length ? (
         <div className="rounded-lg border border-dashed p-8 text-center">
           <p className="text-muted-foreground">
             {debouncedSearch
@@ -96,12 +96,12 @@ export function BookList({ authorId }: BookListProps) {
         <>
           <div className="flex items-center gap-2">
             <p className="text-sm text-muted-foreground">
-              {data?.totalRecords} book{data?.totalRecords !== 1 ? "s" : ""}
+              {data.totalRecords} book{data.totalRecords !== 1 ? "s" : ""}
             </p>
             {showMissing && <Badge variant="outline">Missing only</Badge>}
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" role="list">
-            {data?.records.map((book) => (
+            {data.records.map((book) => (
               <div key={book.id} role="listitem">
                 <BookCard book={book} onClick={() => console.log("Selected:", book.id)} />
               </div>

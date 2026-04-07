@@ -60,7 +60,7 @@ export function AuthorList() {
             />
           ))}
         </div>
-      ) : data?.records.length === 0 ? (
+      ) : !data?.records?.length ? (
         <div className="rounded-lg border border-dashed p-8 text-center">
           <p className="text-muted-foreground">
             {debouncedSearch ? `No authors found for "${debouncedSearch}"` : "No authors yet"}
@@ -72,10 +72,10 @@ export function AuthorList() {
       ) : (
         <>
           <p className="text-sm text-muted-foreground">
-            {data?.totalRecords} author{data?.totalRecords !== 1 ? "s" : ""}
+            {data.totalRecords} author{data.totalRecords !== 1 ? "s" : ""}
           </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">
-            {data?.records.map((author) => (
+            {data.records.map((author) => (
               <div key={author.id} role="listitem">
                 <AuthorCard author={author} onClick={() => console.log("Selected:", author.id)} />
               </div>
