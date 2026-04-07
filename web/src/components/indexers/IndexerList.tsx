@@ -5,8 +5,107 @@ import { Button, Input, Label, Card, CardHeader, CardTitle, CardContent, Badge }
 
 type IndexerType = "newznab" | "torznab"
 
+// Preset configurations for popular ebook indexers
+interface IndexerPreset {
+  id: string
+  name: string
+  type: IndexerType
+  baseUrl: string
+  apiPath: string
+  categories: string
+  description: string
+}
+
+const INDEXER_PRESETS: { usenet: IndexerPreset[]; torrents: IndexerPreset[] } = {
+  usenet: [
+    {
+      id: "nzbgeek",
+      name: "NZBgeek",
+      type: "newznab",
+      baseUrl: "https://api.nzbgeek.info",
+      apiPath: "/api",
+      categories: "7000,7020,7030",
+      description: "Popular Usenet indexer with ebooks",
+    },
+    {
+      id: "drunkenslug",
+      name: "DrunkenSlug",
+      type: "newznab",
+      baseUrl: "https://api.drunkenslug.com",
+      apiPath: "/api",
+      categories: "7000,7020,7030",
+      description: "Usenet indexer with good ebook coverage",
+    },
+    {
+      id: "nzbfinder",
+      name: "NZBFinder",
+      type: "newznab",
+      baseUrl: "https://nzbfinder.ws",
+      apiPath: "/api",
+      categories: "7000,7020,7030",
+      description: "Dutch Usenet indexer with ebooks",
+    },
+    {
+      id: "newznab-custom",
+      name: "Newznab",
+      type: "newznab",
+      baseUrl: "",
+      apiPath: "/api",
+      categories: "7000",
+      description: "Custom Newznab-compatible indexer",
+    },
+  ],
+  torrents: [
+    {
+      id: "myanonamouse",
+      name: "MyAnonamouse",
+      type: "torznab",
+      baseUrl: "",
+      apiPath: "/api",
+      categories: "8000,8010",
+      description: "Private tracker for ebooks (via Prowlarr/Jackett)",
+    },
+    {
+      id: "bibliotik",
+      name: "BiblioTik",
+      type: "torznab",
+      baseUrl: "",
+      apiPath: "/api",
+      categories: "8000,8010",
+      description: "Private ebook tracker (via Prowlarr/Jackett)",
+    },
+    {
+      id: "prowlarr",
+      name: "Prowlarr",
+      type: "torznab",
+      baseUrl: "http://localhost:9696",
+      apiPath: "/1/api",
+      categories: "",
+      description: "Indexer manager/proxy for Servarr",
+    },
+    {
+      id: "jackett",
+      name: "Jackett",
+      type: "torznab",
+      baseUrl: "http://localhost:9117",
+      apiPath: "/api/v2.0/indexers/all/results/torznab",
+      categories: "",
+      description: "Torznab proxy for many trackers",
+    },
+    {
+      id: "torznab-custom",
+      name: "Torznab",
+      type: "torznab",
+      baseUrl: "",
+      apiPath: "/api",
+      categories: "",
+      description: "Custom Torznab-compatible indexer",
+    },
+  ],
+}
+
 interface IndexerTypeSelectorProps {
-  onSelect: (type: IndexerType) => void
+  onSelect: (type: IndexerType, preset?: IndexerPreset) => void
   onCancel: () => void
 }
 
@@ -19,41 +118,48 @@ function IndexerTypeSelector({ onSelect, onCancel }: IndexerTypeSelectorProps) {
       <CardContent className="space-y-6">
         <p className="text-sm text-muted-foreground">
           Bookaneer supports any indexer that uses the Newznab/Torznab standard.
+          Select a preset or choose Custom to configure manually.
         </p>
 
         {/* Usenet Section */}
         <div className="space-y-3">
           <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Usenet</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            <button
-              type="button"
-              onClick={() => onSelect("newznab")}
-              className="p-4 rounded-lg border border-border bg-card hover:bg-accent hover:border-primary transition-colors text-left"
-            >
-              <div className="font-medium">Newznab</div>
-              <div className="text-xs text-muted-foreground mt-1">Standard Usenet indexer</div>
-            </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {INDEXER_PRESETS.usenet.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => onSelect(preset.type, preset)}
+                className="p-4 rounded-lg border border-border bg-card hover:bg-accent hover:border-primary transition-colors text-left group"
+              >
+                <div className="font-medium group-hover:text-primary">{preset.name}</div>
+                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{preset.description}</div>
+              </button>
+            ))}
           </div>
         </div>
 
         {/* Torrents Section */}
         <div className="space-y-3">
           <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Torrents</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            <button
-              type="button"
-              onClick={() => onSelect("torznab")}
-              className="p-4 rounded-lg border border-border bg-card hover:bg-accent hover:border-primary transition-colors text-left"
-            >
-              <div className="font-medium">Torznab</div>
-              <div className="text-xs text-muted-foreground mt-1">Torrent indexer (Prowlarr, Jackett)</div>
-            </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {INDEXER_PRESETS.torrents.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => onSelect(preset.type, preset)}
+                className="p-4 rounded-lg border border-border bg-card hover:bg-accent hover:border-primary transition-colors text-left group"
+              >
+                <div className="font-medium group-hover:text-primary">{preset.name}</div>
+                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{preset.description}</div>
+              </button>
+            ))}
           </div>
         </div>
 
         <div className="flex justify-end pt-2">
           <Button variant="outline" onClick={onCancel}>
-            Cancel
+            Close
           </Button>
         </div>
       </CardContent>
@@ -64,19 +170,20 @@ function IndexerTypeSelector({ onSelect, onCancel }: IndexerTypeSelectorProps) {
 interface IndexerFormProps {
   indexer?: Indexer
   indexerType: IndexerType
+  preset?: IndexerPreset
   onSubmit: (data: CreateIndexerInput) => void
   onCancel: () => void
   isLoading?: boolean
 }
 
-function IndexerForm({ indexer, indexerType, onSubmit, onCancel, isLoading }: IndexerFormProps) {
+function IndexerForm({ indexer, indexerType, preset, onSubmit, onCancel, isLoading }: IndexerFormProps) {
   const [formData, setFormData] = useState<CreateIndexerInput>({
-    name: indexer?.name ?? (indexerType === "newznab" ? "Newznab" : "Torznab"),
+    name: indexer?.name ?? preset?.name ?? (indexerType === "newznab" ? "Newznab" : "Torznab"),
     type: indexer?.type ?? indexerType,
-    baseUrl: indexer?.baseUrl ?? "",
-    apiPath: indexer?.apiPath ?? "/api",
+    baseUrl: indexer?.baseUrl ?? preset?.baseUrl ?? "",
+    apiPath: indexer?.apiPath ?? preset?.apiPath ?? "/api",
     apiKey: indexer?.apiKey ?? "",
-    categories: indexer?.categories ?? "",
+    categories: indexer?.categories ?? preset?.categories ?? "",
     priority: indexer?.priority ?? 25,
     enabled: indexer?.enabled ?? true,
     enableRss: indexer?.enableRss ?? true,
@@ -345,6 +452,7 @@ export function IndexerList() {
   const updateIndexer = useUpdateIndexer()
   const [showTypeSelector, setShowTypeSelector] = useState(false)
   const [selectedType, setSelectedType] = useState<IndexerType | null>(null)
+  const [selectedPreset, setSelectedPreset] = useState<IndexerPreset | undefined>(undefined)
   const [editingIndexer, setEditingIndexer] = useState<Indexer | null>(null)
 
   if (isLoading) {
@@ -355,14 +463,16 @@ export function IndexerList() {
     return <div className="text-destructive">Error loading indexers: {error.message}</div>
   }
 
-  const handleSelectType = (type: IndexerType) => {
+  const handleSelectType = (type: IndexerType, preset?: IndexerPreset) => {
     setShowTypeSelector(false)
     setSelectedType(type)
+    setSelectedPreset(preset)
   }
 
   const handleCreate = async (data: CreateIndexerInput) => {
     await createIndexer.mutateAsync(data)
     setSelectedType(null)
+    setSelectedPreset(undefined)
   }
 
   const handleUpdate = async (data: CreateIndexerInput) => {
@@ -374,6 +484,11 @@ export function IndexerList() {
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this indexer?")) return
     await deleteIndexer.mutateAsync(id)
+  }
+
+  const handleCancelCreate = () => {
+    setSelectedType(null)
+    setSelectedPreset(undefined)
   }
 
   const isFormOpen = showTypeSelector || selectedType !== null || editingIndexer !== null
@@ -428,8 +543,9 @@ export function IndexerList() {
       {selectedType && (
         <IndexerForm
           indexerType={selectedType}
+          preset={selectedPreset}
           onSubmit={handleCreate}
-          onCancel={() => setSelectedType(null)}
+          onCancel={handleCancelCreate}
           isLoading={createIndexer.isPending}
         />
       )}
