@@ -27,6 +27,9 @@ func (h *SearchHandler) Register(g *echo.Group) {
 	g.PUT("/indexer/options", h.UpdateOptions)
 	g.POST("/indexer/test", h.TestIndexer)
 
+	// Prowlarr-compatible schema endpoint
+	g.GET("/indexer/schema", h.IndexerSchema)
+
 	// Indexers CRUD
 	g.GET("/indexer", h.ListIndexers)
 	g.GET("/indexer/:id", h.GetIndexer)
@@ -36,6 +39,75 @@ func (h *SearchHandler) Register(g *echo.Group) {
 
 	// Search
 	g.GET("/search", h.Search)
+}
+
+// IndexerSchemaField represents a field in the indexer schema for Prowlarr compatibility.
+type IndexerSchemaField struct {
+	Order    int         `json:"order"`
+	Name     string      `json:"name"`
+	Label    string      `json:"label"`
+	Value    interface{} `json:"value"`
+	Type     string      `json:"type"`
+	Advanced bool        `json:"advanced"`
+	Privacy  string      `json:"privacy,omitempty"`
+	IsFloat  bool        `json:"isFloat,omitempty"`
+	HelpText string      `json:"helpText,omitempty"`
+}
+
+// IndexerSchema returns the schema that Prowlarr uses to sync indexers.
+// This enables Prowlarr to add Bookaneer as an application and sync indexers automatically.
+func (h *SearchHandler) IndexerSchema(c echo.Context) error {
+	schemas := []map[string]interface{}{
+		{
+			"id":                      0,
+			"name":                    "",
+			"implementation":          "Newznab",
+			"implementationName":      "Newznab",
+			"configContract":          "NewznabSettings",
+			"infoLink":                "https://wiki.servarr.com/readarr/supported#newznab",
+			"enableRss":               true,
+			"enableAutomaticSearch":   true,
+			"enableInteractiveSearch": true,
+			"supportsRss":             true,
+			"supportsSearch":          true,
+			"protocol":                "usenet",
+			"priority":                25,
+			"fields": []IndexerSchemaField{
+				{Order: 0, Name: "baseUrl", Label: "URL", Type: "textbox", Value: ""},
+				{Order: 1, Name: "apiPath", Label: "API Path", Type: "textbox", Value: "/api", Advanced: true},
+				{Order: 2, Name: "apiKey", Label: "API Key", Type: "textbox", Value: "", Privacy: "apiKey"},
+				{Order: 3, Name: "categories", Label: "Categories", Type: "textbox", Value: "7000,7010,7020,7030,7040,7050,7060", Advanced: true, HelpText: "Comma-separated list of categories"},
+				{Order: 4, Name: "additionalParameters", Label: "Additional Parameters", Type: "textbox", Advanced: true},
+			},
+		},
+		{
+			"id":                      0,
+			"name":                    "",
+			"implementation":          "Torznab",
+			"implementationName":      "Torznab",
+			"configContract":          "TorznabSettings",
+			"infoLink":                "https://wiki.servarr.com/readarr/supported#torznab",
+			"enableRss":               true,
+			"enableAutomaticSearch":   true,
+			"enableInteractiveSearch": true,
+			"supportsRss":             true,
+			"supportsSearch":          true,
+			"protocol":                "torrent",
+			"priority":                25,
+			"fields": []IndexerSchemaField{
+				{Order: 0, Name: "baseUrl", Label: "URL", Type: "textbox", Value: ""},
+				{Order: 1, Name: "apiPath", Label: "API Path", Type: "textbox", Value: "/api", Advanced: true},
+				{Order: 2, Name: "apiKey", Label: "API Key", Type: "textbox", Value: "", Privacy: "apiKey"},
+				{Order: 3, Name: "categories", Label: "Categories", Type: "textbox", Value: "7000,7010,7020,7030,7040,7050,7060", Advanced: true, HelpText: "Comma-separated list of categories"},
+				{Order: 4, Name: "minimumSeeders", Label: "Minimum Seeders", Type: "number", Value: 1},
+				{Order: 5, Name: "seedCriteria.seedRatio", Label: "Seed Ratio", Type: "textbox", Value: "", Advanced: true, IsFloat: true},
+				{Order: 6, Name: "seedCriteria.seedTime", Label: "Seed Time", Type: "number", Value: nil, Advanced: true, HelpText: "Time in minutes"},
+				{Order: 7, Name: "additionalParameters", Label: "Additional Parameters", Type: "textbox", Advanced: true},
+			},
+		},
+	}
+
+	return c.JSON(http.StatusOK, schemas)
 }
 
 // ListIndexers returns all indexers.
@@ -64,7 +136,9 @@ func (h *SearchHandler) GetIndexer(c echo.Context) error {
 }
 
 // CreateIndexerRequest is the request body for creating an indexer.
+// Supports both Bookaneer native format and Prowlarr sync format.
 type CreateIndexerRequest struct {
+	// Native Bookaneer format
 	Name                    string   `json:"name"`
 	Type                    string   `json:"type"`
 	BaseURL                 string   `json:"baseUrl"`
@@ -80,6 +154,20 @@ type CreateIndexerRequest struct {
 	MinimumSeeders          int      `json:"minimumSeeders"`
 	SeedRatio               *float64 `json:"seedRatio,omitempty"`
 	SeedTime                *int     `json:"seedTime,omitempty"`
+
+	// Prowlarr sync format (alternative way to provide fields)
+	Implementation string                   `json:"implementation,omitempty"`
+	Fields         []map[string]interface{} `json:"fields,omitempty"`
+}
+
+// parseFieldValue safely extracts a value from a Prowlarr field map.
+func parseFieldValue(fields []map[string]interface{}, name string) interface{} {
+	for _, f := range fields {
+		if n, ok := f["name"].(string); ok && n == name {
+			return f["value"]
+		}
+	}
+	return nil
 }
 
 // CreateIndexer creates a new indexer.
@@ -88,6 +176,50 @@ func (h *SearchHandler) CreateIndexer(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
 	}
+
+	// Handle Prowlarr format (with Implementation and Fields)
+	if req.Implementation != "" && len(req.Fields) > 0 {
+		// Determine type from implementation
+		switch req.Implementation {
+		case "Newznab":
+			req.Type = "newznab"
+		case "Torznab":
+			req.Type = "torznab"
+		default:
+			req.Type = "torznab"
+		}
+
+		// Extract fields
+		if v, ok := parseFieldValue(req.Fields, "baseUrl").(string); ok {
+			req.BaseURL = v
+		}
+		if v, ok := parseFieldValue(req.Fields, "apiPath").(string); ok {
+			req.APIPath = v
+		}
+		if v, ok := parseFieldValue(req.Fields, "apiKey").(string); ok {
+			req.APIKey = v
+		}
+		if v, ok := parseFieldValue(req.Fields, "categories").(string); ok {
+			req.Categories = v
+		}
+		if v, ok := parseFieldValue(req.Fields, "minimumSeeders").(float64); ok {
+			req.MinimumSeeders = int(v)
+		}
+		if v, ok := parseFieldValue(req.Fields, "seedCriteria.seedRatio").(float64); ok {
+			req.SeedRatio = &v
+		}
+		if v, ok := parseFieldValue(req.Fields, "seedCriteria.seedTime").(float64); ok {
+			t := int(v)
+			req.SeedTime = &t
+		}
+		if v, ok := parseFieldValue(req.Fields, "additionalParameters").(string); ok {
+			req.AdditionalParameters = v
+		}
+
+		// Default enabled to true for Prowlarr sync
+		req.Enabled = true
+	}
+
 	if req.Name == "" || req.Type == "" || req.BaseURL == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "name, type, and baseUrl are required")
 	}

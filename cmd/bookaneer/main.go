@@ -148,6 +148,11 @@ func run() error {
 	api.GET("/system/status", systemHandler.Status)
 	api.GET("/system/health", systemHandler.Health)
 
+	// Tags endpoint (Prowlarr compatibility - returns empty array for now)
+	api.GET("/tag", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, []interface{}{})
+	})
+
 	protected := api.Group("")
 	protected.Use(apimw.Auth(authSvc))
 
