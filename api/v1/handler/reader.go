@@ -177,12 +177,106 @@ func (h *ReaderHandler) SaveProgress(c echo.Context) error {
 	return c.JSON(http.StatusOK, progress)
 }
 
+// Bookmark handlers
+
+// ListBookmarks returns all bookmarks for a book file.
+// GET /api/v1/reader/:id/bookmarks
+func (h *ReaderHandler) ListBookmarks(c echo.Context) error {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid book file id")
+	}
+
+	user, ok := c.Get("user").(*auth.User)
+	userID := int64(0)
+	if ok && user != nil {
+		userID = user.ID
+	}
+
+	bookmarks, err := h.svc.ListBookmarks(c.Request().Context(), id, userID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list bookmarks")
+	}
+
+	if bookmarks == nil {
+		bookmarks = []reader.Bookmark{}
+	}
+
+	return c.JSON(http.StatusOK, bookmarks)
+}
+
+// CreateBookmarkRequest is the request body for creating a bookmark.
+type CreateBookmarkRequest struct {
+	Position string `json:"position"`
+	Title    string `json:"title"`
+	Note     string `json:"note"`
+}
+
+// CreateBookmark creates a new bookmark.
+// POST /api/v1/reader/:id/bookmarks
+func (h *ReaderHandler) CreateBookmark(c echo.Context) error {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid book file id")
+	}
+
+	var req CreateBookmarkRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+
+	if req.Position == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "position is required")
+	}
+
+	user, ok := c.Get("user").(*auth.User)
+	userID := int64(0)
+	if ok && user != nil {
+		userID = user.ID
+	}
+
+	bookmark, err := h.svc.CreateBookmark(c.Request().Context(), id, userID, req.Position, req.Title, req.Note)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create bookmark")
+	}
+
+	return c.JSON(http.StatusCreated, bookmark)
+}
+
+// DeleteBookmark deletes a bookmark.
+// DELETE /api/v1/reader/:id/bookmarks/:bookmarkId
+func (h *ReaderHandler) DeleteBookmark(c echo.Context) error {
+	bookmarkID, err := strconv.ParseInt(c.Param("bookmarkId"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid bookmark id")
+	}
+
+	user, ok := c.Get("user").(*auth.User)
+	userID := int64(0)
+	if ok && user != nil {
+		userID = user.ID
+	}
+
+	err = h.svc.DeleteBookmark(c.Request().Context(), bookmarkID, userID)
+	if err == reader.ErrBookmarkNotFound {
+		return echo.NewHTTPError(http.StatusNotFound, "bookmark not found")
+	}
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete bookmark")
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
 // Register registers the reader routes.
 func (h *ReaderHandler) Register(g *echo.Group) {
 	g.GET("/reader/:id", h.GetBookFile)
 	g.GET("/reader/:id/content", h.ServeContent)
 	g.GET("/reader/:id/progress", h.GetProgress)
 	g.PUT("/reader/:id/progress", h.SaveProgress)
+	g.GET("/reader/:id/bookmarks", h.ListBookmarks)
+	g.POST("/reader/:id/bookmarks", h.CreateBookmark)
+	g.DELETE("/reader/:id/bookmarks/:bookmarkId", h.DeleteBookmark)
 }
 
 // Discard implements io.Writer to discard bytes (used when ServeContent is called).

@@ -426,6 +426,23 @@ export interface SaveProgressInput {
   percentage: number
 }
 
+// Bookmark types
+export interface Bookmark {
+  id: number
+  bookFileId: number
+  userId: number
+  position: string
+  title: string
+  note: string
+  createdAt: string
+}
+
+export interface CreateBookmarkInput {
+  position: string
+  title: string
+  note?: string
+}
+
 // Reader API
 export const readerApi = {
   getBookFile: (id: number) => fetchAPI<ReaderBookFile>(`/reader/${id}`),
@@ -442,5 +459,23 @@ export const readerApi = {
     fetchAPI<ReadingProgress>(`/reader/${id}/progress`, {
       method: "PUT",
       body: JSON.stringify(data),
+    }),
+
+  listBookmarks: (id: number) => fetchAPI<Bookmark[]>(`/reader/${id}/bookmarks`),
+
+  createBookmark: (id: number, data: CreateBookmarkInput) =>
+    fetchAPI<Bookmark>(`/reader/${id}/bookmarks`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  deleteBookmark: (bookFileId: number, bookmarkId: number) =>
+    fetch(`${API_BASE}/reader/${bookFileId}/bookmarks/${bookmarkId}`, {
+      method: "DELETE",
+      headers: {
+        "X-Api-Key": getStoredApiKey() || "",
+      },
+    }).then((res) => {
+      if (!res.ok) throw new Error("Failed to delete bookmark")
     }),
 }

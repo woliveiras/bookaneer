@@ -5,6 +5,7 @@ import "errors"
 var (
 	ErrBookFileNotFound = errors.New("book file not found")
 	ErrProgressNotFound = errors.New("reading progress not found")
+	ErrBookmarkNotFound = errors.New("bookmark not found")
 )
 
 // BookFile represents an ebook file on disk.
@@ -34,4 +35,15 @@ type ReadingProgress struct {
 	Position   string  `json:"position"`   // EPUB CFI string
 	Percentage float64 `json:"percentage"` // 0.0 to 1.0
 	UpdatedAt  string  `json:"updatedAt"`
+}
+
+// Bookmark represents a user's saved position in a book.
+type Bookmark struct {
+	ID         int64  `json:"id"`
+	BookFileID int64  `json:"bookFileId"`
+	UserID     int64  `json:"userId"`
+	Position   string `json:"position"` // EPUB CFI or page number
+	Title      string `json:"title"`    // User-provided or auto-generated
+	Note       string `json:"note"`     // Optional user note
+	CreatedAt  string `json:"createdAt"`
 }

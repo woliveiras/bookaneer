@@ -115,3 +115,88 @@ func (s *Service) SaveProgress(ctx context.Context, bookFileID, userID int64, po
 
 	return s.GetProgress(ctx, bookFileID, userID)
 }
+
+// Bookmark operations
+
+// ListBookmarks returns all bookmarks for a user and book file.
+func (s *Service) ListBookmarks(ctx context.Context, bookFileID, userID int64) ([]Bookmark, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id, book_file_id, user_id, position, title, note, created_at
+		FROM bookmarks
+		WHERE book_file_id = ? AND user_id = ?
+		ORDER BY created_at DESC
+	`, bookFileID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var bookmarks []Bookmark
+	for rows.Next() {
+		var bm Bookmark
+		if err := rows.Scan(&bm.ID, &bm.BookFileID, &bm.UserID, &bm.Position, &bm.Title, &bm.Note, &bm.CreatedAt); err != nil {
+			return nil, err
+		}
+		bookmarks = append(bookmarks, bm)
+	}
+
+	return bookmarks, rows.Err()
+}
+
+// CreateBookmark creates a new bookmark.
+func (s *Service) CreateBookmark(ctx context.Context, bookFileID, userID int64, position, title, note string) (*Bookmark, error) {
+	result, err := s.db.ExecContext(ctx, `
+		INSERT INTO bookmarks (book_file_id, user_id, position, title, note)
+		VALUES (?, ?, ?, ?, ?)
+	`, bookFileID, userID, position, title, note)
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	return s.GetBookmark(ctx, id, userID)
+}
+
+// GetBookmark retrieves a bookmark by ID.
+func (s *Service) GetBookmark(ctx context.Context, id, userID int64) (*Bookmark, error) {
+	row := s.db.QueryRowContext(ctx, `
+		SELECT id, book_file_id, user_id, position, title, note, created_at
+		FROM bookmarks
+		WHERE id = ? AND user_id = ?
+	`, id, userID)
+
+	var bm Bookmark
+	err := row.Scan(&bm.ID, &bm.BookFileID, &bm.UserID, &bm.Position, &bm.Title, &bm.Note, &bm.CreatedAt)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrBookmarkNotFound
+		}
+		return nil, err
+	}
+
+	return &bm, nil
+}
+
+// DeleteBookmark deletes a bookmark.
+func (s *Service) DeleteBookmark(ctx context.Context, id, userID int64) error {
+	result, err := s.db.ExecContext(ctx, `
+		DELETE FROM bookmarks WHERE id = ? AND user_id = ?
+	`, id, userID)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return ErrBookmarkNotFound
+	}
+
+	return nil
+}
