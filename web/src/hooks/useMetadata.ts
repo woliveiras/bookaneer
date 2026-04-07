@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { metadataApi } from "../lib/api"
+import { metadataApi, digitalLibraryApi } from "../lib/api"
 
 // Search authors across metadata providers
 export function useMetadataSearchAuthors(query: string, enabled = true) {
@@ -56,6 +56,25 @@ export function useMetadataProviders() {
   return useQuery({
     queryKey: ["metadata", "providers"],
     queryFn: () => metadataApi.getProviders(),
+    staleTime: 60 * 60 * 1000, // 1 hour
+  })
+}
+
+// Search digital libraries (Anna's Archive, LibGen, Internet Archive)
+export function useDigitalLibrarySearch(query: string, enabled = true) {
+  return useQuery({
+    queryKey: ["digitallibrary", "search", query],
+    queryFn: () => digitalLibraryApi.search(query),
+    enabled: enabled && query.length >= 2,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+
+// Get available digital library providers
+export function useDigitalLibraryProviders() {
+  return useQuery({
+    queryKey: ["digitallibrary", "providers"],
+    queryFn: () => digitalLibraryApi.getProviders(),
     staleTime: 60 * 60 * 1000, // 1 hour
   })
 }

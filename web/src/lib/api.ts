@@ -380,6 +380,37 @@ export const metadataApi = {
     fetchAPI<{ providers: string[] }>("/metadata/providers"),
 }
 
+// Digital Library types (Anna's Archive, LibGen, Internet Archive)
+export interface DigitalLibraryResult {
+  id: string
+  title: string
+  authors?: string[]
+  publisher?: string
+  year?: number
+  language?: string
+  format: string
+  size: number
+  isbn?: string
+  coverUrl?: string
+  downloadUrl?: string
+  infoUrl?: string
+  provider: string
+}
+
+export interface DigitalLibrarySearchResponse {
+  results: DigitalLibraryResult[]
+  total: number
+}
+
+// Digital Library API
+export const digitalLibraryApi = {
+  search: (query: string) =>
+    fetchAPI<DigitalLibrarySearchResponse>(`/digitallibrary/search?q=${encodeURIComponent(query)}`),
+
+  getProviders: () =>
+    fetchAPI<{ providers: string[] }>("/digitallibrary/providers"),
+}
+
 // Settings types
 export interface GeneralSettings {
   apiKey: string

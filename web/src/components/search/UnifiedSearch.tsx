@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect } from "react"
-import { useMetadataSearchBooks } from "../../hooks/useMetadata"
+import { useMetadataSearchBooks, useDigitalLibrarySearch } from "../../hooks/useMetadata"
 import { useSearch, type SearchParams } from "../../hooks/useIndexers"
 import { Input, Button, Card, CardContent, Badge } from "../ui"
-import type { MetadataBookResult, SearchResult } from "../../lib/api"
+import type { MetadataBookResult, SearchResult, DigitalLibraryResult } from "../../lib/api"
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B"
@@ -91,6 +91,44 @@ function DownloadResult({ result }: DownloadResultProps) {
   )
 }
 
+interface LibraryResultProps {
+  result: DigitalLibraryResult
+}
+
+function LibraryResult({ result }: LibraryResultProps) {
+  const handleDownload = () => {
+    window.open(result.downloadUrl || result.infoUrl, "_blank")
+  }
+
+  return (
+    <Card>
+      <CardContent className="py-3 px-4">
+        <div className="flex justify-between items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <h4 className="font-medium text-sm line-clamp-2">{result.title}</h4>
+            {result.authors && result.authors.length > 0 && (
+              <p className="text-xs text-muted-foreground">{result.authors.join(", ")}</p>
+            )}
+            <div className="flex flex-wrap gap-1 mt-1">
+              <Badge variant="outline" className="text-xs">{result.provider}</Badge>
+              <Badge variant="secondary" className="text-xs uppercase">{result.format}</Badge>
+              {result.size > 0 && (
+                <Badge variant="secondary" className="text-xs">{formatBytes(result.size)}</Badge>
+              )}
+              {result.year && (
+                <Badge variant="secondary" className="text-xs">{result.year}</Badge>
+              )}
+            </div>
+          </div>
+          <Button size="sm" onClick={handleDownload}>
+            Download
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 interface DownloadPanelProps {
   book: MetadataBookResult
   onClose: () => void
@@ -101,10 +139,17 @@ function DownloadPanel({ book, onClose }: DownloadPanelProps) {
   const searchQuery = [book.title, ...(book.authors || [])].join(" ")
   const searchParams: SearchParams = { q: searchQuery }
   
-  const { data, isLoading, error } = useSearch(searchParams)
+  // Search Torznab/Newznab indexers
+  const indexerSearch = useSearch(searchParams)
+  
+  // Search digital libraries (Anna's Archive, LibGen, Internet Archive)
+  const librarySearch = useDigitalLibrarySearch(searchQuery, true)
 
-  // Filter results that look like ebooks (handle null/undefined results)
-  const ebookResults = (data?.results ?? []).filter((result) => {
+  const isLoading = indexerSearch.isLoading || librarySearch.isLoading
+  const hasError = indexerSearch.error || librarySearch.error
+
+  // Filter indexer results that look like ebooks
+  const indexerResults = (indexerSearch.data?.results ?? []).filter((result) => {
     const title = result.title.toLowerCase()
     const category = result.category?.toLowerCase() || ""
     return (
@@ -119,9 +164,14 @@ function DownloadPanel({ book, onClose }: DownloadPanelProps) {
     )
   })
 
+  // Digital library results (already filtered by format on backend)
+  const libraryResults = librarySearch.data?.results ?? []
+
+  const totalResults = indexerResults.length + libraryResults.length
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-background rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div className="bg-background rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="p-4 border-b flex items-start gap-4">
           {book.coverUrl && (
@@ -146,50 +196,75 @@ function DownloadPanel({ book, onClose }: DownloadPanelProps) {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {isLoading && (
-            <div className="flex justify-center py-8">
+            <div className="flex flex-col items-center justify-center py-8">
               <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-            </div>
-          )}
-
-          {error && (
-            <div className="bg-destructive/10 border border-destructive/30 rounded p-4">
-              <p className="text-destructive font-medium">Error searching indexers</p>
-              <p className="text-sm text-destructive/80 mt-1">{error.message}</p>
-            </div>
-          )}
-
-          {!isLoading && !error && ebookResults.length === 0 && (
-            <div className="text-center text-muted-foreground py-8">
-              <p className="text-lg mb-2">No ebook downloads found</p>
-              <p className="text-sm mb-4">
-                {data?.total === 0 
-                  ? "The indexers returned no results for this search."
-                  : `Found ${data?.total ?? 0} results, but none matched ebook filters (epub, pdf, mobi, etc.)`
-                }
+              <p className="text-sm text-muted-foreground mt-2">
+                Searching libraries and indexers...
               </p>
-              <div className="text-xs bg-muted/50 rounded p-3 text-left max-w-md mx-auto">
-                <p className="font-medium mb-1">Debug info:</p>
-                <p><span className="text-muted-foreground">Query sent:</span> {searchQuery}</p>
-                <p><span className="text-muted-foreground">Total results:</span> {data?.total ?? 0}</p>
-                <p><span className="text-muted-foreground">After ebook filter:</span> {ebookResults.length}</p>
+            </div>
+          )}
+
+          {hasError && (
+            <div className="bg-destructive/10 border border-destructive/30 rounded p-4">
+              <p className="text-destructive font-medium">Error during search</p>
+              <p className="text-sm text-destructive/80 mt-1">
+                {indexerSearch.error?.message || librarySearch.error?.message}
+              </p>
+            </div>
+          )}
+
+          {/* Digital Library Results */}
+          {!isLoading && libraryResults.length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
+                <span>📚</span> Digital Libraries
+                <Badge variant="secondary" className="text-xs">{libraryResults.length}</Badge>
+              </h4>
+              <div className="space-y-2">
+                {libraryResults.map((result) => (
+                  <LibraryResult key={`${result.provider}-${result.id}`} result={result} />
+                ))}
               </div>
             </div>
           )}
 
-          {ebookResults.map((result) => (
-            <DownloadResult
-              key={result.guid}
-              result={result}
-            />
-          ))}
+          {/* Indexer Results */}
+          {!isLoading && indexerResults.length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
+                <span>🔍</span> Torrent/Usenet Indexers
+                <Badge variant="secondary" className="text-xs">{indexerResults.length}</Badge>
+              </h4>
+              <div className="space-y-2">
+                {indexerResults.map((result) => (
+                  <DownloadResult key={result.guid} result={result} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* No Results */}
+          {!isLoading && !hasError && totalResults === 0 && (
+            <div className="text-center text-muted-foreground py-8">
+              <p className="text-lg mb-2">No downloads found</p>
+              <p className="text-sm mb-4">
+                Could not find "{book.title}" in any library or indexer.
+              </p>
+              <div className="text-xs bg-muted/50 rounded p-3 text-left max-w-md mx-auto">
+                <p className="font-medium mb-1">Sources checked:</p>
+                <p>• Digital libraries (Anna's Archive, LibGen, Internet Archive)</p>
+                <p>• Torrent/Usenet indexers (via Prowlarr)</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
         <div className="p-4 border-t text-sm text-muted-foreground">
-          {ebookResults.length > 0 && (
-            <span>{ebookResults.length} ebook {ebookResults.length === 1 ? "release" : "releases"} found</span>
+          {totalResults > 0 && (
+            <span>{totalResults} download {totalResults === 1 ? "option" : "options"} found</span>
           )}
         </div>
       </div>

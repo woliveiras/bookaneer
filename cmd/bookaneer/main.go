@@ -36,6 +36,10 @@ import (
 	_ "github.com/woliveiras/bookaneer/internal/download/qbittorrent"
 	_ "github.com/woliveiras/bookaneer/internal/download/sabnzbd"
 	_ "github.com/woliveiras/bookaneer/internal/download/transmission"
+	digitallibrary "github.com/woliveiras/bookaneer/internal/library"
+	"github.com/woliveiras/bookaneer/internal/library/annas"
+	"github.com/woliveiras/bookaneer/internal/library/archive"
+	"github.com/woliveiras/bookaneer/internal/library/libgen"
 	"github.com/woliveiras/bookaneer/internal/metadata"
 	"github.com/woliveiras/bookaneer/internal/metadata/googlebooks"
 	"github.com/woliveiras/bookaneer/internal/metadata/openlibrary"
@@ -223,6 +227,14 @@ func run() error {
 	}
 	searchHandler := handler.NewSearchHandler(searchSvc)
 	searchHandler.Register(protected)
+
+	// Digital library providers (Anna's Archive, LibGen, Internet Archive)
+	annasProvider := annas.New()
+	libgenProvider := libgen.New()
+	archiveProvider := archive.New()
+	libAggregator := digitallibrary.NewAggregator(annasProvider, libgenProvider, archiveProvider)
+	digitalLibraryHandler := handler.NewDigitalLibraryHandler(libAggregator)
+	digitalLibraryHandler.Register(protected)
 
 	// Download service (SABnzbd, qBittorrent, Transmission, Blackhole)
 	downloadSvc := download.NewService(db)
