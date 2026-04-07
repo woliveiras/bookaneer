@@ -5,11 +5,11 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext"
 import { LoginPage } from "./components/auth"
 import { AuthorList } from "./components/authors"
 import { BookList } from "./components/books"
-import { MetadataSearch } from "./components/metadata"
 import { SettingsGeneral } from "./components/settings"
 import { Reader } from "./components/reader"
-import { IndexerList, IndexerOptions, InteractiveSearch } from "./components/indexers"
+import { IndexerList, IndexerOptions } from "./components/indexers"
 import { DownloadClientList } from "./components/download"
+import { UnifiedSearch } from "./components/search/UnifiedSearch"
 import { Button } from "./components/ui"
 import { bookApi } from "./lib/api"
 
@@ -190,23 +190,7 @@ const searchRoute = createRoute({
     return (
       <AuthLayout>
         <h2 className="text-2xl font-bold mb-6">Search</h2>
-        <div className="space-y-8">
-          <section>
-            <h3 className="text-lg font-semibold mb-4">Search Indexers</h3>
-            <p className="text-muted-foreground mb-4">
-              Search for ebooks across your configured Newznab/Torznab indexers.
-            </p>
-            <InteractiveSearch />
-          </section>
-          <hr className="border-border" />
-          <section>
-            <h3 className="text-lg font-semibold mb-4">Search Metadata</h3>
-            <p className="text-muted-foreground mb-4">
-              Search for authors and books across OpenLibrary, Google Books, and Hardcover.
-            </p>
-            <MetadataSearch />
-          </section>
-        </div>
+        <UnifiedSearch />
       </AuthLayout>
     )
   },
