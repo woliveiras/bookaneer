@@ -195,7 +195,7 @@ CREATE TABLE config (
 
 -- Defaults
 INSERT INTO config (key, value) VALUES
-    ('general.port', '8787'),
+    ('general.port', '9090'),
     ('general.bindAddress', '0.0.0.0'),
     ('general.urlBase', ''),
     ('general.apiKey', ''),           -- generated on first run

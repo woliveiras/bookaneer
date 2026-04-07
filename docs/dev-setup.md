@@ -92,7 +92,7 @@ go install github.com/air-verse/air@latest
 air
 ```
 
-The backend starts at `http://localhost:8787`.
+The backend starts at `http://localhost:9090`.
 
 ### 3. Frontend
 
@@ -118,7 +118,7 @@ make dev    # Starts backend (air) + frontend (vite) in parallel
 
 | Variable | Default | Description |
 |----------|---------|-----------|
-| `BOOKANEER_PORT` | `8787` | HTTP port |
+| `BOOKANEER_PORT` | `9090` | HTTP port |
 | `BOOKANEER_DATA_DIR` | `./data` | Data directory (DB, logs, backups) |
 | `BOOKANEER_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
 
@@ -225,7 +225,7 @@ docker:
 
 docker-run:
 	docker run --rm -it \
-		-p 8787:8787 \
+		-p 9090:9090 \
 		-v $(PWD)/data:/data \
 		-v $(PWD)/library:/library \
 		$(BINARY):dev
@@ -268,10 +268,10 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': 'http://localhost:8787',
-      '/opds': 'http://localhost:8787',
+      '/api': 'http://localhost:9090',
+      '/opds': 'http://localhost:9090',
       '/ws': {
-        target: 'ws://localhost:8787',
+        target: 'ws://localhost:9090',
         ws: true,
       },
     },
@@ -303,7 +303,7 @@ RUN pnpm build
 FROM scratch
 COPY --from=backend /bookaneer /bookaneer
 COPY --from=frontend /src/web/dist /web/dist
-EXPOSE 8787
+EXPOSE 9090
 VOLUME ["/data", "/library"]
 ENTRYPOINT ["/bookaneer"]
 ```
@@ -321,7 +321,7 @@ On the first run:
 1. Creates `data/bookaneer.db` and runs migrations
 2. Generates a random API key
 3. Creates admin user (username/password set via flag or interactive prompt)
-4. Open `http://localhost:8787` — setup wizard:
+4. Open `http://localhost:9090` — setup wizard:
    - Configure root folder
    - (Optional) Configure download client
    - (Optional) Configure indexer

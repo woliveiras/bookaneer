@@ -443,7 +443,7 @@ services:
     image: bookaneer
     container_name: bookaneer
     ports:
-      - "8787:8787"
+      - "9090:9090"
     volumes:
       - ./bookaneer-data:/data        # SQLite, config, cache
       - /media/books:/library         # Ebook library

@@ -16,13 +16,13 @@ A self-hosted ebook collection manager. Combines features from Readarr and LazyL
 ```bash
 docker run -d \
   --name bookaneer \
-  -p 8787:8787 \
+  -p 9090:9090 \
   -v ./data:/data \
   -v /path/to/books:/library \
   bookaneer/bookaneer:latest
 ```
 
-Open `http://localhost:8787` to access the web UI.
+Open `http://localhost:9090` to access the web UI.
 
 ## Documentation
 

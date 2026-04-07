@@ -31,7 +31,7 @@ FROM scratch
 COPY --from=backend /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=backend /app /bookaneer
 COPY --from=frontend /src/web/dist /web/dist
-EXPOSE 8787
+EXPOSE 9090
 VOLUME ["/data", "/library"]
 ENTRYPOINT ["/bookaneer"]
 ```
@@ -71,7 +71,7 @@ services:
   bookaneer:
     build: .
     ports:
-      - "8787:8787"
+      - "9090:9090"
     volumes:
       - ./data:/data        # DB, config, logs
       - ./library:/library   # Book files
@@ -100,7 +100,7 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD ["/bookaneer", "healthcheck"]
 ```
 
-The binary should support a `healthcheck` subcommand that does an HTTP GET to `localhost:8787/api/v1/system/health` and exits 0/1.
+The binary should support a `healthcheck` subcommand that does an HTTP GET to `localhost:9090/api/v1/system/health` and exits 0/1.
 
 ## Resource Limits
 

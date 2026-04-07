@@ -644,7 +644,7 @@ Returns image directly (Content-Type: image/jpeg). Cached on disk.
 
 ## WebSocket
 
-Endpoint: `ws://host:8787/api/v1/ws`
+Endpoint: `ws://host:9090/api/v1/ws`
 
 Auth: `?apikey=xxx` in the connection URL.
 

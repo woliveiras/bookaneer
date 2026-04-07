@@ -1,0 +1,17 @@
+root = "."
+tmp_dir = "data/tmp"
+
+[build]
+  bin = "./data/tmp/bookaneer"
+  cmd = "go build -o ./data/tmp/bookaneer ./cmd/bookaneer"
+  delay = 1000
+  exclude_dir = ["data", "web", "node_modules", "dist", ".git", "migrations"]
+  exclude_regex = ["_test\\.go$"]
+  include_ext = ["go", "yaml", "sql"]
+  kill_delay = 500
+
+[log]
+  time = false
+
+[misc]
+  clean_on_exit = true

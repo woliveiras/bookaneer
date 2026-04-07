@@ -1,0 +1,15 @@
+.git
+data/
+node_modules/
+web/node_modules/
+dist/
+web/dist/
+*.db
+*.db-wal
+*.db-shm
+.env
+.air.toml
+.vscode/
+.idea/
+*.log
+plan.md

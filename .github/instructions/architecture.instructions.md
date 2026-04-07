@@ -141,7 +141,7 @@ Rules:
 - Config loaded once at startup in `main.go`
 - Passed as a struct to services that need it — not as a global
 - Environment variables override config file values
-- Sensitive defaults: auth enabled, random API key, bind to `0.0.0.0:8787`
+- Sensitive defaults: auth enabled, random API key, bind to `0.0.0.0:9090`
 
 ## Background Jobs
 
