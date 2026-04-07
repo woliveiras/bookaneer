@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { createRouter, createRootRoute, createRoute, Outlet, Link, useNavigate } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import { AuthProvider, useAuth } from "./contexts/AuthContext"
@@ -8,6 +9,7 @@ import { MetadataSearch } from "./components/metadata"
 import { SettingsGeneral } from "./components/settings"
 import { Reader } from "./components/reader"
 import { IndexerList, IndexerOptions, InteractiveSearch } from "./components/indexers"
+import { DownloadClientList } from "./components/download"
 import { Button } from "./components/ui"
 import { bookApi } from "./lib/api"
 
@@ -218,20 +220,83 @@ const settingsRoute = createRoute({
     return (
       <AuthLayout>
         <h2 className="text-2xl font-bold mb-6">Settings</h2>
-        <div className="space-y-8">
-          <SettingsGeneral />
-          <hr className="border-border" />
-          <section>
-            <h3 className="text-lg font-semibold mb-4">Indexers</h3>
-            <IndexerList />
-          </section>
-          <hr className="border-border" />
-          <IndexerOptions />
+        <div className="space-y-4">
+          <GeneralSettings />
+          <IndexerSettings />
+          <DownloadClientSettings />
         </div>
       </AuthLayout>
     )
   },
 })
+
+// General settings section - collapsible
+function GeneralSettings() {
+  const [isOpen, setIsOpen] = useState(true) // Default open
+  return (
+    <div className="border rounded-lg">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-full p-4 text-left hover:bg-accent/50 transition-colors"
+      >
+        <span className="text-lg font-semibold">General</span>
+        <span className="text-muted-foreground">{isOpen ? "▼" : "▶"}</span>
+      </button>
+      {isOpen && (
+        <div className="p-4 border-t">
+          <SettingsGeneral />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Indexer settings section - collapsible
+function IndexerSettings() {
+  const [isOpen, setIsOpen] = useState(false)
+  return (
+    <div className="border rounded-lg">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-full p-4 text-left hover:bg-accent/50 transition-colors"
+      >
+        <span className="text-lg font-semibold">Indexers</span>
+        <span className="text-muted-foreground">{isOpen ? "▼" : "▶"}</span>
+      </button>
+      {isOpen && (
+        <div className="p-4 border-t space-y-6">
+          <IndexerList />
+          <hr className="border-border" />
+          <IndexerOptions />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Download client settings section - collapsible
+function DownloadClientSettings() {
+  const [isOpen, setIsOpen] = useState(false)
+  return (
+    <div className="border rounded-lg">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-full p-4 text-left hover:bg-accent/50 transition-colors"
+      >
+        <span className="text-lg font-semibold">Download Clients</span>
+        <span className="text-muted-foreground">{isOpen ? "▼" : "▶"}</span>
+      </button>
+      {isOpen && (
+        <div className="p-4 border-t">
+          <DownloadClientList />
+        </div>
+      )}
+    </div>
+  )
+}
 
 // System route
 const systemRoute = createRoute({

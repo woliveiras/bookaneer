@@ -31,6 +31,11 @@ import (
 	"github.com/woliveiras/bookaneer/internal/core/rootfolder"
 	"github.com/woliveiras/bookaneer/internal/core/series"
 	"github.com/woliveiras/bookaneer/internal/database"
+	"github.com/woliveiras/bookaneer/internal/download"
+	_ "github.com/woliveiras/bookaneer/internal/download/blackhole"
+	_ "github.com/woliveiras/bookaneer/internal/download/qbittorrent"
+	_ "github.com/woliveiras/bookaneer/internal/download/sabnzbd"
+	_ "github.com/woliveiras/bookaneer/internal/download/transmission"
 	"github.com/woliveiras/bookaneer/internal/metadata"
 	"github.com/woliveiras/bookaneer/internal/metadata/googlebooks"
 	"github.com/woliveiras/bookaneer/internal/metadata/openlibrary"
@@ -213,6 +218,11 @@ func run() error {
 	}
 	searchHandler := handler.NewSearchHandler(searchSvc)
 	searchHandler.Register(protected)
+
+	// Download service (SABnzbd, qBittorrent, Transmission, Blackhole)
+	downloadSvc := download.NewService(db)
+	downloadHandler := handler.NewDownloadHandler(downloadSvc)
+	downloadHandler.Register(protected)
 
 	if err := serveFrontend(e); err != nil {
 		return fmt.Errorf("setup frontend: %w", err)

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useIndexerOptions, useUpdateIndexerOptions } from "../../hooks/useIndexers"
-import { Button, Input, Label, Card, CardHeader, CardTitle, CardContent } from "../ui"
+import { Button, Input, Label } from "../ui"
 
 export function IndexerOptions() {
   const { data: options, isLoading, error } = useIndexerOptions()
@@ -47,20 +47,17 @@ export function IndexerOptions() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Indexer Options</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Minimum Age */}
-          <div className="space-y-2">
-            <Label htmlFor="minimumAge">Minimum Age (minutes)</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="minimumAge"
-                type="number"
-                min={0}
+    <div className="space-y-6">
+      <h4 className="text-md font-medium text-muted-foreground">Indexer Options</h4>
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Minimum Age */}
+        <div className="space-y-2">
+          <Label htmlFor="minimumAge">Minimum Age (minutes)</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              id="minimumAge"
+              type="number"
+              min={0}
                 value={formData.minimumAge}
                 onChange={(e) => handleChange("minimumAge", parseInt(e.target.value, 10) || 0)}
                 className="flex-1"
@@ -177,7 +174,6 @@ export function IndexerOptions() {
             {updateOptions.isPending ? "Saving..." : "Save Options"}
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
   )
 }

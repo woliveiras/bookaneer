@@ -11,3 +11,6 @@ export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 
 export { Badge } from "./Badge"
 export type { BadgeProps } from "./Badge"
+
+export { Collapsible } from "./Collapsible"
+export type { CollapsibleProps } from "./Collapsible"

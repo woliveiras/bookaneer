@@ -629,3 +629,169 @@ export const indexerApi = {
     return fetchAPI<SearchResponse>(`/search?${searchParams.toString()}`)
   },
 }
+
+// Download client types
+export type DownloadClientType = "sabnzbd" | "qbittorrent" | "transmission" | "blackhole"
+
+export interface DownloadClient {
+  id: number
+  name: string
+  type: DownloadClientType
+  host: string
+  port: number
+  useTls: boolean
+  username: string
+  password: string
+  apiKey: string
+  category: string
+  recentPriority: number
+  olderPriority: number
+  removeCompletedAfter: number
+  enabled: boolean
+  priority: number
+  nzbFolder: string
+  torrentFolder: string
+  watchFolder: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateDownloadClientInput {
+  name: string
+  type: DownloadClientType
+  host?: string
+  port?: number
+  useTls?: boolean
+  username?: string
+  password?: string
+  apiKey?: string
+  category?: string
+  recentPriority?: number
+  olderPriority?: number
+  removeCompletedAfter?: number
+  enabled?: boolean
+  priority?: number
+  nzbFolder?: string
+  torrentFolder?: string
+  watchFolder?: string
+}
+
+export type DownloadStatus = "queued" | "downloading" | "paused" | "completed" | "seeding" | "failed" | "extracted" | "processing"
+
+export interface QueueItem {
+  id: string
+  name: string
+  status: DownloadStatus
+  progress: number
+  size: number
+  downloadedSize: number
+  speed: number
+  eta: number
+  seeders?: number
+  leechers?: number
+  ratio?: number
+  savePath?: string
+  category?: string
+  errorMessage?: string
+  addedAt: string
+  completedAt?: string
+  clientId: number
+}
+
+export type GrabStatus = "pending" | "sent" | "downloading" | "completed" | "failed" | "imported"
+
+export interface Grab {
+  id: number
+  bookId: number
+  indexerId: number
+  releaseTitle: string
+  downloadUrl: string
+  size: number
+  quality: string
+  clientId: number
+  downloadId: string
+  status: GrabStatus
+  errorMessage: string
+  grabbedAt: string
+  completedAt?: string
+}
+
+export interface CreateGrabInput {
+  bookId: number
+  indexerId: number
+  releaseTitle: string
+  downloadUrl: string
+  size?: number
+  quality?: string
+  clientId: number
+}
+
+export interface TestDownloadClientResponse {
+  success: boolean
+  message: string
+}
+
+// Download client API
+export const downloadClientApi = {
+  list: () => fetchAPI<DownloadClient[]>("/downloadclient"),
+
+  get: (id: number) => fetchAPI<DownloadClient>(`/downloadclient/${id}`),
+
+  create: (data: CreateDownloadClientInput) =>
+    fetchAPI<DownloadClient>("/downloadclient", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  update: (id: number, data: CreateDownloadClientInput) =>
+    fetchAPI<DownloadClient>(`/downloadclient/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  delete: (id: number) =>
+    fetch(`${API_BASE}/downloadclient/${id}`, {
+      method: "DELETE",
+      headers: {
+        "X-Api-Key": getStoredApiKey() || "",
+      },
+    }).then((res) => {
+      if (!res.ok) throw new Error("Failed to delete download client")
+    }),
+
+  test: (data: CreateDownloadClientInput) =>
+    fetchAPI<TestDownloadClientResponse>("/downloadclient/test", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+}
+
+// Queue API
+export const queueApi = {
+  list: () => fetchAPI<QueueItem[]>("/queue"),
+
+  listByClient: (clientId: number) => fetchAPI<QueueItem[]>(`/queue/${clientId}`),
+}
+
+// Grab API
+export const grabApi = {
+  list: (params?: { bookId?: number; status?: GrabStatus; limit?: number }) => {
+    const searchParams = new URLSearchParams()
+    if (params?.bookId) searchParams.set("bookId", params.bookId.toString())
+    if (params?.status) searchParams.set("status", params.status)
+    if (params?.limit) searchParams.set("limit", params.limit.toString())
+    const query = searchParams.toString()
+    return fetchAPI<Grab[]>(`/grab${query ? `?${query}` : ""}`)
+  },
+
+  create: (data: CreateGrabInput) =>
+    fetchAPI<Grab>("/grab", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  send: (id: number) =>
+    fetchAPI<Grab>(`/grab/${id}/send`, {
+      method: "POST",
+    }),
+}
