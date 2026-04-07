@@ -154,17 +154,27 @@ function DownloadPanel({ book, onClose }: DownloadPanelProps) {
           )}
 
           {error && (
-            <div className="text-destructive text-center py-4">
-              Error searching indexers: {error.message}
+            <div className="bg-destructive/10 border border-destructive/30 rounded p-4">
+              <p className="text-destructive font-medium">Error searching indexers</p>
+              <p className="text-sm text-destructive/80 mt-1">{error.message}</p>
             </div>
           )}
 
-          {!isLoading && ebookResults.length === 0 && (
+          {!isLoading && !error && ebookResults.length === 0 && (
             <div className="text-center text-muted-foreground py-8">
               <p className="text-lg mb-2">No ebook downloads found</p>
-              <p className="text-sm">
-                Try configuring more indexers in Settings, or the book may not be available yet.
+              <p className="text-sm mb-4">
+                {data?.total === 0 
+                  ? "The indexers returned no results for this search."
+                  : `Found ${data?.total ?? 0} results, but none matched ebook filters (epub, pdf, mobi, etc.)`
+                }
               </p>
+              <div className="text-xs bg-muted/50 rounded p-3 text-left max-w-md mx-auto">
+                <p className="font-medium mb-1">Debug info:</p>
+                <p><span className="text-muted-foreground">Query sent:</span> {searchQuery}</p>
+                <p><span className="text-muted-foreground">Total results:</span> {data?.total ?? 0}</p>
+                <p><span className="text-muted-foreground">After ebook filter:</span> {ebookResults.length}</p>
+              </div>
             </div>
           )}
 
