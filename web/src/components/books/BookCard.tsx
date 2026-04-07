@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router"
 import type { Book } from "../../lib/api"
 import { Card, CardContent, Badge, Button } from "../ui"
 import { cn } from "../../lib/utils"
@@ -5,11 +6,10 @@ import { cn } from "../../lib/utils"
 interface BookCardProps {
   book: Book
   onClick?: () => void
-  onRead?: () => void
   selected?: boolean
 }
 
-export function BookCard({ book, onClick, onRead, selected }: BookCardProps) {
+export function BookCard({ book, onClick, selected }: BookCardProps) {
   return (
     <Card
       className={cn(
@@ -67,19 +67,21 @@ export function BookCard({ book, onClick, onRead, selected }: BookCardProps) {
             {book.isbn13 && (
               <p className="text-xs text-muted-foreground font-mono">ISBN: {book.isbn13}</p>
             )}
-            {onRead && (
-              <Button
-                variant="default"
-                size="sm"
-                className="mt-2"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onRead()
-                }}
-                aria-label={`Read ${book.title}`}
+            {book.hasFile && (
+              <Link
+                to="/read/$bookId"
+                params={{ bookId: String(book.id) }}
+                onClick={(e) => e.stopPropagation()}
               >
-                📖 Read
-              </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="mt-2"
+                  aria-label={`Read ${book.title}`}
+                >
+                  📖 Read
+                </Button>
+              </Link>
             )}
           </div>
         </div>

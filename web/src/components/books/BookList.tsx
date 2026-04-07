@@ -1,15 +1,13 @@
 import { useState } from "react"
 import { useBooks } from "../../hooks/useBooks"
-import { bookApi } from "../../lib/api"
 import { BookCard } from "./BookCard"
 import { Input, Button, Badge } from "../ui"
 
 interface BookListProps {
   authorId?: number
-  onOpenReader?: (bookFileId: number) => void
 }
 
-export function BookList({ authorId, onOpenReader }: BookListProps) {
+export function BookList({ authorId }: BookListProps) {
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [showMissing, setShowMissing] = useState(false)
@@ -108,17 +106,6 @@ export function BookList({ authorId, onOpenReader }: BookListProps) {
                 <BookCard
                   book={book}
                   onClick={() => console.log("Selected:", book.id)}
-                  onRead={
-                    book.hasFile && onOpenReader
-                      ? async () => {
-                          // Fetch book details to get file IDs
-                          const details = await bookApi.get(book.id)
-                          if (details.files && details.files.length > 0) {
-                            onOpenReader(details.files[0].id)
-                          }
-                        }
-                      : undefined
-                  }
                 />
               </div>
             ))}
