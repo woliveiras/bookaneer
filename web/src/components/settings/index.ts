@@ -1,0 +1,1 @@
+export { SettingsGeneral } from "./SettingsGeneral"

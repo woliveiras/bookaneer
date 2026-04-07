@@ -57,11 +57,24 @@ func (h *AuthHandler) Login(c echo.Context) error {
 
 // Me returns the current authenticated user.
 func (h *AuthHandler) Me(c echo.Context) error {
-	user, ok := c.Get("user").(*auth.User)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "not authenticated")
+	// Check if there's a user (from user-specific API key)
+	if user, ok := c.Get("user").(*auth.User); ok {
+		return c.JSON(http.StatusOK, user)
 	}
-	return c.JSON(http.StatusOK, user)
+
+	// Check if authenticated with system API key
+	if apiKey, ok := c.Get("apiKey").(string); ok && apiKey != "" {
+		// Return a synthetic admin user for system API key
+		return c.JSON(http.StatusOK, &auth.User{
+			ID:        0,
+			Username:  "admin",
+			Role:      "admin",
+			APIKey:    apiKey,
+			CreatedAt: "system",
+		})
+	}
+
+	return echo.NewHTTPError(http.StatusUnauthorized, "not authenticated")
 }
 
 // Logout is a no-op for API key auth (client just removes the key).

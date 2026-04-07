@@ -1,8 +1,11 @@
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { AuthProvider, useAuth } from "./contexts/AuthContext"
+import { LoginPage } from "./components/auth"
 import { AuthorList } from "./components/authors"
 import { BookList } from "./components/books"
 import { MetadataSearch } from "./components/metadata"
+import { SettingsGeneral } from "./components/settings"
 import { Button } from "./components/ui"
 
 interface HealthResponse {
@@ -20,21 +23,40 @@ interface SystemStatus {
   libraryDir: string
 }
 
-type Tab = "library" | "authors" | "books" | "search" | "system"
+type Tab = "library" | "authors" | "books" | "search" | "settings" | "system"
 
-function App() {
+function AppContent() {
+  const { isAuthenticated, isLoading: authLoading, logout, user } = useAuth()
   const [activeTab, setActiveTab] = useState<Tab>("library")
 
   const health = useQuery<HealthResponse>({
     queryKey: ["health"],
     queryFn: () => fetch("/api/v1/system/health").then((r) => r.json()),
+    enabled: isAuthenticated,
   })
 
   const status = useQuery<SystemStatus>({
     queryKey: ["status"],
     queryFn: () => fetch("/api/v1/system/status").then((r) => r.json()),
-    enabled: activeTab === "system",
+    enabled: isAuthenticated && activeTab === "system",
   })
+
+  // Show loading spinner while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show login page if not authenticated
+  if (!isAuthenticated) {
+    return <LoginPage />
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -52,6 +74,14 @@ function App() {
             ) : (
               <span className="text-destructive">Disconnected</span>
             )}
+            {user && (
+              <span className="text-sm text-muted-foreground">
+                {user.username || "API Key"}
+              </span>
+            )}
+            <Button variant="outline" size="sm" onClick={logout}>
+              Sign Out
+            </Button>
           </div>
         </div>
         <nav className="container mx-auto px-4" aria-label="Main navigation">
@@ -62,6 +92,7 @@ function App() {
                 { id: "authors", label: "Authors" },
                 { id: "books", label: "Books" },
                 { id: "search", label: "Search" },
+                { id: "settings", label: "Settings" },
                 { id: "system", label: "System" },
               ] as const
             ).map((tab) => (
@@ -123,6 +154,13 @@ function App() {
           </div>
         )}
 
+        {activeTab === "settings" && (
+          <div id="settings-panel" role="tabpanel" aria-labelledby="settings-tab">
+            <h2 className="text-2xl font-bold mb-6">Settings</h2>
+            <SettingsGeneral />
+          </div>
+        )}
+
         {activeTab === "system" && (
           <div id="system-panel" role="tabpanel" aria-labelledby="system-tab">
             <h2 className="text-2xl font-bold mb-6">System Status</h2>
@@ -166,6 +204,14 @@ function App() {
         )}
       </main>
     </div>
+  )
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   )
 }
 

@@ -1,13 +1,35 @@
 const API_BASE = "/api/v1"
+const API_KEY_STORAGE_KEY = "bookaneer_api_key"
 
-// Generic fetch wrapper
+// Get stored API key
+export function getStoredApiKey(): string | null {
+  return localStorage.getItem(API_KEY_STORAGE_KEY)
+}
+
+// Set stored API key
+export function setStoredApiKey(apiKey: string): void {
+  localStorage.setItem(API_KEY_STORAGE_KEY, apiKey)
+}
+
+// Clear stored API key
+export function clearStoredApiKey(): void {
+  localStorage.removeItem(API_KEY_STORAGE_KEY)
+}
+
+// Generic fetch wrapper with auth
 async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
+  const apiKey = getStoredApiKey()
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...options?.headers,
+  }
+  if (apiKey) {
+    ;(headers as Record<string, string>)["X-Api-Key"] = apiKey
+  }
+
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    },
+    headers,
   })
 
   if (!res.ok) {
@@ -16,6 +38,41 @@ async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
   }
 
   return res.json()
+}
+
+// Auth types
+export interface User {
+  id: number
+  username: string
+  role: string
+  apiKey?: string
+  createdAt: string
+}
+
+export interface LoginResponse {
+  user: User
+  apiKey: string
+}
+
+// Auth API
+export const authApi = {
+  login: (apiKey: string) =>
+    fetchAPI<User>("/auth/me", {
+      headers: { "X-Api-Key": apiKey },
+    }),
+
+  loginWithCredentials: (username: string, password: string) =>
+    fetchAPI<LoginResponse>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+    }),
+
+  me: () => fetchAPI<User>("/auth/me"),
+
+  logout: () =>
+    fetchAPI<{ status: string }>("/auth/logout", {
+      method: "POST",
+    }),
 }
 
 // Author types
@@ -321,4 +378,19 @@ export const metadataApi = {
 
   getProviders: () =>
     fetchAPI<{ providers: string[] }>("/metadata/providers"),
+}
+
+// Settings types
+export interface GeneralSettings {
+  apiKey: string
+  bindAddress: string
+  port: number
+  dataDir: string
+  libraryDir: string
+  logLevel: string
+}
+
+// Settings API
+export const settingsApi = {
+  getGeneral: () => fetchAPI<GeneralSettings>("/settings/general"),
 }

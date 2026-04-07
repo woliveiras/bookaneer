@@ -50,6 +50,8 @@ func Auth(svc *auth.Service) echo.MiddlewareFunc {
 			if apiKey != "" {
 				// Validate against system API key
 				if svc.ValidateAPIKey(ctx, apiKey) {
+					// Store the validated API key
+					c.Set("apiKey", apiKey)
 					// Try to get user by API key
 					user, err := svc.GetUserByAPIKey(ctx, apiKey)
 					if err == nil {
