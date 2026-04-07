@@ -34,6 +34,9 @@ import (
 	"github.com/woliveiras/bookaneer/internal/metadata"
 	"github.com/woliveiras/bookaneer/internal/metadata/googlebooks"
 	"github.com/woliveiras/bookaneer/internal/metadata/openlibrary"
+	"github.com/woliveiras/bookaneer/internal/search"
+	_ "github.com/woliveiras/bookaneer/internal/search/newznab"
+	_ "github.com/woliveiras/bookaneer/internal/search/torznab"
 )
 
 var (
@@ -202,6 +205,14 @@ func run() error {
 	protected.GET("/metadata/books/:foreignId", metadataHandler.GetBook)
 	protected.GET("/metadata/isbn/:isbn", metadataHandler.LookupISBN)
 	protected.GET("/metadata/providers", metadataHandler.ListProviders)
+
+	// Search service (Newznab/Torznab indexers)
+	searchSvc := search.NewService(db)
+	if err := searchSvc.LoadIndexers(context.Background()); err != nil {
+		slog.Warn("could not load indexers", "error", err)
+	}
+	searchHandler := handler.NewSearchHandler(searchSvc)
+	searchHandler.Register(protected)
 
 	if err := serveFrontend(e); err != nil {
 		return fmt.Errorf("setup frontend: %w", err)

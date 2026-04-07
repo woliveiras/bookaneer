@@ -7,6 +7,7 @@ import { BookList } from "./components/books"
 import { MetadataSearch } from "./components/metadata"
 import { SettingsGeneral } from "./components/settings"
 import { Reader } from "./components/reader"
+import { IndexerList, IndexerOptions, InteractiveSearch } from "./components/indexers"
 import { Button } from "./components/ui"
 
 interface HealthResponse {
@@ -158,18 +159,40 @@ function AppContent() {
 
         {activeTab === "search" && (
           <div id="search-panel" role="tabpanel" aria-labelledby="search-tab">
-            <h2 className="text-2xl font-bold mb-6">Search Metadata</h2>
-            <p className="text-muted-foreground mb-6">
-              Search for authors and books across OpenLibrary, Google Books, and Hardcover.
-            </p>
-            <MetadataSearch />
+            <h2 className="text-2xl font-bold mb-6">Search</h2>
+            <div className="space-y-8">
+              <section>
+                <h3 className="text-lg font-semibold mb-4">Search Indexers</h3>
+                <p className="text-muted-foreground mb-4">
+                  Search for ebooks across your configured Newznab/Torznab indexers.
+                </p>
+                <InteractiveSearch />
+              </section>
+              <hr className="border-border" />
+              <section>
+                <h3 className="text-lg font-semibold mb-4">Search Metadata</h3>
+                <p className="text-muted-foreground mb-4">
+                  Search for authors and books across OpenLibrary, Google Books, and Hardcover.
+                </p>
+                <MetadataSearch />
+              </section>
+            </div>
           </div>
         )}
 
         {activeTab === "settings" && (
           <div id="settings-panel" role="tabpanel" aria-labelledby="settings-tab">
             <h2 className="text-2xl font-bold mb-6">Settings</h2>
-            <SettingsGeneral />
+            <div className="space-y-8">
+              <SettingsGeneral />
+              <hr className="border-border" />
+              <section>
+                <h3 className="text-lg font-semibold mb-4">Indexers</h3>
+                <IndexerList />
+              </section>
+              <hr className="border-border" />
+              <IndexerOptions />
+            </div>
           </div>
         )}
 
