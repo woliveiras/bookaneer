@@ -21,6 +21,12 @@ import (
 	apimw "github.com/woliveiras/bookaneer/api/v1/middleware"
 	"github.com/woliveiras/bookaneer/internal/auth"
 	"github.com/woliveiras/bookaneer/internal/config"
+	"github.com/woliveiras/bookaneer/internal/core/author"
+	"github.com/woliveiras/bookaneer/internal/core/book"
+	"github.com/woliveiras/bookaneer/internal/core/library"
+	"github.com/woliveiras/bookaneer/internal/core/qualityprofile"
+	"github.com/woliveiras/bookaneer/internal/core/rootfolder"
+	"github.com/woliveiras/bookaneer/internal/core/series"
 	"github.com/woliveiras/bookaneer/internal/database"
 )
 
@@ -98,6 +104,38 @@ func run() error {
 	api.POST("/auth/login", authHandler.Login)
 	protected.GET("/auth/me", authHandler.Me)
 	protected.POST("/auth/logout", authHandler.Logout)
+
+	// Core domain services
+	authorSvc := author.New(db)
+	bookSvc := book.New(db)
+	seriesSvc := series.New(db)
+	rootFolderSvc := rootfolder.New(db)
+	qualityProfileSvc := qualityprofile.New(db)
+	libraryScanner := library.NewScanner(db)
+
+	// Ensure default quality profile exists
+	if err := qualityProfileSvc.EnsureDefault(context.Background()); err != nil {
+		slog.Warn("could not ensure default quality profile", "error", err)
+	}
+
+	// Core domain handlers
+	authorHandler := handler.NewAuthorHandler(authorSvc)
+	authorHandler.Register(protected)
+
+	bookHandler := handler.NewBookHandler(bookSvc)
+	bookHandler.Register(protected)
+
+	seriesHandler := handler.NewSeriesHandler(seriesSvc)
+	seriesHandler.Register(protected)
+
+	rootFolderHandler := handler.NewRootFolderHandler(rootFolderSvc)
+	rootFolderHandler.Register(protected)
+
+	qualityProfileHandler := handler.NewQualityProfileHandler(qualityProfileSvc)
+	qualityProfileHandler.Register(protected)
+
+	libraryHandler := handler.NewLibraryHandler(libraryScanner)
+	libraryHandler.Register(protected)
 
 	if err := serveFrontend(e); err != nil {
 		return fmt.Errorf("setup frontend: %w", err)

@@ -1,0 +1,456 @@
+package book
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"strings"
+)
+
+// Service provides book-related operations.
+type Service struct {
+	db *sql.DB
+}
+
+// New creates a new book service.
+func New(db *sql.DB) *Service {
+	return &Service{db: db}
+}
+
+// FindByID returns a book by ID.
+func (s *Service) FindByID(ctx context.Context, id int64) (*Book, error) {
+	var b Book
+	var monitored int
+	err := s.db.QueryRowContext(ctx, `
+		SELECT b.id, b.author_id, b.title, b.sort_title, b.foreign_id, b.isbn, b.isbn13,
+		       b.release_date, b.overview, b.image_url, b.page_count, b.monitored, b.added_at, b.updated_at,
+		       a.name
+		FROM books b
+		JOIN authors a ON b.author_id = a.id
+		WHERE b.id = ?
+	`, id).Scan(
+		&b.ID, &b.AuthorID, &b.Title, &b.SortTitle, &b.ForeignID, &b.ISBN, &b.ISBN13,
+		&b.ReleaseDate, &b.Overview, &b.ImageURL, &b.PageCount, &monitored, &b.AddedAt, &b.UpdatedAt,
+		&b.AuthorName,
+	)
+	if err == sql.ErrNoRows {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("find book %d: %w", id, err)
+	}
+	b.Monitored = monitored == 1
+
+	// Check if has file
+	var fileCount int
+	_ = s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM book_files WHERE book_id = ?", id).Scan(&fileCount)
+	b.HasFile = fileCount > 0
+
+	return &b, nil
+}
+
+// FindByForeignID returns a book by foreign ID.
+func (s *Service) FindByForeignID(ctx context.Context, foreignID string) (*Book, error) {
+	var b Book
+	var monitored int
+	err := s.db.QueryRowContext(ctx, `
+		SELECT b.id, b.author_id, b.title, b.sort_title, b.foreign_id, b.isbn, b.isbn13,
+		       b.release_date, b.overview, b.image_url, b.page_count, b.monitored, b.added_at, b.updated_at,
+		       a.name
+		FROM books b
+		JOIN authors a ON b.author_id = a.id
+		WHERE b.foreign_id = ?
+	`, foreignID).Scan(
+		&b.ID, &b.AuthorID, &b.Title, &b.SortTitle, &b.ForeignID, &b.ISBN, &b.ISBN13,
+		&b.ReleaseDate, &b.Overview, &b.ImageURL, &b.PageCount, &monitored, &b.AddedAt, &b.UpdatedAt,
+		&b.AuthorName,
+	)
+	if err == sql.ErrNoRows {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("find book by foreign id %s: %w", foreignID, err)
+	}
+	b.Monitored = monitored == 1
+	return &b, nil
+}
+
+// List returns books matching the filter.
+func (s *Service) List(ctx context.Context, filter ListBooksFilter) ([]Book, int, error) {
+	var conditions []string
+	var args []any
+
+	if filter.AuthorID != nil {
+		conditions = append(conditions, "b.author_id = ?")
+		args = append(args, *filter.AuthorID)
+	}
+	if filter.Monitored != nil {
+		if *filter.Monitored {
+			conditions = append(conditions, "b.monitored = 1")
+		} else {
+			conditions = append(conditions, "b.monitored = 0")
+		}
+	}
+	if filter.Missing {
+		conditions = append(conditions, "NOT EXISTS (SELECT 1 FROM book_files bf WHERE bf.book_id = b.id)")
+	}
+	if filter.Search != "" {
+		conditions = append(conditions, "(b.title LIKE ? OR b.sort_title LIKE ? OR b.isbn LIKE ? OR b.isbn13 LIKE ?)")
+		search := "%" + filter.Search + "%"
+		args = append(args, search, search, search, search)
+	}
+
+	where := ""
+	if len(conditions) > 0 {
+		where = "WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	// Count total
+	var total int
+	countQuery := "SELECT COUNT(*) FROM books b " + where
+	if err := s.db.QueryRowContext(ctx, countQuery, args...).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count books: %w", err)
+	}
+
+	// Build ORDER BY
+	sortBy := "b.title"
+	if filter.SortBy != "" {
+		switch filter.SortBy {
+		case "sortTitle":
+			sortBy = "b.sort_title"
+		case "releaseDate":
+			sortBy = "b.release_date"
+		case "addedAt":
+			sortBy = "b.added_at"
+		default:
+			sortBy = "b.title"
+		}
+	}
+	sortDir := "ASC"
+	if filter.SortDir == "desc" {
+		sortDir = "DESC"
+	}
+
+	// Apply limit/offset
+	limit := 50
+	if filter.Limit > 0 && filter.Limit <= 500 {
+		limit = filter.Limit
+	}
+	offset := 0
+	if filter.Offset > 0 {
+		offset = filter.Offset
+	}
+
+	query := fmt.Sprintf(`
+		SELECT b.id, b.author_id, b.title, b.sort_title, b.foreign_id, b.isbn, b.isbn13,
+		       b.release_date, b.overview, b.image_url, b.page_count, b.monitored, b.added_at, b.updated_at,
+		       a.name,
+		       EXISTS (SELECT 1 FROM book_files bf WHERE bf.book_id = b.id) as has_file
+		FROM books b
+		JOIN authors a ON b.author_id = a.id
+		%s ORDER BY %s %s LIMIT ? OFFSET ?
+	`, where, sortBy, sortDir)
+	args = append(args, limit, offset)
+
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("list books: %w", err)
+	}
+	defer rows.Close()
+
+	var books []Book
+	for rows.Next() {
+		var b Book
+		var monitored, hasFile int
+		if err := rows.Scan(
+			&b.ID, &b.AuthorID, &b.Title, &b.SortTitle, &b.ForeignID, &b.ISBN, &b.ISBN13,
+			&b.ReleaseDate, &b.Overview, &b.ImageURL, &b.PageCount, &monitored, &b.AddedAt, &b.UpdatedAt,
+			&b.AuthorName, &hasFile,
+		); err != nil {
+			return nil, 0, fmt.Errorf("scan book: %w", err)
+		}
+		b.Monitored = monitored == 1
+		b.HasFile = hasFile == 1
+		books = append(books, b)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("iterate books: %w", err)
+	}
+
+	return books, total, nil
+}
+
+// Create creates a new book.
+func (s *Service) Create(ctx context.Context, input CreateBookInput) (*Book, error) {
+	if input.Title == "" {
+		return nil, ErrInvalidInput
+	}
+	if input.AuthorID == 0 {
+		return nil, ErrInvalidInput
+	}
+	if input.SortTitle == "" {
+		input.SortTitle = input.Title
+	}
+
+	// Check author exists
+	var authorExists int
+	err := s.db.QueryRowContext(ctx, "SELECT 1 FROM authors WHERE id = ?", input.AuthorID).Scan(&authorExists)
+	if err == sql.ErrNoRows {
+		return nil, ErrAuthorNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("check author: %w", err)
+	}
+
+	monitored := 0
+	if input.Monitored {
+		monitored = 1
+	}
+
+	result, err := s.db.ExecContext(ctx, `
+		INSERT INTO books (author_id, title, sort_title, foreign_id, isbn, isbn13, release_date, overview, image_url, page_count, monitored)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, input.AuthorID, input.Title, input.SortTitle, input.ForeignID, input.ISBN, input.ISBN13, input.ReleaseDate, input.Overview, input.ImageURL, input.PageCount, monitored)
+	if err != nil {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+			return nil, ErrDuplicate
+		}
+		return nil, fmt.Errorf("create book: %w", err)
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return nil, fmt.Errorf("get book id: %w", err)
+	}
+
+	return s.FindByID(ctx, id)
+}
+
+// Update updates an existing book.
+func (s *Service) Update(ctx context.Context, id int64, input UpdateBookInput) (*Book, error) {
+	existing, err := s.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	var sets []string
+	var args []any
+
+	if input.AuthorID != nil {
+		// Check author exists
+		var authorExists int
+		err := s.db.QueryRowContext(ctx, "SELECT 1 FROM authors WHERE id = ?", *input.AuthorID).Scan(&authorExists)
+		if err == sql.ErrNoRows {
+			return nil, ErrAuthorNotFound
+		}
+		sets = append(sets, "author_id = ?")
+		args = append(args, *input.AuthorID)
+	}
+	if input.Title != nil {
+		sets = append(sets, "title = ?")
+		args = append(args, *input.Title)
+	}
+	if input.SortTitle != nil {
+		sets = append(sets, "sort_title = ?")
+		args = append(args, *input.SortTitle)
+	}
+	if input.ForeignID != nil {
+		sets = append(sets, "foreign_id = ?")
+		args = append(args, *input.ForeignID)
+	}
+	if input.ISBN != nil {
+		sets = append(sets, "isbn = ?")
+		args = append(args, *input.ISBN)
+	}
+	if input.ISBN13 != nil {
+		sets = append(sets, "isbn13 = ?")
+		args = append(args, *input.ISBN13)
+	}
+	if input.ReleaseDate != nil {
+		sets = append(sets, "release_date = ?")
+		args = append(args, *input.ReleaseDate)
+	}
+	if input.Overview != nil {
+		sets = append(sets, "overview = ?")
+		args = append(args, *input.Overview)
+	}
+	if input.ImageURL != nil {
+		sets = append(sets, "image_url = ?")
+		args = append(args, *input.ImageURL)
+	}
+	if input.PageCount != nil {
+		sets = append(sets, "page_count = ?")
+		args = append(args, *input.PageCount)
+	}
+	if input.Monitored != nil {
+		m := 0
+		if *input.Monitored {
+			m = 1
+		}
+		sets = append(sets, "monitored = ?")
+		args = append(args, m)
+	}
+
+	if len(sets) == 0 {
+		return existing, nil
+	}
+
+	sets = append(sets, "updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')")
+	args = append(args, id)
+
+	query := fmt.Sprintf("UPDATE books SET %s WHERE id = ?", strings.Join(sets, ", "))
+	_, err = s.db.ExecContext(ctx, query, args...)
+	if err != nil {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+			return nil, ErrDuplicate
+		}
+		return nil, fmt.Errorf("update book %d: %w", id, err)
+	}
+
+	return s.FindByID(ctx, id)
+}
+
+// Delete deletes a book by ID.
+func (s *Service) Delete(ctx context.Context, id int64) error {
+	result, err := s.db.ExecContext(ctx, "DELETE FROM books WHERE id = ?", id)
+	if err != nil {
+		return fmt.Errorf("delete book %d: %w", id, err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("check deleted rows: %w", err)
+	}
+	if rows == 0 {
+		return ErrNotFound
+	}
+
+	return nil
+}
+
+// GetWithEditions returns a book with its editions and files.
+func (s *Service) GetWithEditions(ctx context.Context, id int64) (*BookWithEditions, error) {
+	book, err := s.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &BookWithEditions{
+		Book:     *book,
+		Editions: []Edition{},
+		Files:    []BookFile{},
+	}
+
+	// Get editions
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id, book_id, foreign_id, title, isbn, isbn13, format, publisher, release_date, page_count, language, monitored
+		FROM editions WHERE book_id = ?
+	`, id)
+	if err != nil {
+		return nil, fmt.Errorf("get editions: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var e Edition
+		var monitored int
+		if err := rows.Scan(
+			&e.ID, &e.BookID, &e.ForeignID, &e.Title, &e.ISBN, &e.ISBN13,
+			&e.Format, &e.Publisher, &e.ReleaseDate, &e.PageCount, &e.Language, &monitored,
+		); err != nil {
+			return nil, fmt.Errorf("scan edition: %w", err)
+		}
+		e.Monitored = monitored == 1
+		result.Editions = append(result.Editions, e)
+	}
+
+	// Get files
+	fileRows, err := s.db.QueryContext(ctx, `
+		SELECT id, book_id, edition_id, path, relative_path, size, format, quality, hash, added_at
+		FROM book_files WHERE book_id = ?
+	`, id)
+	if err != nil {
+		return nil, fmt.Errorf("get book files: %w", err)
+	}
+	defer fileRows.Close()
+
+	for fileRows.Next() {
+		var f BookFile
+		if err := fileRows.Scan(
+			&f.ID, &f.BookID, &f.EditionID, &f.Path, &f.RelativePath, &f.Size, &f.Format, &f.Quality, &f.Hash, &f.AddedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan book file: %w", err)
+		}
+		result.Files = append(result.Files, f)
+	}
+
+	return result, nil
+}
+
+// CreateEdition creates a new edition for a book.
+func (s *Service) CreateEdition(ctx context.Context, input CreateEditionInput) (*Edition, error) {
+	if input.BookID == 0 || input.Title == "" {
+		return nil, ErrInvalidInput
+	}
+
+	// Check book exists
+	_, err := s.FindByID(ctx, input.BookID)
+	if err != nil {
+		return nil, err
+	}
+
+	monitored := 0
+	if input.Monitored {
+		monitored = 1
+	}
+
+	result, err := s.db.ExecContext(ctx, `
+		INSERT INTO editions (book_id, foreign_id, title, isbn, isbn13, format, publisher, release_date, page_count, language, monitored)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, input.BookID, input.ForeignID, input.Title, input.ISBN, input.ISBN13, input.Format, input.Publisher, input.ReleaseDate, input.PageCount, input.Language, monitored)
+	if err != nil {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+			return nil, ErrDuplicate
+		}
+		return nil, fmt.Errorf("create edition: %w", err)
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return nil, fmt.Errorf("get edition id: %w", err)
+	}
+
+	var e Edition
+	var mon int
+	err = s.db.QueryRowContext(ctx, `
+		SELECT id, book_id, foreign_id, title, isbn, isbn13, format, publisher, release_date, page_count, language, monitored
+		FROM editions WHERE id = ?
+	`, id).Scan(
+		&e.ID, &e.BookID, &e.ForeignID, &e.Title, &e.ISBN, &e.ISBN13,
+		&e.Format, &e.Publisher, &e.ReleaseDate, &e.PageCount, &e.Language, &mon,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("get created edition: %w", err)
+	}
+	e.Monitored = mon == 1
+
+	return &e, nil
+}
+
+// DeleteEdition deletes an edition by ID.
+func (s *Service) DeleteEdition(ctx context.Context, id int64) error {
+	result, err := s.db.ExecContext(ctx, "DELETE FROM editions WHERE id = ?", id)
+	if err != nil {
+		return fmt.Errorf("delete edition %d: %w", id, err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("check deleted rows: %w", err)
+	}
+	if rows == 0 {
+		return ErrEditionNotFound
+	}
+
+	return nil
+}
