@@ -1,0 +1,33 @@
+# Project files
+plan.md
+
+# Build outputs
+dist/
+*.exe
+
+# Go
+*.test
+coverage.out
+
+# Node / Frontend
+node_modules/
+web/dist/
+
+# mise (local tool versions cache)
+.mise.local.toml
+
+# Runtime data
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
