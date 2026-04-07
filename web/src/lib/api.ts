@@ -230,3 +230,95 @@ export const bookApi = {
       method: "DELETE",
     }),
 }
+
+// Metadata types (external provider results)
+export interface MetadataAuthorResult {
+  foreignId: string
+  name: string
+  birthYear?: number
+  deathYear?: number
+  photoUrl?: string
+  worksCount?: number
+  provider: string
+}
+
+export interface MetadataBookResult {
+  foreignId: string
+  title: string
+  authors?: string[]
+  publishedYear?: number
+  coverUrl?: string
+  isbn10?: string
+  isbn13?: string
+  provider: string
+}
+
+export interface MetadataAuthor {
+  foreignId: string
+  name: string
+  sortName?: string
+  bio?: string
+  birthDate?: string
+  deathDate?: string
+  photoUrl?: string
+  website?: string
+  wikipedia?: string
+  nationality?: string
+  provider: string
+  links?: { type: string; url: string }[]
+}
+
+export interface MetadataBook {
+  foreignId: string
+  title: string
+  subtitle?: string
+  authors?: string[]
+  authorIds?: string[]
+  description?: string
+  publishedDate?: string
+  publisher?: string
+  pageCount?: number
+  language?: string
+  isbn10?: string
+  isbn13?: string
+  asin?: string
+  coverUrl?: string
+  genres?: string[]
+  subjects?: string[]
+  series?: string
+  seriesPosition?: number
+  averageRating?: number
+  ratingsCount?: number
+  provider: string
+  links?: { type: string; url: string }[]
+}
+
+export interface MetadataSearchResponse<T> {
+  results: T[]
+  total: number
+}
+
+// Metadata API
+export const metadataApi = {
+  searchAuthors: (query: string) =>
+    fetchAPI<MetadataSearchResponse<MetadataAuthorResult>>(`/metadata/authors?q=${encodeURIComponent(query)}`),
+
+  searchBooks: (query: string) =>
+    fetchAPI<MetadataSearchResponse<MetadataBookResult>>(`/metadata/books?q=${encodeURIComponent(query)}`),
+
+  getAuthor: (foreignId: string, provider?: string) => {
+    const params = provider ? `?provider=${encodeURIComponent(provider)}` : ""
+    return fetchAPI<MetadataAuthor>(`/metadata/authors/${encodeURIComponent(foreignId)}${params}`)
+  },
+
+  getBook: (foreignId: string, provider?: string) => {
+    const params = provider ? `?provider=${encodeURIComponent(provider)}` : ""
+    return fetchAPI<MetadataBook>(`/metadata/books/${encodeURIComponent(foreignId)}${params}`)
+  },
+
+  lookupISBN: (isbn: string) =>
+    fetchAPI<MetadataBook>(`/metadata/isbn/${encodeURIComponent(isbn)}`),
+
+  getProviders: () =>
+    fetchAPI<{ providers: string[] }>("/metadata/providers"),
+}

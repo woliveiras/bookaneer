@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { AuthorList } from "./components/authors"
 import { BookList } from "./components/books"
+import { MetadataSearch } from "./components/metadata"
 import { Button } from "./components/ui"
 
 interface HealthResponse {
@@ -19,7 +20,7 @@ interface SystemStatus {
   libraryDir: string
 }
 
-type Tab = "library" | "authors" | "books" | "system"
+type Tab = "library" | "authors" | "books" | "search" | "system"
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>("library")
@@ -60,6 +61,7 @@ function App() {
                 { id: "library", label: "Library" },
                 { id: "authors", label: "Authors" },
                 { id: "books", label: "Books" },
+                { id: "search", label: "Search" },
                 { id: "system", label: "System" },
               ] as const
             ).map((tab) => (
@@ -108,6 +110,16 @@ function App() {
           <div id="books-panel" role="tabpanel" aria-labelledby="books-tab">
             <h2 className="text-2xl font-bold mb-6">Books</h2>
             <BookList />
+          </div>
+        )}
+
+        {activeTab === "search" && (
+          <div id="search-panel" role="tabpanel" aria-labelledby="search-tab">
+            <h2 className="text-2xl font-bold mb-6">Search Metadata</h2>
+            <p className="text-muted-foreground mb-6">
+              Search for authors and books across OpenLibrary, Google Books, and Hardcover.
+            </p>
+            <MetadataSearch />
           </div>
         )}
 
