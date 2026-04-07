@@ -211,9 +211,14 @@ function DownloadClientForm({ client, clientType, preset, onSubmit, onCancel, is
                 <Label htmlFor="port">Port</Label>
                 <Input
                   id="port"
-                  type="number"
-                  value={formData.port}
-                  onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value, 10) || 0 })}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={formData.port || ""}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "")
+                    setFormData({ ...formData, port: val ? parseInt(val, 10) : 0 })
+                  }}
+                  placeholder="8080"
                   required
                 />
               </div>
