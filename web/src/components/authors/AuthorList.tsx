@@ -1,9 +1,11 @@
 import { useState } from "react"
+import { useNavigate } from "@tanstack/react-router"
 import { useAuthors } from "../../hooks/useAuthors"
 import { AuthorCard } from "./AuthorCard"
 import { Input, Button } from "../ui"
 
 export function AuthorList() {
+  const navigate = useNavigate()
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
 
@@ -77,7 +79,7 @@ export function AuthorList() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">
             {data.records.map((author) => (
               <div key={author.id} role="listitem">
-                <AuthorCard author={author} onClick={() => console.log("Selected:", author.id)} />
+                <AuthorCard author={author} onClick={() => navigate({ to: "/author/$authorId", params: { authorId: String(author.id) } })} />
               </div>
             ))}
           </div>

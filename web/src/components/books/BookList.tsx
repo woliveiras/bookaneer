@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "@tanstack/react-router"
 import { useBooks } from "../../hooks/useBooks"
 import { BookCard } from "./BookCard"
 import { Input, Button, Badge } from "../ui"
@@ -8,6 +9,7 @@ interface BookListProps {
 }
 
 export function BookList({ authorId }: BookListProps) {
+  const navigate = useNavigate()
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [showMissing, setShowMissing] = useState(false)
@@ -105,7 +107,7 @@ export function BookList({ authorId }: BookListProps) {
               <div key={book.id} role="listitem">
                 <BookCard
                   book={book}
-                  onClick={() => console.log("Selected:", book.id)}
+                  onClick={() => navigate({ to: "/book/$bookId", params: { bookId: String(book.id) } })}
                 />
               </div>
             ))}

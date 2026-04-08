@@ -13,7 +13,7 @@ import { UnifiedSearch } from "./components/search/UnifiedSearch"
 import { BookDetails } from "./components/search/BookDetails"
 import { WantedList, QueueList } from "./components/wanted"
 import { Button } from "./components/ui"
-import { bookApi, type MetadataBookResult } from "./lib/api"
+import { bookApi, authorApi, type MetadataBookResult } from "./lib/api"
 
 // Types
 interface HealthResponse {
@@ -167,6 +167,56 @@ const authorsRoute = createRoute({
       <AuthLayout>
         <h2 className="text-2xl font-bold mb-6">Authors</h2>
         <AuthorList />
+      </AuthLayout>
+    )
+  },
+})
+
+// Author detail route
+const authorDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/author/$authorId",
+  component: function AuthorDetailPage() {
+    const { authorId } = authorDetailRoute.useParams()
+    const navigate = useNavigate()
+    
+    const { data: author, isLoading, error } = useQuery({
+      queryKey: ["author", authorId],
+      queryFn: () => authorApi.get(Number(authorId)),
+    })
+
+    if (isLoading) {
+      return (
+        <AuthLayout>
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          </div>
+        </AuthLayout>
+      )
+    }
+
+    if (error || !author) {
+      return (
+        <AuthLayout>
+          <div className="text-center py-12">
+            <p className="text-destructive mb-4">Failed to load author</p>
+            <Button onClick={() => navigate({ to: "/authors" })}>Back to Authors</Button>
+          </div>
+        </AuthLayout>
+      )
+    }
+
+    return (
+      <AuthLayout>
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="sm" onClick={() => navigate({ to: "/authors" })}>
+              ← Back
+            </Button>
+            <h2 className="text-2xl font-bold">{author.name}</h2>
+          </div>
+          <BookList authorId={Number(authorId)} />
+        </div>
       </AuthLayout>
     )
   },
@@ -485,11 +535,125 @@ const readerRoute = createRoute({
   },
 })
 
+// Library book detail route
+const libraryBookDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/book/$bookId",
+  component: function LibraryBookDetailPage() {
+    const { bookId } = libraryBookDetailRoute.useParams()
+    const navigate = useNavigate()
+    
+    const { data: book, isLoading, error } = useQuery({
+      queryKey: ["book", bookId],
+      queryFn: () => bookApi.get(Number(bookId)),
+    })
+
+    if (isLoading) {
+      return (
+        <AuthLayout>
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          </div>
+        </AuthLayout>
+      )
+    }
+
+    if (error || !book) {
+      return (
+        <AuthLayout>
+          <div className="text-center py-12">
+            <p className="text-destructive mb-4">Failed to load book</p>
+            <Button onClick={() => navigate({ to: "/books" })}>Back to Books</Button>
+          </div>
+        </AuthLayout>
+      )
+    }
+
+    const hasFile = book.files && book.files.length > 0
+
+    return (
+      <AuthLayout>
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="sm" onClick={() => navigate({ to: "/books" })}>
+              ← Back
+            </Button>
+          </div>
+
+          <div className="flex gap-6">
+            {/* Cover */}
+            <div className="flex-shrink-0 w-32 h-48 bg-muted rounded-lg overflow-hidden">
+              {book.imageUrl ? (
+                <img src={book.imageUrl} alt={book.title} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-4xl">📖</div>
+              )}
+            </div>
+
+            {/* Info */}
+            <div className="flex-1 space-y-4">
+              <div>
+                <h2 className="text-2xl font-bold">{book.title}</h2>
+                <p className="text-muted-foreground">
+                  by <Link to="/author/$authorId" params={{ authorId: String(book.authorId) }} className="underline hover:text-foreground">{book.authorName}</Link>
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <span className={`px-2 py-1 rounded text-xs ${book.monitored ? 'bg-green-500/20 text-green-500' : 'bg-muted text-muted-foreground'}`}>
+                  {book.monitored ? 'Monitored' : 'Not Monitored'}
+                </span>
+                <span className={`px-2 py-1 rounded text-xs ${hasFile ? 'bg-blue-500/20 text-blue-500' : 'bg-yellow-500/20 text-yellow-500'}`}>
+                  {hasFile ? 'Downloaded' : 'Missing'}
+                </span>
+              </div>
+
+              {book.releaseDate && (
+                <p className="text-sm text-muted-foreground">
+                  Released: {new Date(book.releaseDate).toLocaleDateString()}
+                </p>
+              )}
+
+              {book.isbn13 && (
+                <p className="text-sm text-muted-foreground">ISBN: {book.isbn13}</p>
+              )}
+
+              {book.overview && (
+                <p className="text-sm text-muted-foreground line-clamp-4">{book.overview}</p>
+              )}
+
+              <div className="flex gap-2 pt-4">
+                {hasFile && (
+                  <Button onClick={() => navigate({ to: "/read/$bookId", params: { bookId: String(book.id) } })}>
+                    📖 Read
+                  </Button>
+                )}
+                <Button variant="outline" onClick={() => navigate({ to: "/search/book", search: {
+                  title: book.title,
+                  authors: book.authorName,
+                  foreignId: book.foreignId || undefined,
+                  isbn13: book.isbn13 || undefined,
+                  coverUrl: book.imageUrl || undefined,
+                  publishedYear: book.releaseDate ? String(new Date(book.releaseDate).getFullYear()) : undefined,
+                } })}>
+                  🔍 Manual Search
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </AuthLayout>
+    )
+  },
+})
+
 // Route tree
 const routeTree = rootRoute.addChildren([
   indexRoute,
   authorsRoute,
+  authorDetailRoute,
   booksRoute,
+  libraryBookDetailRoute,
   wantedRoute,
   activityRoute,
   searchRoute,
