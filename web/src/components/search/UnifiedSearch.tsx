@@ -355,15 +355,18 @@ interface DownloadPanelProps {
 }
 
 function DownloadPanel({ book, onClose }: DownloadPanelProps) {
-  // Build search query from book metadata
-  const searchQuery = [book.title, ...(book.authors || [])].join(" ")
-  const searchParams: SearchParams = { q: searchQuery }
+  // Build search queries from book metadata
+  // For digital libraries: just title works better (APIs search by title)
+  const librarySearchQuery = book.title
+  // For torrent/usenet indexers: title + author helps narrow results
+  const indexerSearchQuery = [book.title, ...(book.authors || [])].join(" ")
+  const searchParams: SearchParams = { q: indexerSearchQuery }
   
   // Search Torznab/Newznab indexers
   const indexerSearch = useSearch(searchParams)
   
   // Search digital libraries (Anna's Archive, LibGen, Internet Archive)
-  const librarySearch = useDigitalLibrarySearch(searchQuery, true)
+  const librarySearch = useDigitalLibrarySearch(librarySearchQuery, true)
 
   // Determine loading states separately
   const libraryDone = !librarySearch.isLoading
