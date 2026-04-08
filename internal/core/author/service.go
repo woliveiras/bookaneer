@@ -59,6 +59,27 @@ func (s *Service) FindByForeignID(ctx context.Context, foreignID string) (*Autho
 	return &a, nil
 }
 
+// FindByName returns an author by exact name match.
+func (s *Service) FindByName(ctx context.Context, name string) (*Author, error) {
+	var a Author
+	var monitored int
+	err := s.db.QueryRowContext(ctx, `
+		SELECT id, name, sort_name, foreign_id, overview, image_url, status, monitored, path, added_at, updated_at
+		FROM authors WHERE name = ?
+	`, name).Scan(
+		&a.ID, &a.Name, &a.SortName, &a.ForeignID, &a.Overview, &a.ImageURL,
+		&a.Status, &monitored, &a.Path, &a.AddedAt, &a.UpdatedAt,
+	)
+	if err == sql.ErrNoRows {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("find author by name %s: %w", name, err)
+	}
+	a.Monitored = monitored == 1
+	return &a, nil
+}
+
 // List returns authors matching the filter.
 func (s *Service) List(ctx context.Context, filter ListAuthorsFilter) ([]Author, int, error) {
 	var conditions []string
@@ -162,6 +183,30 @@ func (s *Service) Create(ctx context.Context, input CreateAuthorInput) (*Author,
 	}
 	if input.Status == "" {
 		input.Status = "active"
+	}
+
+	// Check if author with same foreignId already exists
+	if input.ForeignID != "" {
+		existing, err := s.FindByForeignID(ctx, input.ForeignID)
+		if err == nil {
+			// Author exists - update monitored status and return
+			monitoredTrue := true
+			return s.Update(ctx, existing.ID, UpdateAuthorInput{Monitored: &monitoredTrue})
+		}
+		if err != ErrNotFound {
+			return nil, fmt.Errorf("check existing author by foreign_id: %w", err)
+		}
+	}
+
+	// Check if author with same name already exists (to avoid duplicates)
+	existing, err := s.FindByName(ctx, input.Name)
+	if err == nil {
+		// Author with same name exists - update monitored status and return existing
+		monitoredTrue := true
+		return s.Update(ctx, existing.ID, UpdateAuthorInput{Monitored: &monitoredTrue})
+	}
+	if err != ErrNotFound {
+		return nil, fmt.Errorf("check existing author by name: %w", err)
 	}
 
 	monitored := 0
