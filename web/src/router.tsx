@@ -10,8 +10,9 @@ import { Reader } from "./components/reader"
 import { IndexerList, IndexerOptions } from "./components/indexers"
 import { DownloadClientList } from "./components/download"
 import { UnifiedSearch } from "./components/search/UnifiedSearch"
+import { BookDetails } from "./components/search/BookDetails"
 import { Button } from "./components/ui"
-import { bookApi } from "./lib/api"
+import { bookApi, type MetadataBookResult } from "./lib/api"
 
 // Types
 interface HealthResponse {
@@ -191,6 +192,65 @@ const searchRoute = createRoute({
       <AuthLayout>
         <h2 className="text-2xl font-bold mb-6">Search</h2>
         <UnifiedSearch />
+      </AuthLayout>
+    )
+  },
+})
+
+// Book details search params type
+interface BookDetailsSearch {
+  title: string
+  authors?: string
+  provider?: string
+  foreignId?: string
+  publishedYear?: string
+  coverUrl?: string
+  isbn13?: string
+}
+
+// Book details route (child of search)
+const bookDetailsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/search/book",
+  validateSearch: (search: Record<string, unknown>): BookDetailsSearch => ({
+    title: (search.title as string) || "",
+    authors: search.authors as string | undefined,
+    provider: search.provider as string | undefined,
+    foreignId: search.foreignId as string | undefined,
+    publishedYear: search.publishedYear as string | undefined,
+    coverUrl: search.coverUrl as string | undefined,
+    isbn13: search.isbn13 as string | undefined,
+  }),
+  component: function BookDetailsPage() {
+    const search = bookDetailsRoute.useSearch()
+    
+    // Reconstruct book data from search params
+    const book: MetadataBookResult = {
+      title: search.title,
+      authors: search.authors ? search.authors.split("|||") : undefined,
+      provider: search.provider || "unknown",
+      foreignId: search.foreignId || "",
+      publishedYear: search.publishedYear ? parseInt(search.publishedYear) : undefined,
+      coverUrl: search.coverUrl,
+      isbn13: search.isbn13,
+    }
+
+    if (!book.title) {
+      return (
+        <AuthLayout>
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">No book selected</p>
+            <Link to="/search" className="text-primary underline mt-2 inline-block">
+              Back to Search
+            </Link>
+          </div>
+        </AuthLayout>
+      )
+    }
+
+    return (
+      <AuthLayout>
+        <BookDetails book={book} />
       </AuthLayout>
     )
   },
@@ -400,6 +460,7 @@ const routeTree = rootRoute.addChildren([
   authorsRoute,
   booksRoute,
   searchRoute,
+  bookDetailsRoute,
   settingsRoute,
   systemRoute,
   readerRoute,

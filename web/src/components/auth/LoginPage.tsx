@@ -34,8 +34,8 @@ export function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <span className="text-3xl" role="img" aria-label="Pirate">
-              🏴‍☠️
+            <span className="text-3xl" role="img" aria-label="Flag">
+              🏴
             </span>
             <CardTitle className="text-2xl">Bookaneer</CardTitle>
           </div>

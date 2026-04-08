@@ -395,6 +395,7 @@ export interface DigitalLibraryResult {
   downloadUrl?: string
   infoUrl?: string
   provider: string
+  score?: number
 }
 
 export interface DigitalLibrarySearchResponse {

@@ -25,4 +25,5 @@ type SearchResult struct {
 	DownloadURL string   `json:"downloadUrl,omitempty"`
 	InfoURL     string   `json:"infoUrl,omitempty"`
 	Provider    string   `json:"provider"`
+	Score       int      `json:"score,omitempty"` // Quality score for ranking
 }

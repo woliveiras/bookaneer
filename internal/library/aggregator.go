@@ -3,6 +3,8 @@ package library
 import (
 	"context"
 	"log/slog"
+	"sort"
+	"strings"
 	"sync"
 )
 
@@ -55,7 +57,83 @@ func (a *Aggregator) Search(ctx context.Context, query string) ([]SearchResult, 
 		allResults = append(allResults, pr.results...)
 	}
 
+	// Calculate scores and sort by quality
+	rankResults(allResults)
+
 	return allResults, nil
+}
+
+// rankResults calculates quality scores and sorts results by score descending.
+func rankResults(results []SearchResult) {
+	for i := range results {
+		results[i].Score = calculateScore(&results[i])
+	}
+
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].Score > results[j].Score
+	})
+}
+
+// calculateScore assigns a quality score to a search result.
+// Higher scores indicate better quality sources.
+func calculateScore(r *SearchResult) int {
+	score := 0
+
+	// Format preference: EPUB > PDF > MOBI > others
+	format := strings.ToLower(r.Format)
+	switch format {
+	case "epub":
+		score += 100
+	case "pdf":
+		score += 80
+	case "mobi", "azw", "azw3":
+		score += 60
+	default:
+		score += 20
+	}
+
+	// Provider reliability bonus
+	provider := strings.ToLower(r.Provider)
+	switch provider {
+	case "internet-archive":
+		score += 50 // Most reliable, legal
+	case "libgen":
+		score += 40
+	case "annas-archive":
+		score += 30
+	default:
+		score += 10
+	}
+
+	// Prefer newer editions (if year is available)
+	if r.Year > 0 {
+		if r.Year >= 2020 {
+			score += 30
+		} else if r.Year >= 2010 {
+			score += 20
+		} else if r.Year >= 2000 {
+			score += 10
+		}
+	}
+
+	// Has metadata bonuses
+	if len(r.Authors) > 0 {
+		score += 15
+	}
+	if r.ISBN != "" {
+		score += 10
+	}
+	if r.CoverURL != "" {
+		score += 5
+	}
+
+	// Language preference (English gets slight boost for discoverability)
+	lang := strings.ToLower(r.Language)
+	if lang == "eng" || lang == "en" || lang == "english" {
+		score += 5
+	}
+
+	return score
 }
 
 // Providers returns the list of configured providers.
