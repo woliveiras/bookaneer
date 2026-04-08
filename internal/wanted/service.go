@@ -38,7 +38,7 @@ type GrabResult struct {
 type DownloadQueueItem struct {
 	ID               int64   `json:"id"`
 	BookID           int64   `json:"bookId"`
-	DownloadClientID int64   `json:"downloadClientId"`
+	DownloadClientID *int64  `json:"downloadClientId,omitempty"`
 	IndexerID        *int64  `json:"indexerId,omitempty"`
 	ExternalID       string  `json:"externalId"`
 	Title            string  `json:"title"`
@@ -449,16 +449,28 @@ func (s *Service) GetDownloadQueue(ctx context.Context) ([]DownloadQueueItem, er
 	var items []DownloadQueueItem
 	for rows.Next() {
 		var item DownloadQueueItem
+		var clientID sql.NullInt64
+		var bookTitle sql.NullString
 		var clientName sql.NullString
 		if err := rows.Scan(
-			&item.ID, &item.BookID, &item.DownloadClientID, &item.IndexerID, &item.ExternalID,
+			&item.ID, &item.BookID, &clientID, &item.IndexerID, &item.ExternalID,
 			&item.Title, &item.Size, &item.Format, &item.Status, &item.Progress, &item.DownloadURL, &item.AddedAt,
-			&item.BookTitle, &clientName,
+			&bookTitle, &clientName,
 		); err != nil {
 			return nil, err
 		}
+		if clientID.Valid {
+			item.DownloadClientID = &clientID.Int64
+		}
+		if bookTitle.Valid {
+			item.BookTitle = bookTitle.String
+		} else {
+			item.BookTitle = item.Title // Fallback to release title
+		}
 		if clientName.Valid {
 			item.ClientName = clientName.String
+		} else {
+			item.ClientName = "Embedded Downloader"
 		}
 		items = append(items, item)
 	}
