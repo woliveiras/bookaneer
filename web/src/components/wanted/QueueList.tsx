@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Link } from "@tanstack/react-router"
 import { useDownloadQueue, useRemoveFromQueue, useActiveCommands } from "../../hooks/useWanted"
 import { Button, Card, CardContent, Progress } from "../ui"
 import type { QueueItem, ActiveCommand } from "../../lib/api"
@@ -87,6 +88,17 @@ export function QueueList() {
   const searchCommands = (activeCommands || []).filter(
     cmd => cmd.name !== "DownloadMonitor"
   )
+  const failedItems = items.filter(item => item.status === "failed")
+
+  const handleClearAllFailed = async () => {
+    for (const item of failedItems) {
+      try {
+        await removeMutation.mutateAsync(item.id)
+      } catch (err) {
+        console.error("Failed to remove item:", err)
+      }
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -95,11 +107,26 @@ export function QueueList() {
         <div>
           <p className="text-muted-foreground">
             {items.length} {items.length === 1 ? "item" : "items"} in queue
+            {failedItems.length > 0 && (
+              <span className="text-destructive ml-2">({failedItems.length} failed)</span>
+            )}
           </p>
         </div>
-        <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          {failedItems.length > 1 && (
+            <Button 
+              variant="outline" 
+              onClick={handleClearAllFailed}
+              disabled={removeMutation.isPending}
+              className="text-destructive border-destructive hover:bg-destructive/10"
+            >
+              Clear All Failed
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Active search commands */}
@@ -259,22 +286,43 @@ function QueueItemCard({ item, onRemove, isRemoving }: QueueItemCardProps) {
 
             {/* Error message */}
             {item.status === "failed" && (
-              <p className="text-xs text-destructive mt-1">Download failed - file may require authorization</p>
+              <div className="mt-1">
+                <p className="text-xs text-destructive">Download failed - this file requires login or is unavailable</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Go to the book page to search for alternative download sources
+                </p>
+                <Link
+                  to="/book/$bookId"
+                  params={{ bookId: String(item.bookId) }}
+                  className="text-xs text-primary hover:underline mt-1 inline-block"
+                >
+                  Open book page →
+                </Link>
+              </div>
             )}
 
             {/* Client info */}
             <p className="text-xs text-muted-foreground mt-1">{item.clientName}</p>
           </div>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onRemove}
-            disabled={isRemoving}
-            className="text-destructive hover:text-destructive"
-          >
-            ✕
-          </Button>
+          <div className="flex items-center gap-1">
+            {item.status === "failed" && (
+              <Link to="/book/$bookId" params={{ bookId: String(item.bookId) }}>
+                <Button variant="outline" size="sm" title="Open book page to search alternatives">
+                  📖
+                </Button>
+              </Link>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onRemove}
+              disabled={isRemoving}
+              className="text-destructive hover:text-destructive"
+            >
+              ✕
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
