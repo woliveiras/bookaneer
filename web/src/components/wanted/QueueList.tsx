@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { useDownloadQueue, useRemoveFromQueue } from "../../hooks/useWanted"
 import { Button, Card, CardContent, Progress } from "../ui"
 import type { QueueItem } from "../../lib/api"
@@ -5,13 +6,17 @@ import type { QueueItem } from "../../lib/api"
 export function QueueList() {
   const { data: queue, isLoading, error, refetch } = useDownloadQueue()
   const removeMutation = useRemoveFromQueue()
+  const [itemToRemove, setItemToRemove] = useState<QueueItem | null>(null)
 
-  const handleRemove = async (id: number) => {
-    if (!confirm("Are you sure you want to remove this item from the queue?")) {
-      return
-    }
+  const handleRemove = (item: QueueItem) => {
+    setItemToRemove(item)
+  }
+
+  const confirmRemove = async () => {
+    if (!itemToRemove) return
     try {
-      await removeMutation.mutateAsync(id)
+      await removeMutation.mutateAsync(itemToRemove.id)
+      setItemToRemove(null)
     } catch (err) {
       console.error("Failed to remove from queue:", err)
     }
@@ -74,10 +79,34 @@ export function QueueList() {
             <QueueItemCard
               key={item.id}
               item={item}
-              onRemove={() => handleRemove(item.id)}
+              onRemove={() => handleRemove(item)}
               isRemoving={removeMutation.isPending}
             />
           ))}
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {itemToRemove && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4 border">
+            <h3 className="text-lg font-semibold mb-2">Remove from Queue?</h3>
+            <p className="text-muted-foreground mb-4">
+              Are you sure you want to remove "{itemToRemove.bookTitle}" from the download queue?
+            </p>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setItemToRemove(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmRemove}
+                disabled={removeMutation.isPending}
+              >
+                {removeMutation.isPending ? "Removing..." : "Remove"}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
