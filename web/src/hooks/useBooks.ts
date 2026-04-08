@@ -25,6 +25,8 @@ export function useCreateBook() {
     mutationFn: (data: CreateBookInput) => bookApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["books"] })
+      queryClient.invalidateQueries({ queryKey: ["wanted"] })
+      queryClient.invalidateQueries({ queryKey: ["queue"] })
     },
   })
 }
