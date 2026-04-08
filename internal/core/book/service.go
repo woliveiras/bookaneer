@@ -303,6 +303,14 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateBookInput) (
 		}
 		sets = append(sets, "monitored = ?")
 		args = append(args, m)
+
+		// If unmonitoring, remove pending downloads from queue
+		if !*input.Monitored {
+			_, _ = s.db.ExecContext(ctx, `
+				DELETE FROM download_queue 
+				WHERE book_id = ? AND status IN ('queued', 'downloading', 'paused')
+			`, id)
+		}
 	}
 
 	if len(sets) == 0 {
