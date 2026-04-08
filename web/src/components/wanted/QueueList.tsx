@@ -1,10 +1,49 @@
 import { useState } from "react"
-import { useDownloadQueue, useRemoveFromQueue } from "../../hooks/useWanted"
+import { useDownloadQueue, useRemoveFromQueue, useActiveCommands } from "../../hooks/useWanted"
 import { Button, Card, CardContent, Progress } from "../ui"
-import type { QueueItem } from "../../lib/api"
+import type { QueueItem, ActiveCommand } from "../../lib/api"
+
+// Map command names to user-friendly descriptions
+function getCommandDescription(command: ActiveCommand): { title: string; subtitle?: string } {
+  const name = command.name
+  const payload = command.payload || {}
+  const bookTitle = payload.bookTitle as string | undefined
+  const authorName = payload.authorName as string | undefined
+
+  switch (name) {
+    case "AutomaticSearch":
+      return {
+        title: bookTitle ? `Searching: ${bookTitle}` : "Searching for book...",
+        subtitle: authorName ? `by ${authorName}` : undefined,
+      }
+    case "BookSearch":
+      return {
+        title: bookTitle ? `Searching: ${bookTitle}` : "Searching for releases...",
+        subtitle: authorName ? `by ${authorName}` : undefined,
+      }
+    case "MissingBookSearch":
+      return {
+        title: "Searching all missing books...",
+        subtitle: undefined,
+      }
+    case "DownloadGrab":
+      return {
+        title: bookTitle ? `Grabbing: ${bookTitle}` : "Grabbing release...",
+        subtitle: authorName ? `by ${authorName}` : undefined,
+      }
+    case "DownloadMonitor":
+      return {
+        title: "Checking downloads...",
+        subtitle: undefined,
+      }
+    default:
+      return { title: name, subtitle: undefined }
+  }
+}
 
 export function QueueList() {
   const { data: queue, isLoading, error, refetch } = useDownloadQueue()
+  const { data: activeCommands } = useActiveCommands()
   const removeMutation = useRemoveFromQueue()
   const [itemToRemove, setItemToRemove] = useState<QueueItem | null>(null)
 
@@ -44,6 +83,10 @@ export function QueueList() {
   }
 
   const items = queue || []
+  // Filter to show only search-related commands (not DownloadMonitor)
+  const searchCommands = (activeCommands || []).filter(
+    cmd => cmd.name !== "DownloadMonitor"
+  )
 
   return (
     <div className="space-y-6">
@@ -59,8 +102,36 @@ export function QueueList() {
         </Button>
       </div>
 
+      {/* Active search commands */}
+      {searchCommands.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-muted-foreground">Active Tasks</h3>
+          {searchCommands.map((cmd) => {
+            const { title, subtitle } = getCommandDescription(cmd)
+            return (
+              <Card key={cmd.id}>
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{title}</p>
+                      {subtitle && (
+                        <p className="text-xs text-muted-foreground">{subtitle}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {cmd.status === "running" ? "Running" : "Queued"}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      )}
+
       {/* Empty state */}
-      {items.length === 0 && (
+      {items.length === 0 && searchCommands.length === 0 && (
         <Card>
           <CardContent className="p-12 text-center">
             <div className="text-4xl mb-4">📭</div>

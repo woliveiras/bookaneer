@@ -36,6 +36,9 @@ func (h *WantedHandler) Register(g *echo.Group) {
 	g.GET("/queue", h.GetQueue)
 	g.DELETE("/queue/:id", h.RemoveFromQueue)
 
+	// Active commands (for Activity page)
+	g.GET("/commands/active", h.GetActiveCommands)
+
 	// Manual search and grab
 	g.POST("/book/:id/search", h.SearchBook)
 	g.POST("/release", h.ManualGrab)
@@ -120,6 +123,20 @@ func (h *WantedHandler) RemoveFromQueue(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusOK)
+}
+
+// GetActiveCommands returns commands that are queued or running.
+func (h *WantedHandler) GetActiveCommands(c echo.Context) error {
+	commands, err := h.schedulerService.GetActiveCommands(c.Request().Context())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get active commands")
+	}
+
+	if commands == nil {
+		commands = []scheduler.Command{}
+	}
+
+	return c.JSON(http.StatusOK, commands)
 }
 
 // SearchBookRequest represents a manual book search request.

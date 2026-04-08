@@ -732,6 +732,22 @@ export interface QueueItem {
   clientName: string
 }
 
+// Active command from scheduler
+export type CommandStatus = "queued" | "running" | "completed" | "failed" | "cancelled"
+
+export interface ActiveCommand {
+  id: string
+  name: string
+  status: CommandStatus
+  priority: number
+  payload?: Record<string, unknown>
+  result?: Record<string, unknown>
+  trigger: string
+  queuedAt: string
+  startedAt?: string
+  endedAt?: string
+}
+
 export type GrabStatus = "pending" | "sent" | "downloading" | "completed" | "failed" | "imported"
 
 export interface Grab {
@@ -897,6 +913,8 @@ export const wantedApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+
+  getActiveCommands: () => fetchAPI<ActiveCommand[]>("/commands/active"),
 }
 
 // Grab API

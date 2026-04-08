@@ -368,6 +368,49 @@ func (s *Scheduler) ListCommands(ctx context.Context, limit int) ([]Command, err
 	return commands, rows.Err()
 }
 
+// GetActiveCommands returns commands that are queued or running.
+func (s *Scheduler) GetActiveCommands(ctx context.Context) ([]Command, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id, name, status, priority, payload, result, trigger, queued_at, started_at, ended_at
+		FROM commands
+		WHERE status IN (?, ?)
+		ORDER BY queued_at DESC
+	`, StatusQueued, StatusRunning)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var commands []Command
+	for rows.Next() {
+		var cmd Command
+		var payloadJSON, resultJSON string
+		var startedAt, endedAt sql.NullString
+		var queuedAt string
+
+		if err := rows.Scan(&cmd.ID, &cmd.Name, &cmd.Status, &cmd.Priority, &payloadJSON, &resultJSON, &cmd.Trigger, &queuedAt, &startedAt, &endedAt); err != nil {
+			return nil, err
+		}
+
+		cmd.QueuedAt, _ = time.Parse(time.RFC3339, queuedAt)
+		if startedAt.Valid {
+			t, _ := time.Parse(time.RFC3339, startedAt.String)
+			cmd.StartedAt = &t
+		}
+		if endedAt.Valid {
+			t, _ := time.Parse(time.RFC3339, endedAt.String)
+			cmd.EndedAt = &t
+		}
+
+		json.Unmarshal([]byte(payloadJSON), &cmd.Payload)
+		json.Unmarshal([]byte(resultJSON), &cmd.Result)
+
+		commands = append(commands, cmd)
+	}
+
+	return commands, rows.Err()
+}
+
 // CancelCommand cancels a running or queued command.
 func (s *Scheduler) CancelCommand(ctx context.Context, id string) error {
 	// If running, cancel it

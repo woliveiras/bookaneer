@@ -117,7 +117,9 @@ func (h *BookHandler) Create(c echo.Context) error {
 	// Trigger automatic search for monitored books
 	if b.Monitored && h.scheduler != nil {
 		_, _ = h.scheduler.QueueCommand(c.Request().Context(), scheduler.CommandAutomaticSearch, scheduler.TriggerAutomatic, map[string]any{
-			"bookId": float64(b.ID),
+			"bookId":     float64(b.ID),
+			"bookTitle":  b.Title,
+			"authorName": b.AuthorName,
 		})
 	}
 

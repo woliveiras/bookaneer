@@ -51,6 +51,14 @@ export function useDownloadQueue() {
   })
 }
 
+export function useActiveCommands() {
+  return useQuery({
+    queryKey: ["commands", "active"],
+    queryFn: wantedApi.getActiveCommands,
+    refetchInterval: 2000, // Refresh every 2 seconds for active commands
+  })
+}
+
 export function useRemoveFromQueue() {
   const queryClient = useQueryClient()
   return useMutation({
