@@ -129,7 +129,7 @@ export function HistoryList() {
                       <div className="flex items-center gap-2 mb-1">
                         {item.bookId ? (
                           <Link
-                            to="/books/$bookId"
+                            to="/book/$bookId"
                             params={{ bookId: String(item.bookId) }}
                             className="font-medium hover:underline truncate"
                           >

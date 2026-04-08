@@ -111,7 +111,7 @@ export function BlocklistList() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <Link
-                        to="/books/$bookId"
+                        to="/book/$bookId"
                         params={{ bookId: String(item.bookId) }}
                         className="font-medium hover:underline truncate"
                       >
