@@ -182,8 +182,12 @@ func (s *Service) grabFromLibrary(ctx context.Context, b *book.Book, r *library.
 		return nil, fmt.Errorf("add to download client: %w", err)
 	}
 
-	// Record in download queue
-	if err := s.recordDownload(ctx, b.ID, cfg.ID, nil, r.Title, r.Size, r.Format, r.DownloadURL, downloadID); err != nil {
+	// Record in download queue (use nil for embedded client)
+	var clientIDPtr *int64
+	if cfg.ID != 0 {
+		clientIDPtr = &cfg.ID
+	}
+	if err := s.recordDownload(ctx, b.ID, clientIDPtr, nil, r.Title, r.Size, r.Format, r.DownloadURL, downloadID); err != nil {
 		slog.Error("Failed to record download", "error", err)
 	}
 
@@ -302,8 +306,12 @@ func (s *Service) grabFromIndexer(ctx context.Context, b *book.Book, r *search.R
 	// Get indexer ID
 	indexerID := &r.IndexerID
 
-	// Record in download queue
-	if err := s.recordDownload(ctx, b.ID, cfg.ID, indexerID, r.Title, r.Size, format, r.DownloadURL, downloadID); err != nil {
+	// Record in download queue (use nil for embedded client)
+	var clientIDPtr *int64
+	if cfg.ID != 0 {
+		clientIDPtr = &cfg.ID
+	}
+	if err := s.recordDownload(ctx, b.ID, clientIDPtr, indexerID, r.Title, r.Size, format, r.DownloadURL, downloadID); err != nil {
 		slog.Error("Failed to record download", "error", err)
 	}
 
@@ -338,7 +346,8 @@ func (s *Service) grabFromIndexer(ctx context.Context, b *book.Book, r *search.R
 }
 
 // recordDownload adds an entry to the download_queue table.
-func (s *Service) recordDownload(ctx context.Context, bookID, clientID int64, indexerID *int64, title string, size int64, format, downloadURL, externalID string) error {
+// clientID can be nil for embedded client (no database entry).
+func (s *Service) recordDownload(ctx context.Context, bookID int64, clientID *int64, indexerID *int64, title string, size int64, format, downloadURL, externalID string) error {
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO download_queue (book_id, download_client_id, indexer_id, external_id, title, size, format, status, download_url)
 		VALUES (?, ?, ?, ?, ?, ?, ?, 'queued', ?)
@@ -515,8 +524,12 @@ func (s *Service) GrabRelease(ctx context.Context, bookID int64, downloadURL, re
 		format = "mobi"
 	}
 
-	// Record in download queue
-	if err := s.recordDownload(ctx, b.ID, cfg.ID, nil, releaseTitle, size, format, downloadURL, downloadID); err != nil {
+	// Record in download queue (use nil for embedded client)
+	var clientIDPtr *int64
+	if cfg.ID != 0 {
+		clientIDPtr = &cfg.ID
+	}
+	if err := s.recordDownload(ctx, b.ID, clientIDPtr, nil, releaseTitle, size, format, downloadURL, downloadID); err != nil {
 		slog.Error("Failed to record download", "error", err)
 	}
 
