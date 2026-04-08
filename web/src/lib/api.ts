@@ -716,23 +716,20 @@ export interface CreateDownloadClientInput {
 export type DownloadStatus = "queued" | "downloading" | "paused" | "completed" | "seeding" | "failed" | "extracted" | "processing"
 
 export interface QueueItem {
-  id: string
-  name: string
+  id: number
+  bookId: number
+  downloadClientId?: number
+  indexerId?: number
+  externalId: string
+  title: string
+  size: number
+  format: string
   status: DownloadStatus
   progress: number
-  size: number
-  downloadedSize: number
-  speed: number
-  eta: number
-  seeders?: number
-  leechers?: number
-  ratio?: number
-  savePath?: string
-  category?: string
-  errorMessage?: string
+  downloadUrl: string
   addedAt: string
-  completedAt?: string
-  clientId: number
+  bookTitle: string
+  clientName: string
 }
 
 export type GrabStatus = "pending" | "sent" | "downloading" | "completed" | "failed" | "imported"

@@ -74,7 +74,7 @@ export function QueueList() {
             <QueueItemCard
               key={item.id}
               item={item}
-              onRemove={() => handleRemove(parseInt(item.id))}
+              onRemove={() => handleRemove(item.id)}
               isRemoving={removeMutation.isPending}
             />
           ))}
@@ -131,22 +131,20 @@ function QueueItemCard({ item, onRemove, isRemoving }: QueueItemCardProps) {
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-medium truncate">{item.name}</h3>
+              <h3 className="font-medium truncate">{item.bookTitle}</h3>
               <span className={`text-xs px-2 py-0.5 rounded ${statusColors[item.status] || statusColors.queued}`}>
                 {item.status}
               </span>
+              <span className="text-xs text-muted-foreground uppercase">{item.format}</span>
             </div>
+            <p className="text-xs text-muted-foreground truncate">{item.title}</p>
 
             {/* Progress bar for active downloads */}
             {item.status === "downloading" && (
               <div className="mt-2">
                 <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                   <span>{Math.round(item.progress)}%</span>
-                  <span>
-                    {formatSize(item.downloadedSize)} / {formatSize(item.size)}
-                    {item.speed > 0 && ` • ${formatSpeed(item.speed)}`}
-                    {item.eta > 0 && ` • ${formatETA(item.eta)} remaining`}
-                  </span>
+                  <span>{item.size > 0 && formatSize(item.size)}</span>
                 </div>
                 <Progress value={item.progress} className="h-2" />
               </div>
@@ -155,23 +153,17 @@ function QueueItemCard({ item, onRemove, isRemoving }: QueueItemCardProps) {
             {/* Completed info */}
             {item.status === "completed" && (
               <p className="text-xs text-muted-foreground mt-1">
-                {formatSize(item.size)}
-                {item.completedAt && ` • Completed ${new Date(item.completedAt).toLocaleString()}`}
+                {formatSize(item.size)} • Downloaded
               </p>
             )}
 
             {/* Error message */}
-            {item.status === "failed" && item.errorMessage && (
-              <p className="text-xs text-destructive mt-1">{item.errorMessage}</p>
+            {item.status === "failed" && (
+              <p className="text-xs text-destructive mt-1">Download failed - file may require authorization</p>
             )}
 
-            {/* Seeding info */}
-            {item.status === "seeding" && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Ratio: {item.ratio?.toFixed(2) || "0.00"}
-                {item.seeders !== undefined && ` • ${item.seeders} seeders`}
-              </p>
-            )}
+            {/* Client info */}
+            <p className="text-xs text-muted-foreground mt-1">{item.clientName}</p>
           </div>
 
           <Button
