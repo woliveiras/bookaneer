@@ -450,10 +450,11 @@ func (s *Service) GetDownloadQueue(ctx context.Context) ([]DownloadQueueItem, er
 	for rows.Next() {
 		var item DownloadQueueItem
 		var clientID sql.NullInt64
+		var indexerID sql.NullInt64
 		var bookTitle sql.NullString
 		var clientName sql.NullString
 		if err := rows.Scan(
-			&item.ID, &item.BookID, &clientID, &item.IndexerID, &item.ExternalID,
+			&item.ID, &item.BookID, &clientID, &indexerID, &item.ExternalID,
 			&item.Title, &item.Size, &item.Format, &item.Status, &item.Progress, &item.DownloadURL, &item.AddedAt,
 			&bookTitle, &clientName,
 		); err != nil {
@@ -461,6 +462,9 @@ func (s *Service) GetDownloadQueue(ctx context.Context) ([]DownloadQueueItem, er
 		}
 		if clientID.Valid {
 			item.DownloadClientID = &clientID.Int64
+		}
+		if indexerID.Valid {
+			item.IndexerID = &indexerID.Int64
 		}
 		if bookTitle.Valid {
 			item.BookTitle = bookTitle.String
@@ -475,7 +479,29 @@ func (s *Service) GetDownloadQueue(ctx context.Context) ([]DownloadQueueItem, er
 		items = append(items, item)
 	}
 
-	return items, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// For embedded client items, get real-time status from the direct client
+	client, _, err := s.downloadService.GetDirectClient(ctx)
+	if err == nil && client != nil {
+		for i := range items {
+			// Check items with no client ID (embedded) that have active statuses
+			if items[i].DownloadClientID == nil && items[i].ExternalID != "" {
+				status, err := client.GetStatus(ctx, items[i].ExternalID)
+				if err == nil {
+					// Update with real-time status from embedded client
+					items[i].Status = string(status.Status)
+					items[i].Progress = status.Progress
+					// Also update DB to persist the status
+					_ = s.UpdateQueueItemStatus(ctx, items[i].ID, items[i].Status, items[i].Progress)
+				}
+			}
+		}
+	}
+
+	return items, nil
 }
 
 // UpdateQueueItemStatus updates the status of a queue item.
