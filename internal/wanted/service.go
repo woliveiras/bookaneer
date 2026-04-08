@@ -594,7 +594,7 @@ func (s *Service) ProcessDownloads(ctx context.Context) (*ProcessDownloadsResult
 
 	type activeDownload struct {
 		ID       int64
-		ClientID int64
+		ClientID sql.NullInt64
 		ExtID    string
 		Status   string
 	}
@@ -615,15 +615,21 @@ func (s *Service) ProcessDownloads(ctx context.Context) (*ProcessDownloadsResult
 
 	// Check status of each download
 	for _, d := range downloads {
+		// Get appropriate client - use embedded client for NULL clientID
 		client, _, err := s.downloadService.GetDirectClient(ctx)
 		if err != nil || client == nil {
-			slog.Warn("Could not get download client", "clientId", d.ClientID, "error", err)
+			slog.Warn("Could not get download client", "queueId", d.ID, "error", err)
 			continue
 		}
 
 		status, err := client.GetStatus(ctx, d.ExtID)
 		if err != nil {
-			slog.Warn("Could not get download status", "externalId", d.ExtID, "error", err)
+			// Download not found in client - probably lost after restart
+			// Try to restart the download
+			slog.Info("Restarting lost download", "queueId", d.ID, "externalId", d.ExtID)
+			if err := s.restartDownload(ctx, d.ID, client); err != nil {
+				slog.Warn("Failed to restart download", "queueId", d.ID, "error", err)
+			}
 			continue
 		}
 
@@ -662,6 +668,41 @@ func (s *Service) ProcessDownloads(ctx context.Context) (*ProcessDownloadsResult
 	}
 
 	return result, nil
+}
+
+// restartDownload restarts a download that was lost (e.g., after server restart).
+func (s *Service) restartDownload(ctx context.Context, queueID int64, client download.Client) error {
+	// Get download info from queue
+	var title, downloadURL string
+	err := s.db.QueryRowContext(ctx, `
+		SELECT title, download_url FROM download_queue WHERE id = ?
+	`, queueID).Scan(&title, &downloadURL)
+	if err != nil {
+		return fmt.Errorf("get queue item: %w", err)
+	}
+
+	if downloadURL == "" {
+		return fmt.Errorf("no download URL for queue item %d", queueID)
+	}
+
+	// Add to client again
+	newID, err := client.Add(ctx, download.AddItem{
+		Name:        title,
+		DownloadURL: downloadURL,
+		Category:    "books",
+	})
+	if err != nil {
+		return fmt.Errorf("add to client: %w", err)
+	}
+
+	// Update external_id in queue
+	_, err = s.db.ExecContext(ctx, `UPDATE download_queue SET external_id = ?, status = 'queued' WHERE id = ?`, newID, queueID)
+	if err != nil {
+		return fmt.Errorf("update queue: %w", err)
+	}
+
+	slog.Info("Download restarted", "queueId", queueID, "newExternalId", newID)
+	return nil
 }
 
 // importCompletedDownload imports a completed download to the library.

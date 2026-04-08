@@ -270,7 +270,8 @@ INSERT INTO scheduled_tasks (name, interval_seconds, next_run_at) VALUES
     ('LibraryScan',       86400, strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '+24 hours')),
     ('MissingBookSearch', 86400, strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '+24 hours')),
     ('Backup',           604800, strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '+7 days')),
-    ('Housekeeping',      86400, strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '+24 hours'));
+    ('Housekeeping',      86400, strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '+24 hours')),
+    ('DownloadMonitor',      30, strftime('%Y-%m-%dT%H:%M:%SZ', 'now'));
 
 -- =============================================================================
 -- Jobs: Download Queue (tracking active downloads)
