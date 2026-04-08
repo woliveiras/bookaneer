@@ -57,12 +57,16 @@ func (s *Service) List(ctx context.Context) ([]RootFolder, error) {
 		if err := rows.Scan(&rf.ID, &rf.Path, &rf.Name, &rf.DefaultQualityProfileID); err != nil {
 			return nil, fmt.Errorf("scan root folder: %w", err)
 		}
-		s.enrichWithDiskInfo(&rf)
-		s.enrichWithAuthorCount(ctx, &rf)
 		folders = append(folders, rf)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate root folders: %w", err)
+	}
+
+	// Enrich after closing rows to avoid SQLite connection contention
+	for i := range folders {
+		s.enrichWithDiskInfo(&folders[i])
+		s.enrichWithAuthorCount(ctx, &folders[i])
 	}
 
 	return folders, nil
@@ -74,12 +78,16 @@ func (s *Service) Create(ctx context.Context, input CreateRootFolderInput) (*Roo
 		return nil, ErrInvalidInput
 	}
 
-	// Verify path exists and is accessible
+	// Create directory if it doesn't exist
 	info, err := os.Stat(input.Path)
-	if err != nil {
+	if os.IsNotExist(err) {
+		// Create the directory with appropriate permissions
+		if err := os.MkdirAll(input.Path, 0755); err != nil {
+			return nil, fmt.Errorf("create directory: %w", err)
+		}
+	} else if err != nil {
 		return nil, ErrPathNotAccessible
-	}
-	if !info.IsDir() {
+	} else if !info.IsDir() {
 		return nil, ErrPathNotAccessible
 	}
 

@@ -803,6 +803,53 @@ export const downloadClientApi = {
     }),
 }
 
+// Root Folder types
+export interface RootFolder {
+  id: number
+  path: string
+  name: string
+  defaultQualityProfileId?: number
+  freeSpace?: number
+  totalSpace?: number
+  authorCount?: number
+  accessible: boolean
+}
+
+export interface CreateRootFolderInput {
+  path: string
+  name: string
+  defaultQualityProfileId?: number
+}
+
+// Root Folder API
+export const rootFolderApi = {
+  list: () => fetchAPI<RootFolder[]>("/rootfolder"),
+
+  get: (id: number) => fetchAPI<RootFolder>(`/rootfolder/${id}`),
+
+  create: (data: CreateRootFolderInput) =>
+    fetchAPI<RootFolder>("/rootfolder", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  update: (id: number, data: Partial<CreateRootFolderInput>) =>
+    fetchAPI<RootFolder>(`/rootfolder/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  delete: (id: number) =>
+    fetch(`${API_BASE}/rootfolder/${id}`, {
+      method: "DELETE",
+      headers: {
+        "X-Api-Key": getStoredApiKey() || "",
+      },
+    }).then((res) => {
+      if (!res.ok) throw new Error("Failed to delete root folder")
+    }),
+}
+
 // Queue API
 export const queueApi = {
   list: () => fetchAPI<QueueItem[]>("/queue"),

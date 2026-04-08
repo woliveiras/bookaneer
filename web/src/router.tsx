@@ -5,7 +5,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext"
 import { LoginPage } from "./components/auth"
 import { AuthorList } from "./components/authors"
 import { BookList } from "./components/books"
-import { SettingsGeneral } from "./components/settings"
+import { SettingsGeneral, RootFolderList } from "./components/settings"
 import { Reader } from "./components/reader"
 import { IndexerList, IndexerOptions } from "./components/indexers"
 import { DownloadClientList } from "./components/download"
@@ -347,6 +347,7 @@ const settingsRoute = createRoute({
         <h2 className="text-2xl font-bold mb-6">Settings</h2>
         <div className="space-y-4">
           <GeneralSettings />
+          <RootFolderSettings />
           <IndexerSettings />
           <DownloadClientSettings />
         </div>
@@ -371,6 +372,28 @@ function GeneralSettings() {
       {isOpen && (
         <div className="p-4 border-t">
           <SettingsGeneral />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Root folder settings section - collapsible
+function RootFolderSettings() {
+  const [isOpen, setIsOpen] = useState(true) // Default open - important for first setup
+  return (
+    <div className="border rounded-lg">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-full p-4 text-left hover:bg-accent/50 transition-colors"
+      >
+        <span className="text-lg font-semibold">Root Folders</span>
+        <span className="text-muted-foreground">{isOpen ? "▼" : "▶"}</span>
+      </button>
+      {isOpen && (
+        <div className="p-4 border-t">
+          <RootFolderList />
         </div>
       )}
     </div>
