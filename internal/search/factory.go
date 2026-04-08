@@ -6,8 +6,8 @@ import "sync"
 type IndexerFactory func(cfg IndexerConfig) (Indexer, error)
 
 var (
-	factoryMu   sync.RWMutex
-	factoryReg  = make(map[string]IndexerFactory)
+	factoryMu  sync.RWMutex
+	factoryReg = make(map[string]IndexerFactory)
 )
 
 // RegisterFactory registers an indexer factory by type name.

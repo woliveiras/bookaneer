@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { createRouter, createRootRoute, createRoute, Outlet, Link, useNavigate } from "@tanstack/react-router"
+import { createRouter, createRootRoute, createRoute, Outlet, Link, useNavigate, useLocation } from "@tanstack/react-router"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { AuthProvider, useAuth } from "./contexts/AuthContext"
 import { LoginPage } from "./components/auth"
@@ -11,7 +11,7 @@ import { IndexerList, IndexerOptions } from "./components/indexers"
 import { DownloadClientList } from "./components/download"
 import { UnifiedSearch } from "./components/search/UnifiedSearch"
 import { BookDetails } from "./components/search/BookDetails"
-import { WantedList, QueueList } from "./components/wanted"
+import { WantedList, QueueList, HistoryList, BlocklistList } from "./components/wanted"
 import { Button } from "./components/ui"
 import { bookApi, authorApi, type MetadataBookResult } from "./lib/api"
 
@@ -268,11 +268,49 @@ const wantedRoute = createRoute({
 const activityRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/activity",
+  validateSearch: (search: Record<string, unknown>) => ({
+    tab: (search.tab as string) || "queue",
+  }),
   component: function ActivityPage() {
+    const navigate = useNavigate()
+    const { tab } = activityRoute.useSearch()
+    
+    const tabs = [
+      { id: "queue", label: "Queue" },
+      { id: "history", label: "History" },
+      { id: "blocklist", label: "Blocklist" },
+    ]
+
     return (
       <AuthLayout>
         <h2 className="text-2xl font-bold mb-6">Activity</h2>
-        <QueueList />
+        
+        {/* Tab navigation */}
+        <div className="border-b border-border mb-6">
+          <nav className="-mb-px flex space-x-8" aria-label="Activity tabs">
+            {tabs.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => navigate({ to: "/activity", search: { tab: t.id } })}
+                className={`
+                  whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition-colors
+                  ${tab === t.id
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:border-muted-foreground/30 hover:text-foreground"
+                  }
+                `}
+                aria-current={tab === t.id ? "page" : undefined}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* Tab content */}
+        {tab === "queue" && <QueueList />}
+        {tab === "history" && <HistoryList />}
+        {tab === "blocklist" && <BlocklistList />}
       </AuthLayout>
     )
   },

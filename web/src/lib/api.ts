@@ -750,6 +750,34 @@ export interface ActiveCommand {
 
 export type GrabStatus = "pending" | "sent" | "downloading" | "completed" | "failed" | "imported"
 
+// History types
+export type HistoryEventType = "grabbed" | "downloadCompleted" | "downloadFailed" | "bookFileDeleted" | "bookFileRenamed" | "bookImported"
+
+export interface HistoryItem {
+  id: number
+  bookId?: number
+  authorId?: number
+  eventType: HistoryEventType
+  sourceTitle: string
+  quality: string
+  data: Record<string, unknown>
+  date: string
+  bookTitle?: string
+  authorName?: string
+}
+
+// Blocklist types
+export interface BlocklistItem {
+  id: number
+  bookId: number
+  sourceTitle: string
+  quality: string
+  reason: string
+  date: string
+  bookTitle: string
+  authorName: string
+}
+
 export interface Grab {
   id: number
   bookId: number
@@ -915,6 +943,33 @@ export const wantedApi = {
     }),
 
   getActiveCommands: () => fetchAPI<ActiveCommand[]>("/commands/active"),
+}
+
+// History API
+export const historyApi = {
+  list: (params?: { limit?: number; eventType?: HistoryEventType }) => {
+    const searchParams = new URLSearchParams()
+    if (params?.limit) searchParams.set("limit", String(params.limit))
+    if (params?.eventType) searchParams.set("eventType", params.eventType)
+    const query = searchParams.toString()
+    return fetchAPI<HistoryItem[]>(`/history${query ? `?${query}` : ""}`)
+  },
+}
+
+// Blocklist API
+export const blocklistApi = {
+  list: () => fetchAPI<BlocklistItem[]>("/blocklist"),
+
+  add: (data: { bookId: number; sourceTitle: string; quality?: string; reason?: string }) =>
+    fetchAPI<void>("/blocklist", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  remove: (id: number) =>
+    fetchAPI<void>(`/blocklist/${id}`, {
+      method: "DELETE",
+    }),
 }
 
 // Grab API

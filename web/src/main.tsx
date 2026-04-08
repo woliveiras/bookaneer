@@ -4,6 +4,7 @@ import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import "./index.css"
 import { router } from "./router"
+import { ErrorBoundary } from "./components/ErrorBoundary"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,8 +20,10 @@ if (!root) throw new Error("Root element not found")
 
 createRoot(root).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </ErrorBoundary>
   </StrictMode>,
 )

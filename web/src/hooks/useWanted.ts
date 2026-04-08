@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { wantedApi, queueApi } from "../lib/api"
+import { wantedApi, queueApi, historyApi, blocklistApi } from "../lib/api"
+import type { HistoryEventType } from "../lib/api"
 
 // Missing books hooks
 export function useWantedMissing() {
@@ -65,6 +66,42 @@ export function useRemoveFromQueue() {
     mutationFn: queueApi.remove,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["queue"] })
+    },
+  })
+}
+
+// History hooks
+export function useHistory(params?: { limit?: number; eventType?: HistoryEventType }) {
+  return useQuery({
+    queryKey: ["history", params],
+    queryFn: () => historyApi.list(params),
+  })
+}
+
+// Blocklist hooks
+export function useBlocklist() {
+  return useQuery({
+    queryKey: ["blocklist"],
+    queryFn: blocklistApi.list,
+  })
+}
+
+export function useAddToBlocklist() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: blocklistApi.add,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["blocklist"] })
+    },
+  })
+}
+
+export function useRemoveFromBlocklist() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: blocklistApi.remove,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["blocklist"] })
     },
   })
 }

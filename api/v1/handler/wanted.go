@@ -36,6 +36,14 @@ func (h *WantedHandler) Register(g *echo.Group) {
 	g.GET("/queue", h.GetQueue)
 	g.DELETE("/queue/:id", h.RemoveFromQueue)
 
+	// History
+	g.GET("/history", h.GetHistory)
+
+	// Blocklist
+	g.GET("/blocklist", h.GetBlocklist)
+	g.POST("/blocklist", h.AddToBlocklist)
+	g.DELETE("/blocklist/:id", h.RemoveFromBlocklist)
+
 	// Active commands (for Activity page)
 	g.GET("/commands/active", h.GetActiveCommands)
 
@@ -209,4 +217,83 @@ func (h *WantedHandler) ManualGrab(c echo.Context) error {
 		"commandId": commandID,
 		"message":   "Grab has been queued",
 	})
+}
+
+// GetHistory returns history events.
+func (h *WantedHandler) GetHistory(c echo.Context) error {
+	limit := 50
+	if l := c.QueryParam("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 {
+			limit = parsed
+		}
+	}
+	eventType := c.QueryParam("eventType")
+
+	items, err := h.wantedService.GetHistory(c.Request().Context(), limit, eventType)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get history")
+	}
+
+	if items == nil {
+		items = []wanted.HistoryItem{}
+	}
+
+	return c.JSON(http.StatusOK, items)
+}
+
+// GetBlocklist returns blocklisted releases.
+func (h *WantedHandler) GetBlocklist(c echo.Context) error {
+	items, err := h.wantedService.GetBlocklist(c.Request().Context())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get blocklist")
+	}
+
+	if items == nil {
+		items = []wanted.BlocklistItem{}
+	}
+
+	return c.JSON(http.StatusOK, items)
+}
+
+// AddToBlocklistRequest represents a request to add to blocklist.
+type AddToBlocklistRequest struct {
+	BookID      int64  `json:"bookId"`
+	SourceTitle string `json:"sourceTitle"`
+	Quality     string `json:"quality"`
+	Reason      string `json:"reason"`
+}
+
+// AddToBlocklist adds a release to the blocklist.
+func (h *WantedHandler) AddToBlocklist(c echo.Context) error {
+	var req AddToBlocklistRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+
+	if req.BookID == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "bookId is required")
+	}
+	if req.SourceTitle == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "sourceTitle is required")
+	}
+
+	if err := h.wantedService.AddToBlocklist(c.Request().Context(), req.BookID, req.SourceTitle, req.Quality, req.Reason); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to add to blocklist")
+	}
+
+	return c.NoContent(http.StatusCreated)
+}
+
+// RemoveFromBlocklist removes an item from the blocklist.
+func (h *WantedHandler) RemoveFromBlocklist(c echo.Context) error {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid blocklist item id")
+	}
+
+	if err := h.wantedService.RemoveFromBlocklist(c.Request().Context(), id); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to remove from blocklist")
+	}
+
+	return c.NoContent(http.StatusOK)
 }
