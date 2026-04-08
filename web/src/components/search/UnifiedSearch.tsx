@@ -136,6 +136,7 @@ interface SearchProgressProps {
   indexerLoading: boolean
   indexerError: Error | null
   indexerResults: number
+  showCompact?: boolean
 }
 
 function SearchProgress({ 
@@ -144,7 +145,8 @@ function SearchProgress({
   libraryResults,
   indexerLoading, 
   indexerError, 
-  indexerResults 
+  indexerResults,
+  showCompact = false
 }: SearchProgressProps) {
   const sources = [
     { 
@@ -176,6 +178,11 @@ function SearchProgress({
       done: !indexerLoading 
     },
   ]
+
+  // If compact and no loading/errors, don't show
+  if (showCompact && !libraryLoading && !indexerLoading && !libraryError && !indexerError) {
+    return null
+  }
 
   return (
     <div className="space-y-3 py-4">
@@ -229,7 +236,7 @@ function SearchProgress({
         }
       `}</style>
       
-      {(libraryResults > 0 || indexerResults > 0) && (
+      {(libraryResults > 0 || indexerResults > 0) && (libraryLoading || indexerLoading) && (
         <div className="text-center text-sm text-muted-foreground mt-4 pt-4 border-t">
           Found {libraryResults + indexerResults} results so far...
         </div>
@@ -255,7 +262,8 @@ function DownloadPanel({ book, onClose }: DownloadPanelProps) {
   const librarySearch = useDigitalLibrarySearch(searchQuery, true)
 
   const isLoading = indexerSearch.isLoading || librarySearch.isLoading
-  const hasError = indexerSearch.error || librarySearch.error
+  const allSourcesFailed = indexerSearch.error && librarySearch.error
+  const someSourcesFailed = (indexerSearch.error || librarySearch.error) && !allSourcesFailed
 
   // Filter indexer results that look like ebooks
   const indexerResults = (indexerSearch.data?.results ?? []).filter((result) => {
@@ -277,6 +285,7 @@ function DownloadPanel({ book, onClose }: DownloadPanelProps) {
   const libraryResults = librarySearch.data?.results ?? []
 
   const totalResults = indexerResults.length + libraryResults.length
+  const hasResults = totalResults > 0
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
@@ -317,17 +326,32 @@ function DownloadPanel({ book, onClose }: DownloadPanelProps) {
             />
           )}
 
-          {hasError && (
-            <div className="bg-destructive/10 border border-destructive/30 rounded p-4">
-              <p className="text-destructive font-medium">Error during search</p>
-              <p className="text-sm text-destructive/80 mt-1">
-                {indexerSearch.error?.message || librarySearch.error?.message}
+          {/* Warning for partial failures - some sources failed but we have results */}
+          {!isLoading && someSourcesFailed && hasResults && (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded p-3 text-sm">
+              <p className="text-amber-600 dark:text-amber-400 font-medium flex items-center gap-2">
+                <span>⚠️</span> Some sources unavailable
+              </p>
+              <p className="text-amber-600/80 dark:text-amber-400/80 mt-1">
+                {indexerSearch.error && "Torrent indexers (Prowlarr) not reachable. "}
+                {librarySearch.error && "Digital libraries not responding. "}
+                Showing results from available sources.
               </p>
             </div>
           )}
 
-          {/* Digital Library Results */}
-          {!isLoading && libraryResults.length > 0 && (
+          {/* Error when ALL sources failed */}
+          {!isLoading && allSourcesFailed && (
+            <div className="bg-destructive/10 border border-destructive/30 rounded p-4">
+              <p className="text-destructive font-medium">All sources failed</p>
+              <p className="text-sm text-destructive/80 mt-1">
+                Could not reach any download source. Check your network connection.
+              </p>
+            </div>
+          )}
+
+          {/* Digital Library Results - show even while indexer is loading */}
+          {!librarySearch.isLoading && libraryResults.length > 0 && (
             <div>
               <h4 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
                 <span>📚</span> Digital Libraries
@@ -341,8 +365,8 @@ function DownloadPanel({ book, onClose }: DownloadPanelProps) {
             </div>
           )}
 
-          {/* Indexer Results */}
-          {!isLoading && indexerResults.length > 0 && (
+          {/* Indexer Results - show even while library is loading */}
+          {!indexerSearch.isLoading && indexerResults.length > 0 && (
             <div>
               <h4 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
                 <span>🔍</span> Torrent/Usenet Indexers
@@ -357,7 +381,7 @@ function DownloadPanel({ book, onClose }: DownloadPanelProps) {
           )}
 
           {/* No Results */}
-          {!isLoading && !hasError && totalResults === 0 && (
+          {!isLoading && !allSourcesFailed && totalResults === 0 && (
             <div className="text-center text-muted-foreground py-8">
               <p className="text-lg mb-2">No downloads found</p>
               <p className="text-sm mb-4">
