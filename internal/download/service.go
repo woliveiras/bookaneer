@@ -12,9 +12,10 @@ import (
 
 // Service manages download clients and queue operations.
 type Service struct {
-	db      *sql.DB
-	mu      sync.RWMutex
-	clients map[int64]Client
+	db             *sql.DB
+	mu             sync.RWMutex
+	clients        map[int64]Client
+	embeddedClient Client // Auto-configured direct downloader
 }
 
 // NewService creates a new download service.
@@ -458,11 +459,69 @@ func (g *GrabItem) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &aux)
 }
 
-// GetDirectClient returns a configured direct download client for downloading
+// GetDirectClient returns a direct download client for downloading
 // from digital libraries (Internet Archive, LibGen, Anna's Archive).
-// Returns nil, nil if no direct client is configured.
+// If no client is configured, creates an embedded one using the first root folder.
 func (s *Service) GetDirectClient(ctx context.Context) (Client, *ClientConfig, error) {
-	return s.getClientByType(ctx, ClientTypeDirect)
+	// First try to get a configured direct client
+	client, cfg, err := s.getClientByType(ctx, ClientTypeDirect)
+	if err != nil {
+		return nil, nil, err
+	}
+	if client != nil {
+		return client, cfg, nil
+	}
+
+	// No configured client, use embedded downloader with root folder
+	return s.getEmbeddedDirectClient(ctx)
+}
+
+// getEmbeddedDirectClient returns or creates the embedded direct downloader
+// that uses the first root folder as download destination.
+func (s *Service) getEmbeddedDirectClient(ctx context.Context) (Client, *ClientConfig, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Return existing embedded client if already created
+	if s.embeddedClient != nil {
+		return s.embeddedClient, &ClientConfig{
+			ID:      0,
+			Name:    "Embedded Downloader",
+			Type:    ClientTypeDirect,
+			Enabled: true,
+		}, nil
+	}
+
+	// Get the first root folder for download destination
+	var rootPath string
+	err := s.db.QueryRowContext(ctx, `SELECT path FROM root_folders ORDER BY id LIMIT 1`).Scan(&rootPath)
+	if err == sql.ErrNoRows {
+		return nil, nil, fmt.Errorf("no root folder configured: please add a root folder in Settings")
+	}
+	if err != nil {
+		return nil, nil, fmt.Errorf("get root folder: %w", err)
+	}
+
+	// Create embedded direct client
+	client, err := NewClient(ClientConfig{
+		Name:        "Embedded Downloader",
+		Type:        ClientTypeDirect,
+		DownloadDir: rootPath,
+		Enabled:     true,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("create embedded client: %w", err)
+	}
+
+	s.embeddedClient = client
+
+	return client, &ClientConfig{
+		ID:          0,
+		Name:        "Embedded Downloader",
+		Type:        ClientTypeDirect,
+		DownloadDir: rootPath,
+		Enabled:     true,
+	}, nil
 }
 
 // GetUsenetClient returns a configured usenet download client (SABnzbd, NZBGet).
