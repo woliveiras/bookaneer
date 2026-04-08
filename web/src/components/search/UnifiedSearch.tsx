@@ -139,6 +139,59 @@ interface SearchProgressProps {
   showCompact?: boolean
 }
 
+// Pirate ship SVG component
+function PirateShip({ className }: { className?: string }) {
+  return (
+    <svg 
+      viewBox="0 0 64 48" 
+      className={className}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      {/* Hull */}
+      <path 
+        d="M8 32 L12 40 L52 40 L56 32 L48 32 L48 28 L16 28 L16 32 Z" 
+        fill="currentColor" 
+        className="text-amber-800"
+      />
+      {/* Deck */}
+      <rect x="16" y="24" width="32" height="4" fill="currentColor" className="text-amber-700" />
+      {/* Mast */}
+      <rect x="30" y="4" width="4" height="24" fill="currentColor" className="text-amber-900" />
+      {/* Sail */}
+      <path 
+        d="M34 6 L34 22 L50 22 Q42 14 34 6 Z" 
+        fill="currentColor" 
+        className="text-slate-100"
+      />
+      {/* Flag - Black */}
+      <rect x="31" y="0" width="12" height="8" fill="currentColor" className="text-slate-800" />
+    </svg>
+  )
+}
+
+// Animated waves SVG
+function WavesSVG() {
+  return (
+    <svg 
+      viewBox="0 0 400 20" 
+      className="absolute bottom-0 left-0 w-[200%] h-5"
+      preserveAspectRatio="none"
+    >
+      <path 
+        d="M0 10 Q25 0 50 10 T100 10 T150 10 T200 10 T250 10 T300 10 T350 10 T400 10 V20 H0 Z" 
+        fill="currentColor" 
+        className="text-blue-400/40"
+      />
+      <path 
+        d="M0 14 Q25 8 50 14 T100 14 T150 14 T200 14 T250 14 T300 14 T350 14 T400 14 V20 H0 Z" 
+        fill="currentColor" 
+        className="text-blue-500/50"
+      />
+    </svg>
+  )
+}
+
 function SearchProgress({ 
   libraryLoading, 
   libraryError, 
@@ -148,101 +201,138 @@ function SearchProgress({
   indexerResults,
   showCompact = false
 }: SearchProgressProps) {
-  const sources = [
-    { 
-      name: "Anna's Archive", 
-      icon: "📚", 
-      loading: libraryLoading, 
-      error: libraryError,
-      done: !libraryLoading 
-    },
-    { 
-      name: "Library Genesis", 
-      icon: "📖", 
-      loading: libraryLoading, 
-      error: libraryError,
-      done: !libraryLoading 
-    },
-    { 
-      name: "Internet Archive", 
-      icon: "🏛️", 
-      loading: libraryLoading, 
-      error: libraryError,
-      done: !libraryLoading 
-    },
-    { 
-      name: "Torrent Indexers", 
-      icon: "🔍", 
-      loading: indexerLoading, 
-      error: indexerError,
-      done: !indexerLoading 
-    },
-  ]
-
-  // If compact and no loading/errors, don't show
-  if (showCompact && !libraryLoading && !indexerLoading && !libraryError && !indexerError) {
+  const isLoading = libraryLoading || indexerLoading
+  const totalFound = libraryResults + indexerResults
+  
+  // If compact and no loading, don't show
+  if (showCompact && !isLoading) {
     return null
   }
 
+  // Source status for the legend
+  const sources = [
+    { name: "Anna's Archive", done: !libraryLoading, error: libraryError },
+    { name: "Library Genesis", done: !libraryLoading, error: libraryError },
+    { name: "Internet Archive", done: !libraryLoading, error: libraryError },
+    { name: "Torrent Indexers", done: !indexerLoading, error: indexerError },
+  ]
+
   return (
-    <div className="space-y-3 py-4">
-      {sources.map((source, index) => (
-        <div 
-          key={source.name} 
-          className="flex items-center gap-3 px-2"
-          style={{ 
-            animation: `fadeSlideIn 0.3s ease-out ${index * 0.1}s both` 
+    <div className="py-6">
+      {/* Pirate Ship Animation */}
+      <div className="relative h-24 mx-auto max-w-sm overflow-hidden rounded-lg">
+        {/* Islands/Ports */}
+        <div className="absolute bottom-4 left-2 text-2xl" title="Library">
+          📚
+        </div>
+        <div
+          className="absolute bottom-4 right-2 text-2xl"
+          title="Your Collection"
+        >
+          🌍
+        </div>
+
+        {/* Ship */}
+        <div
+          className={`absolute bottom-3 w-16 h-12 ${isLoading ? "animate-sail" : "left-1/2 -translate-x-1/2"}`}
+          style={{
+            transition: isLoading ? undefined : "all 0.5s ease-out",
           }}
         >
-          <span className="text-lg">{source.icon}</span>
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">{source.name}</span>
-              {source.loading && (
-                <div className="h-3 w-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              )}
-              {source.done && !source.error && (
-                <span className="text-green-500 text-xs">✓</span>
-              )}
-              {source.error && (
-                <span className="text-destructive text-xs">✗</span>
-              )}
-            </div>
-            <div className="h-1 bg-muted rounded-full overflow-hidden mt-1">
-              <div 
-                className={`h-full transition-all duration-500 ${
-                  source.loading 
-                    ? "bg-primary animate-pulse w-2/3" 
-                    : source.error 
-                      ? "bg-destructive w-full"
-                      : "bg-green-500 w-full"
-                }`}
-              />
-            </div>
+          <div className="animate-bob">
+            <PirateShip className="w-full h-full drop-shadow-md" />
           </div>
         </div>
-      ))}
-      
+
+        {/* Waves */}
+        <div
+          className={`absolute bottom-0 left-0 w-full overflow-hidden ${isLoading ? "animate-waves" : ""}`}
+        >
+          <WavesSVG />
+        </div>
+      </div>
+
+      {/* Status text */}
+      <div className="text-center mt-4">
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground animate-pulse">
+            Sailing the seven seas for books...
+          </p>
+        ) : totalFound > 0 ? (
+          <p className="text-sm text-green-600 dark:text-green-400">
+            Found {totalFound} treasure{totalFound !== 1 ? "s" : ""}!
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No treasures found in these waters
+          </p>
+        )}
+      </div>
+
+      {/* Source indicators - compact */}
+      <div className="flex justify-center gap-3 mt-3 flex-wrap">
+        {sources.map((source) => (
+          <div
+            key={source.name}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground"
+          >
+            {source.done ? (
+              source.error ? (
+                <span className="text-destructive">✗</span>
+              ) : (
+                <span className="text-green-500">✓</span>
+              )
+            ) : (
+              <div className="relative h-3.5 w-3.5">
+                <div
+                  className="absolute inset-0 rounded-full animate-gradient-spin"
+                  style={{
+                    background:
+                      "conic-gradient(from 0deg, transparent, #60a5fa, #3b82f6, transparent)",
+                  }}
+                />
+                <div className="absolute inset-0.5 rounded-full bg-background" />
+              </div>
+            )}
+            <span className="hidden sm:inline">{source.name}</span>
+          </div>
+        ))}
+      </div>
+
       <style>{`
-        @keyframes fadeSlideIn {
-          from {
-            opacity: 0;
-            transform: translateX(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
+        @keyframes sail {
+          0%, 100% { left: 10%; }
+          50% { left: calc(90% - 4rem); }
+        }
+        @keyframes bob {
+          0%, 100% { transform: translateY(0) rotate(-2deg); }
+          25% { transform: translateY(-3px) rotate(0deg); }
+          50% { transform: translateY(0) rotate(2deg); }
+          75% { transform: translateY(2px) rotate(0deg); }
+        }
+        @keyframes waves {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        @keyframes gradient-spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        .animate-sail {
+          animation: sail 4s ease-in-out infinite;
+        }
+        .animate-bob {
+          animation: bob 2s ease-in-out infinite;
+        }
+        .animate-gradient-spin {
+          animation: gradient-spin 1s linear infinite;
+        }
+        .animate-waves {
+          animation: waves 3s linear infinite;
         }
       `}</style>
-      
-      {(libraryResults > 0 || indexerResults > 0) && (libraryLoading || indexerLoading) && (
-        <div className="text-center text-sm text-muted-foreground mt-4 pt-4 border-t">
-          Found {libraryResults + indexerResults} results so far...
-        </div>
-      )}
     </div>
-  )
+  );
 }
 
 interface DownloadPanelProps {
