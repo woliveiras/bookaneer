@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	defaultBaseURL = "https://annas-archive.org"
-	userAgent      = "Bookaneer/1.0 (ebook-manager)"
+	defaultBaseURL = "https://annas-archive.gs"
+	userAgent      = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 )
 
 // Provider implements library.Provider for Anna's Archive.
@@ -75,7 +75,7 @@ func (p *Provider) parseSearchResults(html string) []library.SearchResult {
 	var results []library.SearchResult
 
 	entries := strings.Split(html, `href="/md5/`)
-	
+
 	for i, entry := range entries[1:] {
 		if i >= 25 {
 			break
@@ -100,12 +100,12 @@ func (p *Provider) parseSearchResults(html string) []library.SearchResult {
 			continue
 		}
 		titleStart += contentStart + 1
-		
+
 		contentEnd := strings.Index(entry[titleStart:], "<")
 		if contentEnd == -1 {
 			continue
 		}
-		
+
 		title := strings.TrimSpace(entry[titleStart : titleStart+contentEnd])
 		if title == "" {
 			continue

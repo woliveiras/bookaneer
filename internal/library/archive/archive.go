@@ -38,18 +38,37 @@ type searchResponse struct {
 	Response struct {
 		NumFound int `json:"numFound"`
 		Docs     []struct {
-			Identifier  string   `json:"identifier"`
-			Title       string   `json:"title"`
-			Creator     []string `json:"creator"`
-			Date        string   `json:"date"`
-			Language    []string `json:"language"`
-			Format      []string `json:"format"`
+			Identifier string          `json:"identifier"`
+			Title      string          `json:"title"`
+			Creator    json.RawMessage `json:"creator"` // can be string or []string
+			Date       string          `json:"date"`
+			Language   json.RawMessage `json:"language"` // can be string or []string
+			Format     json.RawMessage `json:"format"`   // can be string or []string
 		} `json:"docs"`
 	} `json:"response"`
 }
 
+// parseStringOrSlice parses a JSON field that can be either a string or []string.
+func parseStringOrSlice(raw json.RawMessage) []string {
+	if len(raw) == 0 {
+		return nil
+	}
+	// Try as []string first
+	var arr []string
+	if err := json.Unmarshal(raw, &arr); err == nil {
+		return arr
+	}
+	// Try as single string
+	var s string
+	if err := json.Unmarshal(raw, &s); err == nil && s != "" {
+		return []string{s}
+	}
+	return nil
+}
+
 func (p *Provider) Search(ctx context.Context, query string) ([]library.SearchResult, error) {
-	searchQuery := fmt.Sprintf("(%s) AND mediatype:texts AND format:(PDF OR EPUB)", query)
+	// Search by title for better results
+	searchQuery := fmt.Sprintf("title:(%s) AND mediatype:texts", query)
 	searchURL := fmt.Sprintf("%s/advancedsearch.php?q=%s&fl[]=identifier&fl[]=title&fl[]=creator&fl[]=date&fl[]=language&fl[]=format&sort[]=downloads+desc&rows=25&page=1&output=json",
 		p.baseURL, url.QueryEscape(searchQuery))
 
@@ -76,7 +95,8 @@ func (p *Provider) Search(ctx context.Context, query string) ([]library.SearchRe
 
 	results := make([]library.SearchResult, 0, len(searchResp.Response.Docs))
 	for _, doc := range searchResp.Response.Docs {
-		format := p.bestFormat(doc.Format)
+		formats := parseStringOrSlice(doc.Format)
+		format := p.bestFormat(formats)
 		if format == "" {
 			continue
 		}
@@ -86,15 +106,18 @@ func (p *Provider) Search(ctx context.Context, query string) ([]library.SearchRe
 			fmt.Sscanf(doc.Date[:4], "%d", &year)
 		}
 
+		languages := parseStringOrSlice(doc.Language)
 		lang := ""
-		if len(doc.Language) > 0 {
-			lang = doc.Language[0]
+		if len(languages) > 0 {
+			lang = languages[0]
 		}
+
+		authors := parseStringOrSlice(doc.Creator)
 
 		result := library.SearchResult{
 			ID:          doc.Identifier,
 			Title:       doc.Title,
-			Authors:     doc.Creator,
+			Authors:     authors,
 			Year:        year,
 			Language:    lang,
 			Format:      format,

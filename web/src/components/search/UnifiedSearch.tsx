@@ -129,6 +129,115 @@ function LibraryResult({ result }: LibraryResultProps) {
   )
 }
 
+interface SearchProgressProps {
+  libraryLoading: boolean
+  libraryError: Error | null
+  libraryResults: number
+  indexerLoading: boolean
+  indexerError: Error | null
+  indexerResults: number
+}
+
+function SearchProgress({ 
+  libraryLoading, 
+  libraryError, 
+  libraryResults,
+  indexerLoading, 
+  indexerError, 
+  indexerResults 
+}: SearchProgressProps) {
+  const sources = [
+    { 
+      name: "Anna's Archive", 
+      icon: "📚", 
+      loading: libraryLoading, 
+      error: libraryError,
+      done: !libraryLoading 
+    },
+    { 
+      name: "Library Genesis", 
+      icon: "📖", 
+      loading: libraryLoading, 
+      error: libraryError,
+      done: !libraryLoading 
+    },
+    { 
+      name: "Internet Archive", 
+      icon: "🏛️", 
+      loading: libraryLoading, 
+      error: libraryError,
+      done: !libraryLoading 
+    },
+    { 
+      name: "Torrent Indexers", 
+      icon: "🔍", 
+      loading: indexerLoading, 
+      error: indexerError,
+      done: !indexerLoading 
+    },
+  ]
+
+  return (
+    <div className="space-y-3 py-4">
+      {sources.map((source, index) => (
+        <div 
+          key={source.name} 
+          className="flex items-center gap-3 px-2"
+          style={{ 
+            animation: `fadeSlideIn 0.3s ease-out ${index * 0.1}s both` 
+          }}
+        >
+          <span className="text-lg">{source.icon}</span>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">{source.name}</span>
+              {source.loading && (
+                <div className="h-3 w-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              )}
+              {source.done && !source.error && (
+                <span className="text-green-500 text-xs">✓</span>
+              )}
+              {source.error && (
+                <span className="text-destructive text-xs">✗</span>
+              )}
+            </div>
+            <div className="h-1 bg-muted rounded-full overflow-hidden mt-1">
+              <div 
+                className={`h-full transition-all duration-500 ${
+                  source.loading 
+                    ? "bg-primary animate-pulse w-2/3" 
+                    : source.error 
+                      ? "bg-destructive w-full"
+                      : "bg-green-500 w-full"
+                }`}
+              />
+            </div>
+          </div>
+        </div>
+      ))}
+      
+      <style>{`
+        @keyframes fadeSlideIn {
+          from {
+            opacity: 0;
+            transform: translateX(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+      `}</style>
+      
+      {(libraryResults > 0 || indexerResults > 0) && (
+        <div className="text-center text-sm text-muted-foreground mt-4 pt-4 border-t">
+          Found {libraryResults + indexerResults} results so far...
+        </div>
+      )}
+    </div>
+  )
+}
+
 interface DownloadPanelProps {
   book: MetadataBookResult
   onClose: () => void
@@ -198,12 +307,14 @@ function DownloadPanel({ book, onClose }: DownloadPanelProps) {
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {isLoading && (
-            <div className="flex flex-col items-center justify-center py-8">
-              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-              <p className="text-sm text-muted-foreground mt-2">
-                Searching libraries and indexers...
-              </p>
-            </div>
+            <SearchProgress
+              libraryLoading={librarySearch.isLoading}
+              libraryError={librarySearch.error}
+              libraryResults={libraryResults.length}
+              indexerLoading={indexerSearch.isLoading}
+              indexerError={indexerSearch.error}
+              indexerResults={indexerResults.length}
+            />
           )}
 
           {hasError && (

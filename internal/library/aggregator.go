@@ -2,6 +2,7 @@ package library
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 )
 
@@ -22,6 +23,7 @@ func (a *Aggregator) Search(ctx context.Context, query string) ([]SearchResult, 
 	}
 
 	type providerResult struct {
+		name    string
 		results []SearchResult
 		err     error
 	}
@@ -34,7 +36,7 @@ func (a *Aggregator) Search(ctx context.Context, query string) ([]SearchResult, 
 		go func(p Provider) {
 			defer wg.Done()
 			results, err := p.Search(ctx, query)
-			resultsChan <- providerResult{results: results, err: err}
+			resultsChan <- providerResult{name: p.Name(), results: results, err: err}
 		}(provider)
 	}
 
@@ -46,8 +48,10 @@ func (a *Aggregator) Search(ctx context.Context, query string) ([]SearchResult, 
 	var allResults []SearchResult
 	for pr := range resultsChan {
 		if pr.err != nil {
+			slog.Debug("library provider search failed", "provider", pr.name, "error", pr.err)
 			continue
 		}
+		slog.Debug("library provider search completed", "provider", pr.name, "results", len(pr.results))
 		allResults = append(allResults, pr.results...)
 	}
 
