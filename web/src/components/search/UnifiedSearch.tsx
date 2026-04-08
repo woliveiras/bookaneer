@@ -163,7 +163,7 @@ export function UnifiedSearch() {
       {bookSearch.data && bookSearch.data.results.length > 0 && (
         <div>
           <p className="text-sm text-muted-foreground mb-4">
-            {bookSearch.data.results.length} books found — click one to find downloads
+            {bookSearch.data.results.length} books found — click one for manual search
           </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {bookSearch.data.results.map((book) => (

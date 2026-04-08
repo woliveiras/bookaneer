@@ -2,6 +2,8 @@ import { useState, useMemo } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import { useDigitalLibrarySearch } from "../../hooks/useMetadata"
 import { useSearch, type SearchParams } from "../../hooks/useIndexers"
+import { useCreateBook } from "../../hooks/useBooks"
+import { useCreateAuthor, useAuthors } from "../../hooks/useAuthors"
 import { Button, Card, CardContent, Badge, Input } from "../ui"
 import type { MetadataBookResult, SearchResult, DigitalLibraryResult } from "../../lib/api"
 
@@ -172,11 +174,60 @@ export function BookDetails({ book }: BookDetailsProps) {
   // Search state - only start when user clicks
   const [searchStarted, setSearchStarted] = useState(false)
   
+  // Add to library state
+  const [addedToLibrary, setAddedToLibrary] = useState(false)
+  const [addingToLibrary, setAddingToLibrary] = useState(false)
+  const [addError, setAddError] = useState<string | null>(null)
+  
+  const createBook = useCreateBook()
+  const createAuthor = useCreateAuthor()
+  const authorName = book.authors?.[0] || "Unknown Author"
+  const { data: existingAuthors } = useAuthors({ search: authorName, limit: 1 })
+  
   // Filters state
   const [formatFilter, setFormatFilter] = useState<string>("all")
   const [providerFilter, setProviderFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<string>("score")
   const [searchInResults, setSearchInResults] = useState("")
+
+  // Handle add to library
+  const handleAddToLibrary = async () => {
+    setAddingToLibrary(true)
+    setAddError(null)
+    
+    try {
+      let authorId: number
+      
+      // Check if author already exists
+      if (existingAuthors?.records?.length && existingAuthors.records[0].name.toLowerCase() === authorName.toLowerCase()) {
+        authorId = existingAuthors.records[0].id
+      } else {
+        // Create author
+        const author = await createAuthor.mutateAsync({
+          name: authorName,
+          monitored: true,
+        })
+        authorId = author.id
+      }
+      
+      // Create book
+      await createBook.mutateAsync({
+        authorId,
+        title: book.title,
+        foreignId: book.foreignId || "",
+        isbn13: book.isbn13 || "",
+        releaseDate: book.publishedYear ? `${book.publishedYear}-01-01` : "",
+        imageUrl: book.coverUrl || "",
+        monitored: true,
+      })
+      
+      setAddedToLibrary(true)
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : "Failed to add to library")
+    } finally {
+      setAddingToLibrary(false)
+    }
+  }
 
   // Build search queries
   const librarySearchQuery = book.title
@@ -316,7 +367,7 @@ export function BookDetails({ book }: BookDetailsProps) {
             <Badge variant="outline">{book.provider}</Badge>
             {book.isbn13 && <Badge variant="secondary">{book.isbn13}</Badge>}
           </div>
-          <div className="flex gap-2 mt-4">
+          <div className="flex flex-wrap gap-2 mt-4">
             <Button 
               variant="outline" 
               size="sm"
@@ -324,15 +375,38 @@ export function BookDetails({ book }: BookDetailsProps) {
             >
               ← Back to Search
             </Button>
+            {!addedToLibrary ? (
+              <Button 
+                size="sm"
+                variant="default"
+                onClick={handleAddToLibrary}
+                disabled={addingToLibrary}
+              >
+                {addingToLibrary ? "Adding..." : "➕ Add to Library"}
+              </Button>
+            ) : (
+              <Button 
+                size="sm"
+                variant="outline"
+                className="text-green-600 border-green-600"
+                disabled
+              >
+                ✓ Added to Library
+              </Button>
+            )}
             {!searchStarted && (
               <Button 
                 size="sm"
+                variant="secondary"
                 onClick={() => setSearchStarted(true)}
               >
-                🔍 Find Downloads
+                🔍 Manual Search
               </Button>
             )}
           </div>
+          {addError && (
+            <p className="text-sm text-destructive mt-2">{addError}</p>
+          )}
         </div>
       </div>
 
@@ -341,12 +415,12 @@ export function BookDetails({ book }: BookDetailsProps) {
         <Card>
           <CardContent className="py-12 text-center">
             <div className="text-4xl mb-4">🏴</div>
-            <h3 className="text-lg font-semibold mb-2">Ready to search for downloads?</h3>
+            <h3 className="text-lg font-semibold mb-2">Ready for manual search?</h3>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
               Click the button below to search digital libraries and torrent indexers for "{book.title}"
             </p>
             <Button size="lg" onClick={() => setSearchStarted(true)}>
-              🔍 Find Downloads
+              🔍 Manual Search
             </Button>
           </CardContent>
         </Card>

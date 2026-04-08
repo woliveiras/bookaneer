@@ -803,6 +803,51 @@ export const queueApi = {
   list: () => fetchAPI<QueueItem[]>("/queue"),
 
   listByClient: (clientId: number) => fetchAPI<QueueItem[]>(`/queue/${clientId}`),
+
+  remove: (id: number) =>
+    fetch(`${API_BASE}/queue/${id}`, {
+      method: "DELETE",
+      headers: {
+        "X-Api-Key": getStoredApiKey() || "",
+      },
+    }).then((res) => {
+      if (!res.ok) throw new Error("Failed to remove from queue")
+    }),
+}
+
+// Wanted API (missing books)
+export interface WantedResponse {
+  page: number
+  pageSize: number
+  totalRecords: number
+  sortKey: string
+  sortDirection: string
+  records: Book[]
+}
+
+export interface SearchCommandResponse {
+  commandId: string
+  message: string
+}
+
+export const wantedApi = {
+  getMissing: () => fetchAPI<WantedResponse>("/wanted/missing"),
+
+  searchAllMissing: () =>
+    fetchAPI<SearchCommandResponse>("/wanted/missing/search", {
+      method: "POST",
+    }),
+
+  searchBook: (bookId: number) =>
+    fetchAPI<SearchCommandResponse>(`/book/${bookId}/search`, {
+      method: "POST",
+    }),
+
+  manualGrab: (data: { bookId: number; downloadUrl: string; releaseTitle?: string; size?: number; quality?: string }) =>
+    fetchAPI<SearchCommandResponse>("/release", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 }
 
 // Grab API

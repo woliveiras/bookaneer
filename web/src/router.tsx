@@ -11,6 +11,7 @@ import { IndexerList, IndexerOptions } from "./components/indexers"
 import { DownloadClientList } from "./components/download"
 import { UnifiedSearch } from "./components/search/UnifiedSearch"
 import { BookDetails } from "./components/search/BookDetails"
+import { WantedList, QueueList } from "./components/wanted"
 import { Button } from "./components/ui"
 import { bookApi, type MetadataBookResult } from "./lib/api"
 
@@ -97,6 +98,8 @@ function Navigation() {
     { to: "/", label: "Library" },
     { to: "/authors", label: "Authors" },
     { to: "/books", label: "Books" },
+    { to: "/wanted", label: "Wanted" },
+    { to: "/activity", label: "Activity" },
     { to: "/search", label: "Search" },
     { to: "/settings", label: "Settings" },
     { to: "/system", label: "System" },
@@ -192,6 +195,34 @@ const searchRoute = createRoute({
       <AuthLayout>
         <h2 className="text-2xl font-bold mb-6">Search</h2>
         <UnifiedSearch />
+      </AuthLayout>
+    )
+  },
+})
+
+// Wanted route (missing books)
+const wantedRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/wanted",
+  component: function WantedPage() {
+    return (
+      <AuthLayout>
+        <h2 className="text-2xl font-bold mb-6">Wanted</h2>
+        <WantedList />
+      </AuthLayout>
+    )
+  },
+})
+
+// Activity route (download queue)
+const activityRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/activity",
+  component: function ActivityPage() {
+    return (
+      <AuthLayout>
+        <h2 className="text-2xl font-bold mb-6">Activity</h2>
+        <QueueList />
       </AuthLayout>
     )
   },
@@ -459,6 +490,8 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   authorsRoute,
   booksRoute,
+  wantedRoute,
+  activityRoute,
   searchRoute,
   bookDetailsRoute,
   settingsRoute,

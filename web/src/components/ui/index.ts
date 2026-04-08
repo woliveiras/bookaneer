@@ -14,3 +14,6 @@ export type { BadgeProps } from "./Badge"
 
 export { Collapsible } from "./Collapsible"
 export type { CollapsibleProps } from "./Collapsible"
+
+export { Progress } from "./Progress"
+export type { ProgressProps } from "./Progress"
