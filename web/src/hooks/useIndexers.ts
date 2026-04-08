@@ -75,6 +75,8 @@ export function useSearch(params: SearchParams, enabled = true) {
     queryFn: () => indexerApi.search(params),
     enabled: enabled && !!(params.q || params.author || params.title || params.isbn),
     staleTime: 60 * 1000, // 1 minute
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
   })
 }
 

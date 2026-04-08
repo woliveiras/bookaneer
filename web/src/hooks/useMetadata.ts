@@ -67,6 +67,8 @@ export function useDigitalLibrarySearch(query: string, enabled = true) {
     queryFn: () => digitalLibraryApi.search(query),
     enabled: enabled && query.length >= 2,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
   })
 }
 

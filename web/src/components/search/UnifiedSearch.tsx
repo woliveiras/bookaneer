@@ -133,9 +133,11 @@ interface SearchProgressProps {
   libraryLoading: boolean
   libraryError: Error | null
   libraryResults: number
+  libraryRetryCount: number
   indexerLoading: boolean
   indexerError: Error | null
   indexerResults: number
+  indexerRetryCount: number
   showCompact?: boolean
 }
 
@@ -196,9 +198,11 @@ function SearchProgress({
   libraryLoading, 
   libraryError, 
   libraryResults,
+  libraryRetryCount,
   indexerLoading, 
   indexerError, 
   indexerResults,
+  indexerRetryCount,
   showCompact = false
 }: SearchProgressProps) {
   const isLoading = libraryLoading || indexerLoading
@@ -209,12 +213,12 @@ function SearchProgress({
     return null
   }
 
-  // Source status for the legend
+  // Source status for the legend with retry info
   const sources = [
-    { name: "Anna's Archive", done: !libraryLoading, error: libraryError },
-    { name: "Library Genesis", done: !libraryLoading, error: libraryError },
-    { name: "Internet Archive", done: !libraryLoading, error: libraryError },
-    { name: "Torrent Indexers", done: !indexerLoading, error: indexerError },
+    { name: "Anna's Archive", done: !libraryLoading, error: libraryError, retrying: libraryRetryCount > 0 && libraryLoading },
+    { name: "Library Genesis", done: !libraryLoading, error: libraryError, retrying: libraryRetryCount > 0 && libraryLoading },
+    { name: "Internet Archive", done: !libraryLoading, error: libraryError, retrying: libraryRetryCount > 0 && libraryLoading },
+    { name: "Torrent Indexers", done: !indexerLoading, error: indexerError, retrying: indexerRetryCount > 0 && indexerLoading },
   ]
 
   return (
@@ -255,9 +259,15 @@ function SearchProgress({
       {/* Status text */}
       <div className="text-center mt-4">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground animate-pulse">
-            Sailing the seven seas for books...
-          </p>
+          sources.some(s => s.retrying) ? (
+            <p className="text-sm text-amber-500 animate-pulse">
+              Some sources had issues, retrying...
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground animate-pulse">
+              Sailing the seven seas for books...
+            </p>
+          )
         ) : totalFound > 0 ? (
           <p className="text-sm text-green-600 dark:text-green-400">
             Found {totalFound} treasure{totalFound !== 1 ? "s" : ""}!
@@ -287,14 +297,18 @@ function SearchProgress({
                 <div
                   className="absolute inset-0 rounded-full animate-gradient-spin"
                   style={{
-                    background:
-                      "conic-gradient(from 0deg, transparent, #60a5fa, #3b82f6, transparent)",
+                    background: source.retrying
+                      ? "conic-gradient(from 0deg, transparent, #f59e0b, #eab308, transparent)"
+                      : "conic-gradient(from 0deg, transparent, #60a5fa, #3b82f6, transparent)",
                   }}
                 />
                 <div className="absolute inset-0.5 rounded-full bg-background" />
               </div>
             )}
-            <span className="hidden sm:inline">{source.name}</span>
+            <span className="hidden sm:inline">
+              {source.name}
+              {source.retrying && <span className="text-amber-500 ml-1">(retrying...)</span>}
+            </span>
           </div>
         ))}
       </div>
@@ -351,9 +365,17 @@ function DownloadPanel({ book, onClose }: DownloadPanelProps) {
   // Search digital libraries (Anna's Archive, LibGen, Internet Archive)
   const librarySearch = useDigitalLibrarySearch(searchQuery, true)
 
-  const isLoading = indexerSearch.isLoading || librarySearch.isLoading
-  const allSourcesFailed = indexerSearch.error && librarySearch.error
-  const someSourcesFailed = (indexerSearch.error || librarySearch.error) && !allSourcesFailed
+  // Determine loading states separately
+  const libraryDone = !librarySearch.isLoading
+  const indexerDone = !indexerSearch.isLoading
+  const isLoading = !libraryDone || !indexerDone
+  
+  // Only consider it failed if it finished AND has an error AND no data
+  const libraryFailed = libraryDone && !!librarySearch.error && !librarySearch.data?.results?.length
+  const indexerFailed = indexerDone && !!indexerSearch.error && !indexerSearch.data?.results?.length
+  
+  const allSourcesFailed = libraryFailed && indexerFailed
+  const someSourcesFailed = (libraryFailed || indexerFailed) && !allSourcesFailed
 
   // Filter indexer results that look like ebooks
   const indexerResults = (indexerSearch.data?.results ?? []).filter((result) => {
@@ -410,9 +432,11 @@ function DownloadPanel({ book, onClose }: DownloadPanelProps) {
               libraryLoading={librarySearch.isLoading}
               libraryError={librarySearch.error}
               libraryResults={libraryResults.length}
+              libraryRetryCount={librarySearch.failureCount}
               indexerLoading={indexerSearch.isLoading}
               indexerError={indexerSearch.error}
               indexerResults={indexerResults.length}
+              indexerRetryCount={indexerSearch.failureCount}
             />
           )}
 
@@ -420,11 +444,11 @@ function DownloadPanel({ book, onClose }: DownloadPanelProps) {
           {!isLoading && someSourcesFailed && hasResults && (
             <div className="bg-amber-500/10 border border-amber-500/30 rounded p-3 text-sm">
               <p className="text-amber-600 dark:text-amber-400 font-medium flex items-center gap-2">
-                <span>⚠️</span> Some sources unavailable
+                <span>⚠️</span> Some sources unavailable after retrying
               </p>
               <p className="text-amber-600/80 dark:text-amber-400/80 mt-1">
-                {indexerSearch.error && "Torrent indexers (Prowlarr) not reachable. "}
-                {librarySearch.error && "Digital libraries not responding. "}
+                {indexerFailed && "Torrent indexers (Prowlarr) could not be reached. "}
+                {libraryFailed && "Digital libraries did not respond. "}
                 Showing results from available sources.
               </p>
             </div>
@@ -433,15 +457,15 @@ function DownloadPanel({ book, onClose }: DownloadPanelProps) {
           {/* Error when ALL sources failed */}
           {!isLoading && allSourcesFailed && (
             <div className="bg-destructive/10 border border-destructive/30 rounded p-4">
-              <p className="text-destructive font-medium">All sources failed</p>
+              <p className="text-destructive font-medium">All sources failed after retrying</p>
               <p className="text-sm text-destructive/80 mt-1">
-                Could not reach any download source. Check your network connection.
+                Could not reach any download source after multiple attempts. Check your network connection.
               </p>
             </div>
           )}
 
-          {/* Digital Library Results - show even while indexer is loading */}
-          {!librarySearch.isLoading && libraryResults.length > 0 && (
+          {/* Digital Library Results - show as soon as available */}
+          {libraryDone && libraryResults.length > 0 && (
             <div>
               <h4 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
                 <span>📚</span> Digital Libraries
@@ -455,8 +479,8 @@ function DownloadPanel({ book, onClose }: DownloadPanelProps) {
             </div>
           )}
 
-          {/* Indexer Results - show even while library is loading */}
-          {!indexerSearch.isLoading && indexerResults.length > 0 && (
+          {/* Indexer Results - show as soon as available */}
+          {indexerDone && indexerResults.length > 0 && (
             <div>
               <h4 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
                 <span>🔍</span> Torrent/Usenet Indexers
@@ -475,12 +499,16 @@ function DownloadPanel({ book, onClose }: DownloadPanelProps) {
             <div className="text-center text-muted-foreground py-8">
               <p className="text-lg mb-2">No downloads found</p>
               <p className="text-sm mb-4">
-                Could not find "{book.title}" in any library or indexer.
+                Could not find "{book.title}" in {someSourcesFailed ? "available sources" : "any library or indexer"}.
               </p>
               <div className="text-xs bg-muted/50 rounded p-3 text-left max-w-md mx-auto">
                 <p className="font-medium mb-1">Sources checked:</p>
-                <p>• Digital libraries (Anna's Archive, LibGen, Internet Archive)</p>
-                <p>• Torrent/Usenet indexers (via Prowlarr)</p>
+                <p className={libraryFailed ? "text-destructive" : ""}>
+                  • Digital libraries (Anna's Archive, LibGen, Internet Archive) {libraryFailed && "- unavailable"}
+                </p>
+                <p className={indexerFailed ? "text-destructive" : ""}>
+                  • Torrent/Usenet indexers (via Prowlarr) {indexerFailed && "- unavailable"}
+                </p>
               </div>
             </div>
           )}
