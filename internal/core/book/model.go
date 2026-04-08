@@ -101,7 +101,7 @@ type CreateEditionInput struct {
 type ListBooksFilter struct {
 	AuthorID  *int64
 	Monitored *bool
-	Missing   bool   // Only books without files
+	Missing   bool // Only books without files
 	Search    string
 	SortBy    string // title, sortTitle, releaseDate, addedAt
 	SortDir   string // asc, desc
@@ -112,6 +112,6 @@ type ListBooksFilter struct {
 // BookWithEditions represents a book with its editions.
 type BookWithEditions struct {
 	Book
-	Editions []Edition `json:"editions"`
+	Editions []Edition  `json:"editions"`
 	Files    []BookFile `json:"files,omitempty"`
 }

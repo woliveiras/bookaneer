@@ -33,6 +33,7 @@ import (
 	"github.com/woliveiras/bookaneer/internal/database"
 	"github.com/woliveiras/bookaneer/internal/download"
 	_ "github.com/woliveiras/bookaneer/internal/download/blackhole"
+	_ "github.com/woliveiras/bookaneer/internal/download/direct"
 	_ "github.com/woliveiras/bookaneer/internal/download/qbittorrent"
 	_ "github.com/woliveiras/bookaneer/internal/download/sabnzbd"
 	_ "github.com/woliveiras/bookaneer/internal/download/transmission"
@@ -43,9 +44,11 @@ import (
 	"github.com/woliveiras/bookaneer/internal/metadata"
 	"github.com/woliveiras/bookaneer/internal/metadata/googlebooks"
 	"github.com/woliveiras/bookaneer/internal/metadata/openlibrary"
+	"github.com/woliveiras/bookaneer/internal/scheduler"
 	"github.com/woliveiras/bookaneer/internal/search"
 	_ "github.com/woliveiras/bookaneer/internal/search/newznab"
 	_ "github.com/woliveiras/bookaneer/internal/search/torznab"
+	"github.com/woliveiras/bookaneer/internal/wanted"
 )
 
 var (
@@ -236,10 +239,22 @@ func run() error {
 	digitalLibraryHandler := handler.NewDigitalLibraryHandler(libAggregator)
 	digitalLibraryHandler.Register(protected)
 
-	// Download service (SABnzbd, qBittorrent, Transmission, Blackhole)
+	// Download service (SABnzbd, qBittorrent, Transmission, Blackhole, Direct)
 	downloadSvc := download.NewService(db)
 	downloadHandler := handler.NewDownloadHandler(downloadSvc)
 	downloadHandler.Register(protected)
+
+	// Wanted service (monitors books and grabs from libraries/indexers)
+	wantedSvc := wanted.New(db, bookSvc, libAggregator, searchSvc, downloadSvc)
+
+	// Scheduler (background job processor)
+	jobScheduler := scheduler.New(db, 3)
+	jobScheduler.RegisterWantedHandlers(wantedSvc)
+	jobScheduler.Start(context.Background())
+
+	// Wanted/Queue handler
+	wantedHandler := handler.NewWantedHandler(wantedSvc, jobScheduler)
+	wantedHandler.Register(protected)
 
 	if err := serveFrontend(e); err != nil {
 		return fmt.Errorf("setup frontend: %w", err)
@@ -258,6 +273,10 @@ func run() error {
 	<-quit
 
 	slog.Info("shutting down...")
+
+	// Stop the scheduler gracefully
+	jobScheduler.Stop()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

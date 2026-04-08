@@ -91,6 +91,7 @@ type ClientConfig struct {
 	NzbFolder            string   `json:"nzbFolder,omitempty"`
 	TorrentFolder        string   `json:"torrentFolder,omitempty"`
 	WatchFolder          string   `json:"watchFolder,omitempty"`
+	DownloadDir          string   `json:"downloadDir,omitempty"` // For direct downloads
 	CreatedAt            string   `json:"createdAt"`
 	UpdatedAt            string   `json:"updatedAt"`
 }
@@ -101,6 +102,7 @@ const (
 	ClientTypeQBittorrent  = "qbittorrent"
 	ClientTypeTransmission = "transmission"
 	ClientTypeBlackhole    = "blackhole"
+	ClientTypeDirect       = "direct"
 )
 
 // GrabStatus represents the status of a grab.

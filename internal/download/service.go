@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 )
@@ -455,4 +456,108 @@ func (g *GrabItem) UnmarshalJSON(data []byte) error {
 		Alias: (*Alias)(g),
 	}
 	return json.Unmarshal(data, &aux)
+}
+
+// GetDirectClient returns a configured direct download client for downloading
+// from digital libraries (Internet Archive, LibGen, Anna's Archive).
+// Returns nil, nil if no direct client is configured.
+func (s *Service) GetDirectClient(ctx context.Context) (Client, *ClientConfig, error) {
+	return s.getClientByType(ctx, ClientTypeDirect)
+}
+
+// GetUsenetClient returns a configured usenet download client (SABnzbd, NZBGet).
+// Returns nil, nil if no usenet client is configured.
+func (s *Service) GetUsenetClient(ctx context.Context) (Client, *ClientConfig, error) {
+	return s.getClientByType(ctx, ClientTypeSABnzbd)
+}
+
+// GetTorrentClient returns a configured torrent download client
+// (qBittorrent, Transmission, Deluge).
+// Returns nil, nil if no torrent client is configured.
+func (s *Service) GetTorrentClient(ctx context.Context) (Client, *ClientConfig, error) {
+	return s.getClientByTypes(ctx, ClientTypeQBittorrent, ClientTypeTransmission)
+}
+
+// getClientByType finds and returns the first enabled client of the given type.
+func (s *Service) getClientByType(ctx context.Context, clientType string) (Client, *ClientConfig, error) {
+	return s.getClientByTypes(ctx, clientType)
+}
+
+// getClientByTypes finds and returns the first enabled client of any of the given types.
+func (s *Service) getClientByTypes(ctx context.Context, clientTypes ...string) (Client, *ClientConfig, error) {
+	if len(clientTypes) == 0 {
+		return nil, nil, nil
+	}
+
+	// Build placeholders for IN clause
+	placeholders := make([]string, len(clientTypes))
+	args := make([]any, len(clientTypes))
+	for i, ct := range clientTypes {
+		placeholders[i] = "?"
+		args[i] = ct
+	}
+
+	query := fmt.Sprintf(`
+		SELECT id, name, type, settings, enabled, priority
+		FROM download_clients
+		WHERE type IN (%s) AND enabled = 1
+		ORDER BY priority DESC
+		LIMIT 1
+	`, strings.Join(placeholders, ", "))
+
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, nil, fmt.Errorf("query clients: %w", err)
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return nil, nil, nil // No client configured
+	}
+
+	var cfg ClientConfig
+	var settingsJSON string
+	var enabled int
+	if err := rows.Scan(&cfg.ID, &cfg.Name, &cfg.Type, &settingsJSON, &enabled, &cfg.Priority); err != nil {
+		return nil, nil, fmt.Errorf("scan client: %w", err)
+	}
+	cfg.Enabled = enabled == 1
+
+	// Parse settings JSON into config fields
+	if settingsJSON != "" && settingsJSON != "{}" {
+		var settings map[string]any
+		if err := json.Unmarshal([]byte(settingsJSON), &settings); err != nil {
+			return nil, nil, fmt.Errorf("unmarshal settings: %w", err)
+		}
+		if v, ok := settings["host"].(string); ok {
+			cfg.Host = v
+		}
+		if v, ok := settings["port"].(float64); ok {
+			cfg.Port = int(v)
+		}
+		if v, ok := settings["apiKey"].(string); ok {
+			cfg.APIKey = v
+		}
+		if v, ok := settings["username"].(string); ok {
+			cfg.Username = v
+		}
+		if v, ok := settings["password"].(string); ok {
+			cfg.Password = v
+		}
+		if v, ok := settings["useTls"].(bool); ok {
+			cfg.UseTLS = v
+		}
+		if v, ok := settings["downloadDir"].(string); ok {
+			cfg.DownloadDir = v
+		}
+		if v, ok := settings["category"].(string); ok {
+			cfg.Category = v
+		}
+	}
+
+	client, err := s.getOrCreateClient(cfg)
+	if err != nil {
+		return nil, nil, err
+	}
+	return client, &cfg, nil
 }
