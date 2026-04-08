@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { createRouter, createRootRoute, createRoute, Outlet, Link, useNavigate } from "@tanstack/react-router"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { AuthProvider, useAuth } from "./contexts/AuthContext"
 import { LoginPage } from "./components/auth"
 import { AuthorList } from "./components/authors"
@@ -542,10 +542,20 @@ const libraryBookDetailRoute = createRoute({
   component: function LibraryBookDetailPage() {
     const { bookId } = libraryBookDetailRoute.useParams()
     const navigate = useNavigate()
+    const queryClient = useQueryClient()
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     
     const { data: book, isLoading, error } = useQuery({
       queryKey: ["book", bookId],
       queryFn: () => bookApi.get(Number(bookId)),
+    })
+
+    const deleteMutation = useMutation({
+      mutationFn: () => bookApi.delete(Number(bookId)),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["books"] })
+        navigate({ to: "/books" })
+      },
     })
 
     if (isLoading) {
@@ -638,7 +648,38 @@ const libraryBookDetailRoute = createRoute({
                 } })}>
                   🔍 Manual Search
                 </Button>
+                <Button
+                  variant="outline"
+                  className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  🗑️ Delete
+                </Button>
               </div>
+
+              {/* Delete confirmation dialog */}
+              {showDeleteConfirm && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                  <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+                    <h3 className="text-lg font-semibold mb-2">Delete Book?</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Are you sure you want to delete "{book.title}"? This will remove it from your library.
+                    </p>
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={() => deleteMutation.mutate()}
+                        disabled={deleteMutation.isPending}
+                      >
+                        {deleteMutation.isPending ? "Deleting..." : "Delete"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

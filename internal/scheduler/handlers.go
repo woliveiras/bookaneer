@@ -83,4 +83,70 @@ func (s *Scheduler) RegisterWantedHandlers(wantedService *wanted.Service) {
 
 		return nil
 	})
+
+	// RssSync: Periodically search for wanted books using RSS-enabled sources
+	// This runs on a schedule and searches all wanted (missing) books
+	s.RegisterHandler(CommandRssSync, func(ctx context.Context, cmd *Command) error {
+		results, err := wantedService.SearchAllWanted(ctx)
+		if err != nil {
+			return err
+		}
+
+		cmd.Result = map[string]any{
+			"searched": true,
+			"grabbed":  len(results),
+			"message":  fmt.Sprintf("RSS sync completed, grabbed %d releases", len(results)),
+		}
+
+		return nil
+	})
+
+	// AutomaticSearch: Triggered when a new book is added as monitored
+	// Searches for the book using automatic-search-enabled indexers
+	s.RegisterHandler(CommandAutomaticSearch, func(ctx context.Context, cmd *Command) error {
+		bookID, ok := cmd.Payload["bookId"].(float64)
+		if !ok {
+			return fmt.Errorf("missing or invalid bookId in payload")
+		}
+
+		result, err := wantedService.SearchAndGrab(ctx, int64(bookID))
+		if err != nil {
+			return err
+		}
+
+		if result != nil {
+			cmd.Result = map[string]any{
+				"grabbed":  true,
+				"title":    result.Title,
+				"source":   result.Source,
+				"provider": result.ProviderName,
+				"format":   result.Format,
+				"client":   result.ClientName,
+			}
+		} else {
+			cmd.Result = map[string]any{
+				"grabbed": false,
+				"message": "No suitable release found",
+			}
+		}
+
+		return nil
+	})
+
+	// DownloadMonitor: Periodically check status of active downloads
+	// Updates queue status and triggers post-processing for completed downloads
+	s.RegisterHandler(CommandDownloadMonitor, func(ctx context.Context, cmd *Command) error {
+		result, err := wantedService.ProcessDownloads(ctx)
+		if err != nil {
+			return err
+		}
+
+		cmd.Result = map[string]any{
+			"checked":   result.Checked,
+			"completed": result.Completed,
+			"failed":    result.Failed,
+		}
+
+		return nil
+	})
 }

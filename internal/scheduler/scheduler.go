@@ -23,6 +23,7 @@ const (
 	CommandBookSearch        CommandName = "BookSearch"
 	CommandMissingBookSearch CommandName = "MissingBookSearch"
 	CommandRefreshBook       CommandName = "RefreshBook"
+	CommandAutomaticSearch   CommandName = "AutomaticSearch"
 
 	// Library commands.
 	CommandLibraryScan  CommandName = "LibraryScan"

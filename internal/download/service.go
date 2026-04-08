@@ -498,10 +498,11 @@ func (s *Service) getClientByTypes(ctx context.Context, clientTypes ...string) (
 	}
 
 	query := fmt.Sprintf(`
-		SELECT id, name, type, settings, enabled, priority
+		SELECT id, name, type, host, port, use_tls, username, password, api_key, 
+		       category, enabled, priority, nzb_folder, torrent_folder, watch_folder
 		FROM download_clients
 		WHERE type IN (%s) AND enabled = 1
-		ORDER BY priority DESC
+		ORDER BY priority ASC
 		LIMIT 1
 	`, strings.Join(placeholders, ", "))
 
@@ -516,44 +517,23 @@ func (s *Service) getClientByTypes(ctx context.Context, clientTypes ...string) (
 	}
 
 	var cfg ClientConfig
-	var settingsJSON string
-	var enabled int
-	if err := rows.Scan(&cfg.ID, &cfg.Name, &cfg.Type, &settingsJSON, &enabled, &cfg.Priority); err != nil {
+	var enabled, useTLS int
+	var username, password, apiKey, category sql.NullString
+	var nzbFolder, torrentFolder, watchFolder sql.NullString
+	if err := rows.Scan(&cfg.ID, &cfg.Name, &cfg.Type, &cfg.Host, &cfg.Port, &useTLS,
+		&username, &password, &apiKey, &category, &enabled, &cfg.Priority,
+		&nzbFolder, &torrentFolder, &watchFolder); err != nil {
 		return nil, nil, fmt.Errorf("scan client: %w", err)
 	}
 	cfg.Enabled = enabled == 1
-
-	// Parse settings JSON into config fields
-	if settingsJSON != "" && settingsJSON != "{}" {
-		var settings map[string]any
-		if err := json.Unmarshal([]byte(settingsJSON), &settings); err != nil {
-			return nil, nil, fmt.Errorf("unmarshal settings: %w", err)
-		}
-		if v, ok := settings["host"].(string); ok {
-			cfg.Host = v
-		}
-		if v, ok := settings["port"].(float64); ok {
-			cfg.Port = int(v)
-		}
-		if v, ok := settings["apiKey"].(string); ok {
-			cfg.APIKey = v
-		}
-		if v, ok := settings["username"].(string); ok {
-			cfg.Username = v
-		}
-		if v, ok := settings["password"].(string); ok {
-			cfg.Password = v
-		}
-		if v, ok := settings["useTls"].(bool); ok {
-			cfg.UseTLS = v
-		}
-		if v, ok := settings["downloadDir"].(string); ok {
-			cfg.DownloadDir = v
-		}
-		if v, ok := settings["category"].(string); ok {
-			cfg.Category = v
-		}
-	}
+	cfg.UseTLS = useTLS == 1
+	cfg.Username = username.String
+	cfg.Password = password.String
+	cfg.APIKey = apiKey.String
+	cfg.Category = category.String
+	cfg.NzbFolder = nzbFolder.String
+	cfg.TorrentFolder = torrentFolder.String
+	cfg.WatchFolder = watchFolder.String
 
 	client, err := s.getOrCreateClient(cfg)
 	if err != nil {

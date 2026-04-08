@@ -185,11 +185,14 @@ func run() error {
 		slog.Warn("could not ensure default quality profile", "error", err)
 	}
 
+	// Scheduler (background job processor) - created early so handlers can queue jobs
+	jobScheduler := scheduler.New(db, 3)
+
 	// Core domain handlers
 	authorHandler := handler.NewAuthorHandler(authorSvc)
 	authorHandler.Register(protected)
 
-	bookHandler := handler.NewBookHandler(bookSvc)
+	bookHandler := handler.NewBookHandler(bookSvc, jobScheduler)
 	bookHandler.Register(protected)
 
 	seriesHandler := handler.NewSeriesHandler(seriesSvc)
@@ -247,8 +250,7 @@ func run() error {
 	// Wanted service (monitors books and grabs from libraries/indexers)
 	wantedSvc := wanted.New(db, bookSvc, libAggregator, searchSvc, downloadSvc)
 
-	// Scheduler (background job processor)
-	jobScheduler := scheduler.New(db, 3)
+	// Register wanted handlers and start scheduler
 	jobScheduler.RegisterWantedHandlers(wantedSvc)
 	jobScheduler.Start(context.Background())
 
