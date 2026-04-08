@@ -54,4 +54,33 @@ func (s *Scheduler) RegisterWantedHandlers(wantedService *wanted.Service) {
 
 		return nil
 	})
+
+	// DownloadGrab: Manually grab a specific release by URL
+	s.RegisterHandler(CommandDownloadGrab, func(ctx context.Context, cmd *Command) error {
+		bookID, ok := cmd.Payload["bookId"].(float64)
+		if !ok {
+			return fmt.Errorf("missing or invalid bookId in payload")
+		}
+
+		downloadURL, ok := cmd.Payload["downloadUrl"].(string)
+		if !ok || downloadURL == "" {
+			return fmt.Errorf("missing or invalid downloadUrl in payload")
+		}
+
+		releaseTitle, _ := cmd.Payload["releaseTitle"].(string)
+		size, _ := cmd.Payload["size"].(float64)
+
+		result, err := wantedService.GrabRelease(ctx, int64(bookID), downloadURL, releaseTitle, int64(size))
+		if err != nil {
+			return err
+		}
+
+		cmd.Result = map[string]any{
+			"grabbed":    true,
+			"downloadId": result.DownloadID,
+			"client":     result.ClientName,
+		}
+
+		return nil
+	})
 }

@@ -4,6 +4,7 @@ import { useDigitalLibrarySearch } from "../../hooks/useMetadata"
 import { useSearch, type SearchParams } from "../../hooks/useIndexers"
 import { useCreateBook } from "../../hooks/useBooks"
 import { useCreateAuthor, useAuthors } from "../../hooks/useAuthors"
+import { useManualGrab } from "../../hooks/useWanted"
 import { Button, Card, CardContent, Badge, Input } from "../ui"
 import type { MetadataBookResult, SearchResult, DigitalLibraryResult } from "../../lib/api"
 
@@ -42,11 +43,20 @@ const SORT_OPTIONS = [
 
 interface DownloadResultProps {
   result: SearchResult
+  onGrab: (url: string, title: string, size: number) => Promise<void>
+  isGrabbing: boolean
 }
 
-function DownloadResult({ result }: DownloadResultProps) {
-  const handleDownload = () => {
-    window.open(result.downloadUrl, "_blank")
+function DownloadResult({ result, onGrab, isGrabbing }: DownloadResultProps) {
+  const [grabbing, setGrabbing] = useState(false)
+  
+  const handleGrab = async () => {
+    setGrabbing(true)
+    try {
+      await onGrab(result.downloadUrl, result.title, result.size)
+    } finally {
+      setGrabbing(false)
+    }
   }
 
   return (
@@ -65,8 +75,8 @@ function DownloadResult({ result }: DownloadResultProps) {
               )}
             </div>
           </div>
-          <Button size="sm" onClick={handleDownload}>
-            Download
+          <Button size="sm" onClick={handleGrab} disabled={grabbing || isGrabbing}>
+            {grabbing ? "Grabbing..." : "Grab"}
           </Button>
         </div>
       </CardContent>
@@ -76,11 +86,20 @@ function DownloadResult({ result }: DownloadResultProps) {
 
 interface LibraryResultProps {
   result: DigitalLibraryResult
+  onGrab: (url: string, title: string, size: number) => Promise<void>
+  isGrabbing: boolean
 }
 
-function LibraryResult({ result }: LibraryResultProps) {
-  const handleDownload = () => {
-    window.open(result.downloadUrl || result.infoUrl, "_blank")
+function LibraryResult({ result, onGrab, isGrabbing }: LibraryResultProps) {
+  const [grabbing, setGrabbing] = useState(false)
+  
+  const handleGrab = async () => {
+    setGrabbing(true)
+    try {
+      await onGrab(result.downloadUrl || result.infoUrl, result.title, result.size)
+    } finally {
+      setGrabbing(false)
+    }
   }
 
   return (
@@ -108,8 +127,8 @@ function LibraryResult({ result }: LibraryResultProps) {
               )}
             </div>
           </div>
-          <Button size="sm" onClick={handleDownload}>
-            Download
+          <Button size="sm" onClick={handleGrab} disabled={grabbing || isGrabbing}>
+            {grabbing ? "Grabbing..." : "Grab"}
           </Button>
         </div>
       </CardContent>
@@ -178,9 +197,16 @@ export function BookDetails({ book }: BookDetailsProps) {
   const [addedToLibrary, setAddedToLibrary] = useState(false)
   const [addingToLibrary, setAddingToLibrary] = useState(false)
   const [addError, setAddError] = useState<string | null>(null)
+  const [createdBookId, setCreatedBookId] = useState<number | null>(null)
+  
+  // Grab state
+  const [isGrabbing, setIsGrabbing] = useState(false)
+  const [grabSuccess, setGrabSuccess] = useState(false)
+  const [grabError, setGrabError] = useState<string | null>(null)
   
   const createBook = useCreateBook()
   const createAuthor = useCreateAuthor()
+  const manualGrab = useManualGrab()
   const authorName = book.authors?.[0] || "Unknown Author"
   const { data: existingAuthors } = useAuthors({ search: authorName, limit: 1 })
   
@@ -190,8 +216,12 @@ export function BookDetails({ book }: BookDetailsProps) {
   const [sortBy, setSortBy] = useState<string>("score")
   const [searchInResults, setSearchInResults] = useState("")
 
-  // Handle add to library
-  const handleAddToLibrary = async () => {
+  // Ensure book is in library and return bookId
+  const ensureBookInLibrary = async (): Promise<number> => {
+    if (createdBookId) {
+      return createdBookId
+    }
+    
     setAddingToLibrary(true)
     setAddError(null)
     
@@ -211,7 +241,7 @@ export function BookDetails({ book }: BookDetailsProps) {
       }
       
       // Create book
-      await createBook.mutateAsync({
+      const newBook = await createBook.mutateAsync({
         authorId,
         title: book.title,
         foreignId: book.foreignId || "",
@@ -221,11 +251,49 @@ export function BookDetails({ book }: BookDetailsProps) {
         monitored: true,
       })
       
+      setCreatedBookId(newBook.id)
       setAddedToLibrary(true)
+      return newBook.id
     } catch (err) {
       setAddError(err instanceof Error ? err.message : "Failed to add to library")
+      throw err
     } finally {
       setAddingToLibrary(false)
+    }
+  }
+
+  // Handle add to library button
+  const handleAddToLibrary = async () => {
+    try {
+      await ensureBookInLibrary()
+    } catch {
+      // Error already set in ensureBookInLibrary
+    }
+  }
+  
+  // Handle grab - ensures book is in library first, then sends to download
+  const handleGrab = async (downloadUrl: string, releaseTitle: string, size: number) => {
+    setIsGrabbing(true)
+    setGrabError(null)
+    setGrabSuccess(false)
+    
+    try {
+      // First ensure the book is in the library
+      const bookId = await ensureBookInLibrary()
+      
+      // Now send the grab request
+      await manualGrab.mutateAsync({
+        bookId,
+        downloadUrl,
+        releaseTitle,
+        size,
+      })
+      
+      setGrabSuccess(true)
+    } catch (err) {
+      setGrabError(err instanceof Error ? err.message : "Failed to grab release")
+    } finally {
+      setIsGrabbing(false)
     }
   }
 
@@ -407,21 +475,59 @@ export function BookDetails({ book }: BookDetailsProps) {
           {addError && (
             <p className="text-sm text-destructive mt-2">{addError}</p>
           )}
+          {grabError && (
+            <p className="text-sm text-destructive mt-2">{grabError}</p>
+          )}
         </div>
       </div>
+
+      {/* Grab success notification */}
+      {grabSuccess && (
+        <Card className="border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950">
+          <CardContent className="p-4">
+            <p className="text-green-700 dark:text-green-300 flex items-center gap-2">
+              <span>✓</span> Release grabbed! Check the Activity tab.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Initial state - search not started */}
       {!searchStarted && (
         <Card>
-          <CardContent className="py-12 text-center">
-            <div className="text-4xl mb-4">🏴</div>
-            <h3 className="text-lg font-semibold mb-2">Ready for manual search?</h3>
-            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Click the button below to search digital libraries and torrent indexers for "{book.title}"
-            </p>
-            <Button size="lg" onClick={() => setSearchStarted(true)}>
-              🔍 Manual Search
-            </Button>
+          <CardContent className="py-8">
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* Wanted Section */}
+              <div className="text-center md:text-left space-y-3">
+                <div className="flex items-center gap-2 justify-center md:justify-start">
+                  <span className="text-2xl">📋</span>
+                  <h3 className="text-lg font-semibold">Add to Wanted</h3>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Click <strong>"Add to Library"</strong> above to monitor this book. 
+                  Bookaneer will automatically search for it when new releases become available.
+                </p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                  <span>💡</span>
+                  <span>Wanted books appear in <strong>Activity → Wanted</strong> tab</span>
+                </div>
+              </div>
+
+              {/* Manual Search Section */}
+              <div className="text-center md:text-left space-y-3 md:border-l md:pl-8">
+                <div className="flex items-center gap-2 justify-center md:justify-start">
+                  <span className="text-2xl">🔍</span>
+                  <h3 className="text-lg font-semibold">Manual Search</h3>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Search digital libraries and torrent indexers right now for "{book.title}".
+                  Review results and grab what you want.
+                </p>
+                <Button size="lg" onClick={() => setSearchStarted(true)} className="w-full md:w-auto">
+                  🏴 Start Manual Search
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -563,7 +669,12 @@ export function BookDetails({ book }: BookDetailsProps) {
               </h3>
               <div className="grid gap-2">
                 {filteredLibraryResults.map((result) => (
-                  <LibraryResult key={`${result.provider}-${result.id}`} result={result} />
+                  <LibraryResult 
+                    key={`${result.provider}-${result.id}`} 
+                    result={result} 
+                    onGrab={handleGrab}
+                    isGrabbing={isGrabbing}
+                  />
                 ))}
               </div>
             </div>
@@ -578,7 +689,12 @@ export function BookDetails({ book }: BookDetailsProps) {
               </h3>
               <div className="grid gap-2">
                 {filteredIndexerResults.map((result) => (
-                  <DownloadResult key={result.guid} result={result} />
+                  <DownloadResult 
+                    key={result.guid} 
+                    result={result} 
+                    onGrab={handleGrab}
+                    isGrabbing={isGrabbing}
+                  />
                 ))}
               </div>
             </div>

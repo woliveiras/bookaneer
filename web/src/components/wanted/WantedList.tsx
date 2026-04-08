@@ -1,13 +1,18 @@
 import { useState } from "react"
 import { useWantedMissing, useSearchAllMissing, useSearchBook } from "../../hooks/useWanted"
+import { useUpdateBook } from "../../hooks/useBooks"
 import { Button, Card, CardContent, CardHeader, CardTitle } from "../ui"
+import { useQueryClient } from "@tanstack/react-query"
 import type { Book } from "../../lib/api"
 
 export function WantedList() {
+  const queryClient = useQueryClient()
   const { data, isLoading, error, refetch } = useWantedMissing()
   const searchAllMutation = useSearchAllMissing()
   const searchBookMutation = useSearchBook()
+  const updateBookMutation = useUpdateBook()
   const [searchingBooks, setSearchingBooks] = useState<Set<number>>(new Set())
+  const [removingBooks, setRemovingBooks] = useState<Set<number>>(new Set())
 
   const handleSearchAll = async () => {
     try {
@@ -25,6 +30,22 @@ export function WantedList() {
       console.error("Failed to search book:", err)
     } finally {
       setSearchingBooks(prev => {
+        const next = new Set(prev)
+        next.delete(bookId)
+        return next
+      })
+    }
+  }
+
+  const handleRemoveFromWanted = async (bookId: number) => {
+    setRemovingBooks(prev => new Set(prev).add(bookId))
+    try {
+      await updateBookMutation.mutateAsync({ id: bookId, data: { monitored: false } })
+      queryClient.invalidateQueries({ queryKey: ["wanted"] })
+    } catch (err) {
+      console.error("Failed to remove from wanted:", err)
+    } finally {
+      setRemovingBooks(prev => {
         const next = new Set(prev)
         next.delete(bookId)
         return next
@@ -114,6 +135,8 @@ export function WantedList() {
               book={book}
               onSearch={() => handleSearchBook(book.id)}
               isSearching={searchingBooks.has(book.id)}
+              onRemove={() => handleRemoveFromWanted(book.id)}
+              isRemoving={removingBooks.has(book.id)}
             />
           ))}
         </div>
@@ -126,9 +149,11 @@ interface WantedBookCardProps {
   book: Book
   onSearch: () => void
   isSearching: boolean
+  onRemove: () => void
+  isRemoving: boolean
 }
 
-function WantedBookCard({ book, onSearch, isSearching }: WantedBookCardProps) {
+function WantedBookCard({ book, onSearch, isSearching, onRemove, isRemoving }: WantedBookCardProps) {
   return (
     <Card>
       <div className="flex items-start gap-4 p-4">
@@ -171,13 +196,21 @@ function WantedBookCard({ book, onSearch, isSearching }: WantedBookCardProps) {
         </div>
 
         {/* Actions */}
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 flex gap-2">
           <Button
             size="sm"
             onClick={onSearch}
-            disabled={isSearching}
+            disabled={isSearching || isRemoving}
           >
             {isSearching ? "Searching..." : "Search"}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onRemove}
+            disabled={isRemoving || isSearching}
+          >
+            {isRemoving ? "Removing..." : "Remove"}
           </Button>
         </div>
       </div>

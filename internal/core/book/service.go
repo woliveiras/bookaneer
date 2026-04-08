@@ -192,6 +192,20 @@ func (s *Service) Create(ctx context.Context, input CreateBookInput) (*Book, err
 		input.SortTitle = input.Title
 	}
 
+	// Check if book with same foreignId already exists (e.g., was previously removed from wanted)
+	if input.ForeignID != "" {
+		existing, err := s.FindByForeignID(ctx, input.ForeignID)
+		if err == nil {
+			// Book exists - update it to set monitored=true
+			monitoredTrue := true
+			return s.Update(ctx, existing.ID, UpdateBookInput{Monitored: &monitoredTrue})
+		}
+		// If not found, continue to create new book
+		if err != ErrNotFound {
+			return nil, fmt.Errorf("check existing book: %w", err)
+		}
+	}
+
 	// Check author exists
 	var authorExists int
 	err := s.db.QueryRowContext(ctx, "SELECT 1 FROM authors WHERE id = ?", input.AuthorID).Scan(&authorExists)

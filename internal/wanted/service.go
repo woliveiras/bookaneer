@@ -464,6 +464,82 @@ func (s *Service) RemoveFromQueue(ctx context.Context, id int64) error {
 	return err
 }
 
+// GrabRelease manually grabs a release by URL and sends it to a download client.
+func (s *Service) GrabRelease(ctx context.Context, bookID int64, downloadURL, releaseTitle string, size int64) (*GrabResult, error) {
+	// Get book details
+	b, err := s.bookService.FindByID(ctx, bookID)
+	if err != nil {
+		return nil, fmt.Errorf("find book: %w", err)
+	}
+
+	// Find a direct download client (for HTTP URLs from digital libraries)
+	client, cfg, err := s.downloadService.GetDirectClient(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get download client: %w", err)
+	}
+	if client == nil {
+		return nil, fmt.Errorf("no download client configured")
+	}
+
+	// Build filename from release title or book info
+	filename := releaseTitle
+	if filename == "" {
+		filename = fmt.Sprintf("%s - %s", b.AuthorName, b.Title)
+	}
+	filename = sanitizeFilename(filename)
+
+	// Add to download client
+	downloadID, err := client.Add(ctx, download.AddItem{
+		Name:        filename,
+		DownloadURL: downloadURL,
+		Category:    "books",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("add to download client: %w", err)
+	}
+
+	// Determine format from URL or title
+	format := "unknown"
+	urlLower := strings.ToLower(downloadURL + releaseTitle)
+	switch {
+	case strings.Contains(urlLower, "epub"):
+		format = "epub"
+	case strings.Contains(urlLower, "pdf"):
+		format = "pdf"
+	case strings.Contains(urlLower, "mobi"):
+		format = "mobi"
+	}
+
+	// Record in download queue
+	if err := s.recordDownload(ctx, b.ID, cfg.ID, nil, releaseTitle, size, format, downloadURL, downloadID); err != nil {
+		slog.Error("Failed to record download", "error", err)
+	}
+
+	// Record in history
+	s.recordHistory(ctx, b.ID, b.AuthorID, "grabbed", releaseTitle, format, map[string]any{
+		"downloadId": downloadID,
+		"client":     cfg.Name,
+		"manual":     true,
+	})
+
+	slog.Info("Manually grabbed release",
+		"book", b.Title,
+		"url", downloadURL,
+		"client", cfg.Name,
+	)
+
+	return &GrabResult{
+		BookID:       b.ID,
+		Title:        releaseTitle,
+		Source:       "manual",
+		ProviderName: "manual",
+		Format:       format,
+		Size:         size,
+		DownloadID:   downloadID,
+		ClientName:   cfg.Name,
+	}, nil
+}
+
 // sanitizeFilename removes unsafe characters from filename.
 func sanitizeFilename(name string) string {
 	replacer := strings.NewReplacer(
