@@ -1,11 +1,35 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Link } from "@tanstack/react-router"
-import { useDownloadQueue, useRemoveFromQueue, useActiveCommands } from "../../hooks/useWanted"
+import { useDownloadQueue, useRemoveFromQueue, useActiveCommands, useRecentCommands } from "../../hooks/useWanted"
 import { Button, Card, CardContent, Progress } from "../ui"
 import type { QueueItem, ActiveCommand } from "../../lib/api"
 
+const DISMISSED_STORAGE_KEY = "bookaneer-dismissed-commands"
+
+// Get dismissed command IDs from localStorage
+function getDismissedCommands(): Set<string> {
+  try {
+    const stored = localStorage.getItem(DISMISSED_STORAGE_KEY)
+    if (stored) {
+      return new Set(JSON.parse(stored))
+    }
+  } catch {
+    // Ignore errors
+  }
+  return new Set()
+}
+
+// Save dismissed command IDs to localStorage
+function saveDismissedCommands(dismissed: Set<string>) {
+  try {
+    localStorage.setItem(DISMISSED_STORAGE_KEY, JSON.stringify([...dismissed]))
+  } catch {
+    // Ignore errors
+  }
+}
+
 // Map command names to user-friendly descriptions
-function getCommandDescription(command: ActiveCommand): { title: string; subtitle?: string } {
+function getCommandDescription(command: ActiveCommand): { title: string; subtitle?: string; bookTitle?: string } {
   const name = command.name
   const payload = command.payload || {}
   const bookTitle = payload.bookTitle as string | undefined
@@ -14,39 +38,54 @@ function getCommandDescription(command: ActiveCommand): { title: string; subtitl
   switch (name) {
     case "AutomaticSearch":
       return {
-        title: bookTitle ? `Searching: ${bookTitle}` : "Searching for book...",
+        bookTitle,
+        title: bookTitle || "Unknown Book",
         subtitle: authorName ? `by ${authorName}` : undefined,
       }
     case "BookSearch":
       return {
-        title: bookTitle ? `Searching: ${bookTitle}` : "Searching for releases...",
+        bookTitle,
+        title: bookTitle || "Unknown Book",
         subtitle: authorName ? `by ${authorName}` : undefined,
       }
     case "MissingBookSearch":
       return {
-        title: "Searching all missing books...",
-        subtitle: undefined,
+        title: "All Missing Books",
+        subtitle: "Searching all monitored books",
       }
     case "DownloadGrab":
       return {
-        title: bookTitle ? `Grabbing: ${bookTitle}` : "Grabbing release...",
+        bookTitle,
+        title: bookTitle || "Unknown Book",
         subtitle: authorName ? `by ${authorName}` : undefined,
-      }
-    case "DownloadMonitor":
-      return {
-        title: "Checking downloads...",
-        subtitle: undefined,
       }
     default:
       return { title: name, subtitle: undefined }
   }
 }
 
+function getStatusInfo(status: string, hasError: boolean) {
+  if (status === "running" || status === "queued") {
+    return { label: "Searching", color: "bg-blue-500", icon: "🔍", spinning: true }
+  }
+  if (status === "failed" || hasError) {
+    return { label: "Not Found", color: "bg-red-500", icon: "✕", spinning: false }
+  }
+  return { label: "Found", color: "bg-green-500", icon: "✓", spinning: false }
+}
+
 export function QueueList() {
   const { data: queue, isLoading, error, refetch } = useDownloadQueue()
   const { data: activeCommands } = useActiveCommands()
+  const { data: recentCommands } = useRecentCommands(50)
   const removeMutation = useRemoveFromQueue()
   const [itemToRemove, setItemToRemove] = useState<QueueItem | null>(null)
+  const [dismissedCommands, setDismissedCommands] = useState<Set<string>>(getDismissedCommands)
+
+  // Sync dismissed commands to localStorage
+  useEffect(() => {
+    saveDismissedCommands(dismissedCommands)
+  }, [dismissedCommands])
 
   const handleRemove = (item: QueueItem) => {
     setItemToRemove(item)
@@ -60,6 +99,10 @@ export function QueueList() {
     } catch (err) {
       console.error("Failed to remove from queue:", err)
     }
+  }
+
+  const dismissCommand = (commandId: string) => {
+    setDismissedCommands(prev => new Set([...prev, commandId]))
   }
 
   if (isLoading) {
@@ -83,15 +126,28 @@ export function QueueList() {
     )
   }
 
-  const items = queue || []
-  // Filter to show only search-related commands (not DownloadMonitor)
-  const searchCommands = (activeCommands || []).filter(
-    cmd => cmd.name !== "DownloadMonitor"
+  const downloadItems = queue || []
+  
+  // Filter book-related commands that aren't dismissed
+  const bookCommands = (recentCommands || []).filter(cmd => 
+    ["AutomaticSearch", "BookSearch", "MissingBookSearch", "DownloadGrab"].includes(cmd.name) &&
+    !dismissedCommands.has(cmd.id)
   )
-  const failedItems = items.filter(item => item.status === "failed")
+
+  // Active commands (still running)
+  const activeBookCommands = (activeCommands || []).filter(cmd =>
+    ["AutomaticSearch", "BookSearch", "MissingBookSearch", "DownloadGrab"].includes(cmd.name)
+  )
+
+  // Completed/failed commands
+  const finishedCommands = bookCommands.filter(cmd => 
+    cmd.status === "completed" || cmd.status === "failed"
+  )
+
+  const failedDownloads = downloadItems.filter(item => item.status === "failed")
 
   const handleClearAllFailed = async () => {
-    for (const item of failedItems) {
+    for (const item of failedDownloads) {
       try {
         await removeMutation.mutateAsync(item.id)
       } catch (err) {
@@ -100,85 +156,111 @@ export function QueueList() {
     }
   }
 
+  const clearAllFinishedCommands = () => {
+    finishedCommands.forEach(cmd => {
+      dismissCommand(cmd.id)
+    })
+  }
+
+  const hasActiveItems = activeBookCommands.length > 0 || downloadItems.length > 0
+  const hasFinishedItems = finishedCommands.length > 0
+  const isEmpty = !hasActiveItems && !hasFinishedItems
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <p className="text-muted-foreground">
-            {items.length} {items.length === 1 ? "item" : "items"} in queue
-            {failedItems.length > 0 && (
-              <span className="text-destructive ml-2">({failedItems.length} failed)</span>
+            {activeBookCommands.length > 0 && (
+              <span>{activeBookCommands.length} searching</span>
             )}
+            {downloadItems.length > 0 && (
+              <span className="ml-2">{downloadItems.length} downloading</span>
+            )}
+            {hasFinishedItems && (
+              <span className="ml-2">{finishedCommands.length} {finishedCommands.length === 1 ? "result" : "results"}</span>
+            )}
+            {isEmpty && "No activity"}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {failedItems.length > 1 && (
+          {finishedCommands.length > 1 && (
             <Button 
               variant="outline" 
+              size="sm"
+              onClick={clearAllFinishedCommands}
+            >
+              Clear All Results
+            </Button>
+          )}
+          {failedDownloads.length > 1 && (
+            <Button 
+              variant="outline" 
+              size="sm"
               onClick={handleClearAllFailed}
               disabled={removeMutation.isPending}
               className="text-destructive border-destructive hover:bg-destructive/10"
             >
-              Clear All Failed
+              Clear Failed Downloads
             </Button>
           )}
-          <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
             Refresh
           </Button>
         </div>
       </div>
 
-      {/* Active search commands */}
-      {searchCommands.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-muted-foreground">Active Tasks</h3>
-          {searchCommands.map((cmd) => {
-            const { title, subtitle } = getCommandDescription(cmd)
-            return (
-              <Card key={cmd.id}>
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-3">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{title}</p>
-                      {subtitle && (
-                        <p className="text-xs text-muted-foreground">{subtitle}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {cmd.status === "running" ? "Running" : "Queued"}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-      )}
-
       {/* Empty state */}
-      {items.length === 0 && searchCommands.length === 0 && (
+      {isEmpty && (
         <Card>
           <CardContent className="p-12 text-center">
             <div className="text-4xl mb-4">📭</div>
-            <h3 className="text-lg font-semibold mb-2">Queue is empty</h3>
+            <h3 className="text-lg font-semibold mb-2">No activity</h3>
             <p className="text-muted-foreground">
-              No downloads in progress. Search for books to start downloading.
+              Search for books to start downloading. Activity will appear here.
             </p>
           </CardContent>
         </Card>
       )}
 
-      {/* Queue items */}
-      {items.length > 0 && (
-        <div className="space-y-3">
-          {items.map((item) => (
+      {/* Active Searches */}
+      {activeBookCommands.length > 0 && (
+        <div className="space-y-2">
+          {activeBookCommands.map((cmd) => (
+            <SearchCommandCard 
+              key={cmd.id} 
+              command={cmd} 
+              onDismiss={() => dismissCommand(cmd.id)}
+              canDismiss={false}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Downloads in progress */}
+      {downloadItems.length > 0 && (
+        <div className="space-y-2">
+          {downloadItems.map((item) => (
             <QueueItemCard
               key={item.id}
               item={item}
               onRemove={() => handleRemove(item)}
               isRemoving={removeMutation.isPending}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Finished searches (completed/failed) */}
+      {finishedCommands.length > 0 && (
+        <div className="space-y-2">
+          {finishedCommands.map((cmd) => (
+            <SearchCommandCard 
+              key={cmd.id} 
+              command={cmd} 
+              onDismiss={() => dismissCommand(cmd.id)}
+              canDismiss={true}
             />
           ))}
         </div>
@@ -211,6 +293,104 @@ export function QueueList() {
   )
 }
 
+// Search command card component
+interface SearchCommandCardProps {
+  command: ActiveCommand
+  onDismiss: () => void
+  canDismiss: boolean
+}
+
+function SearchCommandCard({ command, onDismiss, canDismiss }: SearchCommandCardProps) {
+  const { title, subtitle } = getCommandDescription(command)
+  const hasError = command.status === "failed" || 
+    (command.result?.error != null) ||
+    (typeof command.result?.message === "string" && command.result.message.includes("no suitable"))
+  
+  const statusInfo = getStatusInfo(command.status, hasError)
+  
+  const errorMsg = command.result?.error 
+    ? String(command.result.error) 
+    : command.result?.message
+      ? String(command.result.message)
+      : null
+
+  const formatTime = (dateStr: string) => {
+    const date = new Date(dateStr)
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  }
+
+  const bookId = command.payload?.bookId as number | undefined
+
+  return (
+    <Card className={hasError && command.status !== "running" ? "border-red-500/30" : ""}>
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            {/* Status indicator */}
+            <div className="flex-shrink-0 mt-0.5">
+              {statusInfo.spinning ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
+              ) : (
+                <span className={`flex items-center justify-center h-5 w-5 rounded-full text-white text-xs ${statusInfo.color}`}>
+                  {statusInfo.icon}
+                </span>
+              )}
+            </div>
+            
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="font-medium truncate">{title}</h3>
+                <span className={`text-xs px-2 py-0.5 rounded ${
+                  statusInfo.spinning 
+                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                    : hasError 
+                      ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                      : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                }`}>
+                  {statusInfo.label}
+                </span>
+              </div>
+              {subtitle && (
+                <p className="text-sm text-muted-foreground">{subtitle}</p>
+              )}
+              {errorMsg && !statusInfo.spinning && (
+                <p className="text-sm text-red-400 mt-1" title={errorMsg}>
+                  {errorMsg}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                {formatTime(command.endedAt || command.startedAt || command.queuedAt)}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Link to book for retry */}
+            {bookId && hasError && !statusInfo.spinning && (
+              <Link to="/book/$bookId" params={{ bookId: String(bookId) }}>
+                <Button variant="outline" size="sm" title="Open book page to search alternatives">
+                  Search Again
+                </Button>
+              </Link>
+            )}
+            {canDismiss && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onDismiss}
+                className="text-muted-foreground hover:text-foreground"
+                title="Remove from list"
+              >
+                ✕
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 interface QueueItemCardProps {
   item: QueueItem
   onRemove: () => void
@@ -237,79 +417,72 @@ function QueueItemCard({ item, onRemove, isRemoving }: QueueItemCardProps) {
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`
   }
 
-  const formatSpeed = (bytesPerSecond: number) => {
-    if (bytesPerSecond === 0) return ""
-    return `${formatSize(bytesPerSecond)}/s`
-  }
-
-  const formatETA = (seconds: number) => {
-    if (seconds <= 0) return ""
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-    const secs = seconds % 60
-    if (hours > 0) return `${hours}h ${minutes}m`
-    if (minutes > 0) return `${minutes}m ${secs}s`
-    return `${secs}s`
-  }
-
   return (
-    <Card>
+    <Card className={item.status === "failed" ? "border-red-500/30" : ""}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-medium truncate">{item.bookTitle}</h3>
-              <span className={`text-xs px-2 py-0.5 rounded ${statusColors[item.status] || statusColors.queued}`}>
-                {item.status}
-              </span>
-              <span className="text-xs text-muted-foreground uppercase">{item.format}</span>
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            {/* Status indicator */}
+            <div className="flex-shrink-0 mt-0.5">
+              {item.status === "downloading" ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
+              ) : item.status === "completed" ? (
+                <span className="flex items-center justify-center h-5 w-5 rounded-full bg-green-500 text-white text-xs">✓</span>
+              ) : item.status === "failed" ? (
+                <span className="flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-xs">✕</span>
+              ) : (
+                <span className="flex items-center justify-center h-5 w-5 rounded-full bg-gray-500 text-white text-xs">⏳</span>
+              )}
             </div>
-            <p className="text-xs text-muted-foreground truncate">{item.title}</p>
 
-            {/* Progress bar for active downloads */}
-            {item.status === "downloading" && (
-              <div className="mt-2">
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                  <span>{Math.round(item.progress)}%</span>
-                  <span>{item.size > 0 && formatSize(item.size)}</span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="font-medium truncate">{item.bookTitle}</h3>
+                <span className={`text-xs px-2 py-0.5 rounded ${statusColors[item.status] || statusColors.queued}`}>
+                  {item.status === "downloading" ? "Downloading" : item.status}
+                </span>
+                <span className="text-xs text-muted-foreground uppercase">{item.format}</span>
+              </div>
+              <p className="text-xs text-muted-foreground truncate">{item.title}</p>
+
+              {/* Progress bar for active downloads */}
+              {item.status === "downloading" && (
+                <div className="mt-2">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                    <span>{Math.round(item.progress)}%</span>
+                    <span>{item.size > 0 && formatSize(item.size)}</span>
+                  </div>
+                  <Progress value={item.progress} className="h-2" />
                 </div>
-                <Progress value={item.progress} className="h-2" />
-              </div>
-            )}
+              )}
 
-            {/* Completed info */}
-            {item.status === "completed" && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {formatSize(item.size)} • Downloaded
-              </p>
-            )}
-
-            {/* Error message */}
-            {item.status === "failed" && (
-              <div className="mt-1">
-                <p className="text-xs text-destructive">Download failed - this file requires login or is unavailable</p>
+              {/* Completed info */}
+              {item.status === "completed" && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Go to the book page to search for alternative download sources
+                  {formatSize(item.size)} • Downloaded
                 </p>
-                <Link
-                  to="/book/$bookId"
-                  params={{ bookId: String(item.bookId) }}
-                  className="text-xs text-primary hover:underline mt-1 inline-block"
-                >
-                  Open book page →
-                </Link>
-              </div>
-            )}
+              )}
 
-            {/* Client info */}
-            <p className="text-xs text-muted-foreground mt-1">{item.clientName}</p>
+              {/* Error message */}
+              {item.status === "failed" && (
+                <div className="mt-1">
+                  <p className="text-xs text-destructive">Download failed - this file requires login or is unavailable</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Go to the book page to search for alternative download sources
+                  </p>
+                </div>
+              )}
+
+              {/* Client info */}
+              <p className="text-xs text-muted-foreground mt-1">{item.clientName}</p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-shrink-0">
             {item.status === "failed" && (
               <Link to="/book/$bookId" params={{ bookId: String(item.bookId) }}>
                 <Button variant="outline" size="sm" title="Open book page to search alternatives">
-                  📖
+                  Search Again
                 </Button>
               </Link>
             )}
@@ -318,7 +491,8 @@ function QueueItemCard({ item, onRemove, isRemoving }: QueueItemCardProps) {
               size="sm"
               onClick={onRemove}
               disabled={isRemoving}
-              className="text-destructive hover:text-destructive"
+              className="text-muted-foreground hover:text-destructive"
+              title="Remove from queue"
             >
               ✕
             </Button>

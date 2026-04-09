@@ -60,6 +60,14 @@ export function useActiveCommands() {
   })
 }
 
+export function useRecentCommands(limit = 10) {
+  return useQuery({
+    queryKey: ["commands", "recent", limit],
+    queryFn: () => wantedApi.getRecentCommands(limit),
+    refetchInterval: 5000, // Refresh every 5 seconds
+  })
+}
+
 export function useRemoveFromQueue() {
   const queryClient = useQueryClient()
   return useMutation({
