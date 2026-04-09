@@ -112,7 +112,7 @@ export interface CreateAuthorInput {
   imageUrl?: string
   status?: string
   monitored?: boolean
-  path: string
+  path?: string
 }
 
 export interface UpdateAuthorInput {

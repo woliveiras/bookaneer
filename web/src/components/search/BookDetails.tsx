@@ -232,12 +232,28 @@ export function BookDetails({ book }: BookDetailsProps) {
       if (existingAuthors?.records?.length && existingAuthors.records[0].name.toLowerCase() === authorName.toLowerCase()) {
         authorId = existingAuthors.records[0].id
       } else {
-        // Create author
-        const author = await createAuthor.mutateAsync({
-          name: authorName,
-          monitored: true,
-        })
-        authorId = author.id
+        // Create author (service handles duplicates gracefully)
+        try {
+          const author = await createAuthor.mutateAsync({
+            name: authorName,
+            monitored: true,
+          })
+          authorId = author.id
+        } catch (authorErr) {
+          // If author creation fails due to conflict, search for existing
+          if (authorErr instanceof Error && authorErr.message.includes("already exists")) {
+            // Refetch authors and use the first match
+            const response = await fetch(`/api/v1/authors?search=${encodeURIComponent(authorName)}&limit=1`)
+            const data = await response.json()
+            if (data.records?.length > 0) {
+              authorId = data.records[0].id
+            } else {
+              throw authorErr
+            }
+          } else {
+            throw authorErr
+          }
+        }
       }
       
       // Create book

@@ -22,7 +22,7 @@ func (s *Service) FindByID(ctx context.Context, id int64) (*Author, error) {
 	var a Author
 	var monitored int
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, name, sort_name, foreign_id, overview, image_url, status, monitored, path, added_at, updated_at
+		SELECT id, name, sort_name, COALESCE(foreign_id, ''), overview, image_url, status, monitored, path, added_at, updated_at
 		FROM authors WHERE id = ?
 	`, id).Scan(
 		&a.ID, &a.Name, &a.SortName, &a.ForeignID, &a.Overview, &a.ImageURL,
@@ -43,7 +43,7 @@ func (s *Service) FindByForeignID(ctx context.Context, foreignID string) (*Autho
 	var a Author
 	var monitored int
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, name, sort_name, foreign_id, overview, image_url, status, monitored, path, added_at, updated_at
+		SELECT id, name, sort_name, COALESCE(foreign_id, ''), overview, image_url, status, monitored, path, added_at, updated_at
 		FROM authors WHERE foreign_id = ?
 	`, foreignID).Scan(
 		&a.ID, &a.Name, &a.SortName, &a.ForeignID, &a.Overview, &a.ImageURL,
@@ -59,13 +59,13 @@ func (s *Service) FindByForeignID(ctx context.Context, foreignID string) (*Autho
 	return &a, nil
 }
 
-// FindByName returns an author by exact name match.
+// FindByName returns an author by exact name match (case-insensitive).
 func (s *Service) FindByName(ctx context.Context, name string) (*Author, error) {
 	var a Author
 	var monitored int
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, name, sort_name, foreign_id, overview, image_url, status, monitored, path, added_at, updated_at
-		FROM authors WHERE name = ?
+		SELECT id, name, sort_name, COALESCE(foreign_id, ''), overview, image_url, status, monitored, path, added_at, updated_at
+		FROM authors WHERE LOWER(name) = LOWER(?)
 	`, name).Scan(
 		&a.ID, &a.Name, &a.SortName, &a.ForeignID, &a.Overview, &a.ImageURL,
 		&a.Status, &monitored, &a.Path, &a.AddedAt, &a.UpdatedAt,
@@ -142,7 +142,7 @@ func (s *Service) List(ctx context.Context, filter ListAuthorsFilter) ([]Author,
 	}
 
 	query := fmt.Sprintf(`
-		SELECT id, name, sort_name, foreign_id, overview, image_url, status, monitored, path, added_at, updated_at
+		SELECT id, name, sort_name, COALESCE(foreign_id, ''), overview, image_url, status, monitored, path, added_at, updated_at
 		FROM authors %s ORDER BY %s %s LIMIT ? OFFSET ?
 	`, where, sortBy, sortDir)
 	args = append(args, limit, offset)
@@ -214,12 +214,30 @@ func (s *Service) Create(ctx context.Context, input CreateAuthorInput) (*Author,
 		monitored = 1
 	}
 
+	// Convert empty foreign_id to NULL to avoid UNIQUE constraint issues
+	var foreignID any = input.ForeignID
+	if input.ForeignID == "" {
+		foreignID = nil
+	}
+
 	result, err := s.db.ExecContext(ctx, `
 		INSERT INTO authors (name, sort_name, foreign_id, overview, image_url, status, monitored, path)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`, input.Name, input.SortName, input.ForeignID, input.Overview, input.ImageURL, input.Status, monitored, input.Path)
+	`, input.Name, input.SortName, foreignID, input.Overview, input.ImageURL, input.Status, monitored, input.Path)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+			// Race condition - author was created between our check and insert
+			// Try to find and return the existing author
+			if input.ForeignID != "" {
+				if existing, findErr := s.FindByForeignID(ctx, input.ForeignID); findErr == nil {
+					monitoredTrue := true
+					return s.Update(ctx, existing.ID, UpdateAuthorInput{Monitored: &monitoredTrue})
+				}
+			}
+			if existing, findErr := s.FindByName(ctx, input.Name); findErr == nil {
+				monitoredTrue := true
+				return s.Update(ctx, existing.ID, UpdateAuthorInput{Monitored: &monitoredTrue})
+			}
 			return nil, ErrDuplicate
 		}
 		return nil, fmt.Errorf("create author: %w", err)
