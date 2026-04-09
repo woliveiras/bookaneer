@@ -943,6 +943,11 @@ export const wantedApi = {
     }),
 
   getActiveCommands: () => fetchAPI<ActiveCommand[]>("/commands/active"),
+
+  getRecentCommands: (limit?: number) => {
+    const params = limit ? `?limit=${limit}` : ""
+    return fetchAPI<ActiveCommand[]>(`/commands/recent${params}`)
+  },
 }
 
 // History API

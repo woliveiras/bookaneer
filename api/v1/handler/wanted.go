@@ -44,8 +44,9 @@ func (h *WantedHandler) Register(g *echo.Group) {
 	g.POST("/blocklist", h.AddToBlocklist)
 	g.DELETE("/blocklist/:id", h.RemoveFromBlocklist)
 
-	// Active commands (for Activity page)
+	// Commands (for Activity and System pages)
 	g.GET("/commands/active", h.GetActiveCommands)
+	g.GET("/commands/recent", h.GetRecentCommands)
 
 	// Manual search and grab
 	g.POST("/book/:id/search", h.SearchBook)
@@ -138,6 +139,28 @@ func (h *WantedHandler) GetActiveCommands(c echo.Context) error {
 	commands, err := h.schedulerService.GetActiveCommands(c.Request().Context())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get active commands")
+	}
+
+	if commands == nil {
+		commands = []scheduler.Command{}
+	}
+
+	return c.JSON(http.StatusOK, commands)
+}
+
+// GetRecentCommands returns the most recent commands for the logs view.
+func (h *WantedHandler) GetRecentCommands(c echo.Context) error {
+	limitStr := c.QueryParam("limit")
+	limit := 20
+	if limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
+			limit = l
+		}
+	}
+
+	commands, err := h.schedulerService.ListCommands(c.Request().Context(), limit)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get recent commands")
 	}
 
 	if commands == nil {
