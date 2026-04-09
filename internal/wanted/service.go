@@ -733,8 +733,15 @@ func (s *Service) UpdateQueueItemStatusWithPath(ctx context.Context, id int64, s
 
 // RemoveFromQueue removes an item from the download queue.
 func (s *Service) RemoveFromQueue(ctx context.Context, id int64) error {
-	_, err := s.db.ExecContext(ctx, `DELETE FROM download_queue WHERE id = ?`, id)
-	return err
+	result, err := s.db.ExecContext(ctx, `DELETE FROM download_queue WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("delete query failed: %w", err)
+	}
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("queue item %d not found", id)
+	}
+	return nil
 }
 
 // GrabRelease manually grabs a release by URL and sends it to a download client.

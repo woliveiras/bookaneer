@@ -128,10 +128,11 @@ func (h *WantedHandler) RemoveFromQueue(c echo.Context) error {
 	}
 
 	if err := h.wantedService.RemoveFromQueue(c.Request().Context(), id); err != nil {
+		c.Logger().Errorf("failed to remove queue item %d: %v", id, err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to remove from queue")
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.NoContent(http.StatusNoContent)
 }
 
 // GetActiveCommands returns commands that are queued or running.
