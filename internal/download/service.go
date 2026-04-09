@@ -31,7 +31,7 @@ func (s *Service) ListClients(ctx context.Context) ([]ClientConfig, error) {
 	query := `
 		SELECT id, name, type, host, port, use_tls, username, password, api_key, 
 		       category, recent_priority, older_priority, remove_completed_after, 
-		       enabled, priority, nzb_folder, torrent_folder, watch_folder,
+		       enabled, priority, nzb_folder, torrent_folder, watch_folder, download_dir,
 		       created_at, updated_at
 		FROM download_clients
 		ORDER BY priority ASC, name ASC
@@ -47,13 +47,13 @@ func (s *Service) ListClients(ctx context.Context) ([]ClientConfig, error) {
 	for rows.Next() {
 		var cfg ClientConfig
 		var username, password, apiKey, category sql.NullString
-		var nzbFolder, torrentFolder, watchFolder sql.NullString
+		var nzbFolder, torrentFolder, watchFolder, downloadDir sql.NullString
 
 		err := rows.Scan(
 			&cfg.ID, &cfg.Name, &cfg.Type, &cfg.Host, &cfg.Port, &cfg.UseTLS,
 			&username, &password, &apiKey, &category,
 			&cfg.RecentPriority, &cfg.OlderPriority, &cfg.RemoveCompletedAfter,
-			&cfg.Enabled, &cfg.Priority, &nzbFolder, &torrentFolder, &watchFolder,
+			&cfg.Enabled, &cfg.Priority, &nzbFolder, &torrentFolder, &watchFolder, &downloadDir,
 			&cfg.CreatedAt, &cfg.UpdatedAt,
 		)
 		if err != nil {
@@ -67,6 +67,7 @@ func (s *Service) ListClients(ctx context.Context) ([]ClientConfig, error) {
 		cfg.NzbFolder = nzbFolder.String
 		cfg.TorrentFolder = torrentFolder.String
 		cfg.WatchFolder = watchFolder.String
+		cfg.DownloadDir = downloadDir.String
 
 		clients = append(clients, cfg)
 	}
@@ -79,7 +80,7 @@ func (s *Service) GetClient(ctx context.Context, id int64) (*ClientConfig, error
 	query := `
 		SELECT id, name, type, host, port, use_tls, username, password, api_key, 
 		       category, recent_priority, older_priority, remove_completed_after, 
-		       enabled, priority, nzb_folder, torrent_folder, watch_folder,
+		       enabled, priority, nzb_folder, torrent_folder, watch_folder, download_dir,
 		       created_at, updated_at
 		FROM download_clients
 		WHERE id = ?
@@ -87,13 +88,13 @@ func (s *Service) GetClient(ctx context.Context, id int64) (*ClientConfig, error
 
 	var cfg ClientConfig
 	var username, password, apiKey, category sql.NullString
-	var nzbFolder, torrentFolder, watchFolder sql.NullString
+	var nzbFolder, torrentFolder, watchFolder, downloadDir sql.NullString
 
 	err := s.db.QueryRowContext(ctx, query, id).Scan(
 		&cfg.ID, &cfg.Name, &cfg.Type, &cfg.Host, &cfg.Port, &cfg.UseTLS,
 		&username, &password, &apiKey, &category,
 		&cfg.RecentPriority, &cfg.OlderPriority, &cfg.RemoveCompletedAfter,
-		&cfg.Enabled, &cfg.Priority, &nzbFolder, &torrentFolder, &watchFolder,
+		&cfg.Enabled, &cfg.Priority, &nzbFolder, &torrentFolder, &watchFolder, &downloadDir,
 		&cfg.CreatedAt, &cfg.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {
@@ -110,6 +111,7 @@ func (s *Service) GetClient(ctx context.Context, id int64) (*ClientConfig, error
 	cfg.NzbFolder = nzbFolder.String
 	cfg.TorrentFolder = torrentFolder.String
 	cfg.WatchFolder = watchFolder.String
+	cfg.DownloadDir = downloadDir.String
 
 	return &cfg, nil
 }
@@ -122,9 +124,9 @@ func (s *Service) CreateClient(ctx context.Context, cfg *ClientConfig) error {
 		INSERT INTO download_clients (
 			name, type, host, port, use_tls, username, password, api_key,
 			category, recent_priority, older_priority, remove_completed_after,
-			enabled, priority, nzb_folder, torrent_folder, watch_folder,
+			enabled, priority, nzb_folder, torrent_folder, watch_folder, download_dir,
 			created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := s.db.ExecContext(ctx, query,
@@ -132,7 +134,7 @@ func (s *Service) CreateClient(ctx context.Context, cfg *ClientConfig) error {
 		cfg.Username, cfg.Password, cfg.APIKey,
 		cfg.Category, cfg.RecentPriority, cfg.OlderPriority, cfg.RemoveCompletedAfter,
 		cfg.Enabled, cfg.Priority, cfg.NzbFolder, cfg.TorrentFolder,
-		cfg.WatchFolder, now, now,
+		cfg.WatchFolder, cfg.DownloadDir, now, now,
 	)
 	if err != nil {
 		return fmt.Errorf("insert client: %w", err)
@@ -159,7 +161,7 @@ func (s *Service) UpdateClient(ctx context.Context, cfg *ClientConfig) error {
 			username = ?, password = ?, api_key = ?, category = ?,
 			recent_priority = ?, older_priority = ?, remove_completed_after = ?,
 			enabled = ?, priority = ?, nzb_folder = ?, torrent_folder = ?,
-			watch_folder = ?, updated_at = ?
+			watch_folder = ?, download_dir = ?, updated_at = ?
 		WHERE id = ?
 	`
 
@@ -168,7 +170,7 @@ func (s *Service) UpdateClient(ctx context.Context, cfg *ClientConfig) error {
 		cfg.Username, cfg.Password, cfg.APIKey,
 		cfg.Category, cfg.RecentPriority, cfg.OlderPriority, cfg.RemoveCompletedAfter,
 		cfg.Enabled, cfg.Priority, cfg.NzbFolder, cfg.TorrentFolder,
-		cfg.WatchFolder, now, cfg.ID,
+		cfg.WatchFolder, cfg.DownloadDir, now, cfg.ID,
 	)
 	if err != nil {
 		return fmt.Errorf("update client: %w", err)
@@ -558,7 +560,7 @@ func (s *Service) getClientByTypes(ctx context.Context, clientTypes ...string) (
 
 	query := fmt.Sprintf(`
 		SELECT id, name, type, host, port, use_tls, username, password, api_key, 
-		       category, enabled, priority, nzb_folder, torrent_folder, watch_folder
+		       category, enabled, priority, nzb_folder, torrent_folder, watch_folder, download_dir
 		FROM download_clients
 		WHERE type IN (%s) AND enabled = 1
 		ORDER BY priority ASC
@@ -578,10 +580,10 @@ func (s *Service) getClientByTypes(ctx context.Context, clientTypes ...string) (
 	var cfg ClientConfig
 	var enabled, useTLS int
 	var username, password, apiKey, category sql.NullString
-	var nzbFolder, torrentFolder, watchFolder sql.NullString
+	var nzbFolder, torrentFolder, watchFolder, downloadDir sql.NullString
 	if err := rows.Scan(&cfg.ID, &cfg.Name, &cfg.Type, &cfg.Host, &cfg.Port, &useTLS,
 		&username, &password, &apiKey, &category, &enabled, &cfg.Priority,
-		&nzbFolder, &torrentFolder, &watchFolder); err != nil {
+		&nzbFolder, &torrentFolder, &watchFolder, &downloadDir); err != nil {
 		return nil, nil, fmt.Errorf("scan client: %w", err)
 	}
 	cfg.Enabled = enabled == 1
@@ -593,6 +595,7 @@ func (s *Service) getClientByTypes(ctx context.Context, clientTypes ...string) (
 	cfg.NzbFolder = nzbFolder.String
 	cfg.TorrentFolder = torrentFolder.String
 	cfg.WatchFolder = watchFolder.String
+	cfg.DownloadDir = downloadDir.String
 
 	client, err := s.getOrCreateClient(cfg)
 	if err != nil {
