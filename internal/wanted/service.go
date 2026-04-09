@@ -104,6 +104,15 @@ func New(
 	}
 }
 
+// GetBookInfo returns book title and author for display purposes.
+func (s *Service) GetBookInfo(ctx context.Context, bookID int64) (title, authorName string, err error) {
+	b, err := s.bookService.FindByID(ctx, bookID)
+	if err != nil {
+		return "", "", err
+	}
+	return b.Title, b.AuthorName, nil
+}
+
 // SearchAndGrab searches for a book and grabs the best result.
 func (s *Service) SearchAndGrab(ctx context.Context, bookID int64) (*GrabResult, error) {
 	// Get book details

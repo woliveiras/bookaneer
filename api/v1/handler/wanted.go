@@ -184,9 +184,17 @@ func (h *WantedHandler) SearchBook(c echo.Context) error {
 
 	ctx := c.Request().Context()
 
-	// Queue a BookSearch command
+	// Get book info for display purposes
+	bookTitle, authorName, err := h.wantedService.GetBookInfo(ctx, id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "book not found")
+	}
+
+	// Queue a BookSearch command with book details for UI display
 	commandID, err := h.schedulerService.QueueCommand(ctx, scheduler.CommandBookSearch, scheduler.TriggerManual, map[string]any{
-		"bookId": id,
+		"bookId":     id,
+		"bookTitle":  bookTitle,
+		"authorName": authorName,
 	})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to queue search command")
