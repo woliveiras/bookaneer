@@ -1,5 +1,12 @@
-import { describe, it, expect, beforeEach } from "vitest"
-import { loadSettings, saveSettings, DEFAULT_SETTINGS, THEMES, FONTS, FORMAT_LABELS } from "./readerConfig"
+import { beforeEach, describe, expect, it } from "vitest"
+import {
+  DEFAULT_SETTINGS,
+  FONTS,
+  FORMAT_LABELS,
+  loadSettings,
+  saveSettings,
+  THEMES,
+} from "./readerConfig"
 
 beforeEach(() => {
   localStorage.clear()
@@ -12,7 +19,10 @@ describe("loadSettings", () => {
   })
 
   it("returns stored settings merged with defaults", () => {
-    localStorage.setItem("bookaneer_reader_settings", JSON.stringify({ theme: "dark", fontSize: 120 }))
+    localStorage.setItem(
+      "bookaneer_reader_settings",
+      JSON.stringify({ theme: "dark", fontSize: 120 }),
+    )
     const settings = loadSettings()
     expect(settings.theme).toBe("dark")
     expect(settings.fontSize).toBe(120)

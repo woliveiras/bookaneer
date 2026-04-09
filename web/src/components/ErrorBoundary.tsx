@@ -71,9 +71,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
             {/* Error message */}
             <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-foreground">
-                Something went wrong
-              </h1>
+              <h1 className="text-2xl font-bold text-foreground">Something went wrong</h1>
               <p className="text-muted-foreground">
                 An unexpected error occurred. We apologize for the inconvenience.
               </p>
@@ -102,9 +100,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               <Button variant="outline" onClick={this.handleReload}>
                 Try again
               </Button>
-              <Button onClick={this.handleGoHome}>
-                Go to Home
-              </Button>
+              <Button onClick={this.handleGoHome}>Go to Home</Button>
             </div>
           </div>
         </div>

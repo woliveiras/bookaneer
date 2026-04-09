@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query"
-import { useAuth } from "../contexts/AuthContext"
 import { AuthLayout } from "../components/layout/AppLayout"
 import { Button } from "../components/ui"
-import { wantedApi, type ActiveCommand } from "../lib/api"
+import { useAuth } from "../contexts/AuthContext"
+import { type ActiveCommand, wantedApi } from "../lib/api"
 
 interface SystemStatus {
   version: string
@@ -123,7 +123,9 @@ export function SystemPage() {
               return (
                 <div key={cmd.id} className="p-3 text-sm hover:bg-muted/50">
                   <div className="flex items-start gap-3">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium border ${getStatusBadge(cmd.status)}`}>
+                    <span
+                      className={`px-2 py-0.5 rounded text-xs font-medium border ${getStatusBadge(cmd.status)}`}
+                    >
                       {cmd.status}
                     </span>
                     <div className="flex-1 min-w-0">
@@ -138,12 +140,17 @@ export function SystemPage() {
                           {errorMsg}
                         </p>
                       )}
-                      {cmd.payload && Object.keys(cmd.payload).length > 0 && cmd.name !== "DownloadMonitor" && (
-                        <p className="text-muted-foreground text-xs mt-1">
-                          {cmd.payload.bookTitle ? `Book: ${cmd.payload.bookTitle}` :
-                           cmd.payload.bookId ? `Book ID: ${cmd.payload.bookId}` : null}
-                        </p>
-                      )}
+                      {cmd.payload &&
+                        Object.keys(cmd.payload).length > 0 &&
+                        cmd.name !== "DownloadMonitor" && (
+                          <p className="text-muted-foreground text-xs mt-1">
+                            {cmd.payload.bookTitle
+                              ? `Book: ${cmd.payload.bookTitle}`
+                              : cmd.payload.bookId
+                                ? `Book ID: ${cmd.payload.bookId}`
+                                : null}
+                          </p>
+                        )}
                     </div>
                   </div>
                 </div>

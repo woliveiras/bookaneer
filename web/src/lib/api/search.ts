@@ -1,12 +1,23 @@
+import type {
+  DigitalLibrarySearchResponse,
+  MetadataAuthor,
+  MetadataAuthorResult,
+  MetadataBook,
+  MetadataBookResult,
+  MetadataSearchResponse,
+} from "../types"
 import { fetchAPI } from "./client"
-import type { MetadataSearchResponse, MetadataAuthorResult, MetadataBookResult, MetadataAuthor, MetadataBook, DigitalLibrarySearchResponse } from "../types"
 
 export const metadataApi = {
   searchAuthors: (query: string) =>
-    fetchAPI<MetadataSearchResponse<MetadataAuthorResult>>(`/metadata/authors?q=${encodeURIComponent(query)}`),
+    fetchAPI<MetadataSearchResponse<MetadataAuthorResult>>(
+      `/metadata/authors?q=${encodeURIComponent(query)}`,
+    ),
 
   searchBooks: (query: string) =>
-    fetchAPI<MetadataSearchResponse<MetadataBookResult>>(`/metadata/books?q=${encodeURIComponent(query)}`),
+    fetchAPI<MetadataSearchResponse<MetadataBookResult>>(
+      `/metadata/books?q=${encodeURIComponent(query)}`,
+    ),
 
   getAuthor: (foreignId: string, provider?: string) => {
     const params = provider ? `?provider=${encodeURIComponent(provider)}` : ""
@@ -21,14 +32,12 @@ export const metadataApi = {
   lookupISBN: (isbn: string) =>
     fetchAPI<MetadataBook>(`/metadata/isbn/${encodeURIComponent(isbn)}`),
 
-  getProviders: () =>
-    fetchAPI<{ providers: string[] }>("/metadata/providers"),
+  getProviders: () => fetchAPI<{ providers: string[] }>("/metadata/providers"),
 }
 
 export const digitalLibraryApi = {
   search: (query: string) =>
     fetchAPI<DigitalLibrarySearchResponse>(`/digitallibrary/search?q=${encodeURIComponent(query)}`),
 
-  getProviders: () =>
-    fetchAPI<{ providers: string[] }>("/digitallibrary/providers"),
+  getProviders: () => fetchAPI<{ providers: string[] }>("/digitallibrary/providers"),
 }

@@ -3,8 +3,8 @@ import { RouterProvider } from "@tanstack/react-router"
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import "./index.css"
-import { router } from "./router"
 import { ErrorBoundary } from "./components/ErrorBoundary"
+import { router } from "./router"
 
 const queryClient = new QueryClient({
   defaultOptions: {

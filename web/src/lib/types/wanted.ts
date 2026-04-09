@@ -29,7 +29,13 @@ export interface SearchCommandResponse {
   message: string
 }
 
-export type HistoryEventType = "grabbed" | "downloadCompleted" | "downloadFailed" | "bookFileDeleted" | "bookFileRenamed" | "bookImported"
+export type HistoryEventType =
+  | "grabbed"
+  | "downloadCompleted"
+  | "downloadFailed"
+  | "bookFileDeleted"
+  | "bookFileRenamed"
+  | "bookImported"
 
 export interface HistoryItem {
   id: number

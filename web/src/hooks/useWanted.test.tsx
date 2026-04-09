@@ -1,20 +1,27 @@
-import { renderHook, waitFor } from "@testing-library/react"
-import { describe, it, expect, vi, beforeEach } from "vitest"
-import type { ReactNode } from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { renderHook, waitFor } from "@testing-library/react"
+import type { ReactNode } from "react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import type {
+  ActiveCommand,
+  BlocklistItem,
+  HistoryItem,
+  QueueItem,
+  SearchCommandResponse,
+  WantedResponse,
+} from "../lib/api"
 import {
-  useWantedMissing,
+  useActiveCommands,
+  useAddToBlocklist,
+  useBlocklist,
+  useDownloadQueue,
+  useHistory,
+  useRemoveFromBlocklist,
+  useRemoveFromQueue,
   useSearchAllMissing,
   useSearchBook,
-  useDownloadQueue,
-  useActiveCommands,
-  useRemoveFromQueue,
-  useHistory,
-  useBlocklist,
-  useAddToBlocklist,
-  useRemoveFromBlocklist,
+  useWantedMissing,
 } from "./useWanted"
-import type { WantedResponse, SearchCommandResponse, QueueItem, ActiveCommand, HistoryItem, BlocklistItem } from "../lib/api"
 
 vi.mock("../lib/api", async () => {
   const actual = await vi.importActual<typeof import("../lib/api")>("../lib/api")
@@ -43,7 +50,7 @@ vi.mock("../lib/api", async () => {
   }
 })
 
-import { wantedApi, queueApi, historyApi, blocklistApi } from "../lib/api"
+import { blocklistApi, historyApi, queueApi, wantedApi } from "../lib/api"
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -110,11 +117,22 @@ describe("useSearchBook", () => {
 
 describe("useDownloadQueue", () => {
   it("fetches queue items", async () => {
-    const items: QueueItem[] = [{
-      id: 1, bookId: 1, externalId: "ext-1", title: "Book", size: 1024,
-      format: "epub", status: "downloading", progress: 50, downloadUrl: "",
-      addedAt: "2025-01-01T00:00:00Z", bookTitle: "Book", clientName: "SABnzbd",
-    }]
+    const items: QueueItem[] = [
+      {
+        id: 1,
+        bookId: 1,
+        externalId: "ext-1",
+        title: "Book",
+        size: 1024,
+        format: "epub",
+        status: "downloading",
+        progress: 50,
+        downloadUrl: "",
+        addedAt: "2025-01-01T00:00:00Z",
+        bookTitle: "Book",
+        clientName: "SABnzbd",
+      },
+    ]
     vi.mocked(queueApi.list).mockResolvedValue(items)
 
     const { result } = renderHook(() => useDownloadQueue(), { wrapper: createWrapper() })
@@ -126,10 +144,16 @@ describe("useDownloadQueue", () => {
 
 describe("useActiveCommands", () => {
   it("fetches active commands", async () => {
-    const commands: ActiveCommand[] = [{
-      id: "cmd-1", name: "BookSearch", status: "running",
-      priority: 1, trigger: "manual", queuedAt: "2025-01-01T00:00:00Z",
-    }]
+    const commands: ActiveCommand[] = [
+      {
+        id: "cmd-1",
+        name: "BookSearch",
+        status: "running",
+        priority: 1,
+        trigger: "manual",
+        queuedAt: "2025-01-01T00:00:00Z",
+      },
+    ]
     vi.mocked(wantedApi.getActiveCommands).mockResolvedValue(commands)
 
     const { result } = renderHook(() => useActiveCommands(), { wrapper: createWrapper() })
@@ -154,10 +178,16 @@ describe("useRemoveFromQueue", () => {
 
 describe("useHistory", () => {
   it("fetches history with params", async () => {
-    const items: HistoryItem[] = [{
-      id: 1, eventType: "grabbed", sourceTitle: "Book.epub",
-      quality: "EPUB", data: {}, date: "2025-01-01T00:00:00Z",
-    }]
+    const items: HistoryItem[] = [
+      {
+        id: 1,
+        eventType: "grabbed",
+        sourceTitle: "Book.epub",
+        quality: "EPUB",
+        data: {},
+        date: "2025-01-01T00:00:00Z",
+      },
+    ]
     vi.mocked(historyApi.list).mockResolvedValue(items)
 
     const params = { limit: 10 }
@@ -170,11 +200,18 @@ describe("useHistory", () => {
 
 describe("useBlocklist", () => {
   it("fetches blocklist", async () => {
-    const items: BlocklistItem[] = [{
-      id: 1, bookId: 1, sourceTitle: "Blocked", quality: "EPUB",
-      reason: "Bad quality", date: "2025-01-01T00:00:00Z",
-      bookTitle: "Blocked", authorName: "Author",
-    }]
+    const items: BlocklistItem[] = [
+      {
+        id: 1,
+        bookId: 1,
+        sourceTitle: "Blocked",
+        quality: "EPUB",
+        reason: "Bad quality",
+        date: "2025-01-01T00:00:00Z",
+        bookTitle: "Blocked",
+        authorName: "Author",
+      },
+    ]
     vi.mocked(blocklistApi.list).mockResolvedValue(items)
 
     const { result } = renderHook(() => useBlocklist(), { wrapper: createWrapper() })
@@ -193,7 +230,10 @@ describe("useAddToBlocklist", () => {
     result.current.mutate({ bookId: 1, sourceTitle: "Bad Book" })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(blocklistApi.add).toHaveBeenCalledWith({ bookId: 1, sourceTitle: "Bad Book" }, expect.anything())
+    expect(blocklistApi.add).toHaveBeenCalledWith(
+      { bookId: 1, sourceTitle: "Bad Book" },
+      expect.anything(),
+    )
   })
 })
 

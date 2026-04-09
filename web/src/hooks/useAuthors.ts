@@ -1,5 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { authorApi, type CreateAuthorInput, type UpdateAuthorInput, type ListAuthorsParams } from "../lib/api"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  authorApi,
+  type CreateAuthorInput,
+  type ListAuthorsParams,
+  type UpdateAuthorInput,
+} from "../lib/api"
 
 export function useAuthors(params?: ListAuthorsParams) {
   return useQuery({

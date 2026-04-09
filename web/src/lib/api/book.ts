@@ -1,5 +1,11 @@
+import type {
+  Book,
+  BookWithEditions,
+  CreateBookInput,
+  ListBooksParams,
+  PaginatedResponse,
+} from "../types"
 import { fetchAPI } from "./client"
-import type { Book, BookWithEditions, CreateBookInput, ListBooksParams, PaginatedResponse } from "../types"
 
 export const bookApi = {
   list: (params?: ListBooksParams) => {

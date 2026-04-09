@@ -1,5 +1,5 @@
-import { Button, Card, CardHeader, CardTitle, CardContent } from "../ui"
-import { INDEXER_PRESETS, type IndexerType, type IndexerPreset } from "./indexer-presets"
+import { Button, Card, CardContent, CardHeader, CardTitle } from "../ui"
+import { INDEXER_PRESETS, type IndexerPreset, type IndexerType } from "./indexer-presets"
 
 interface IndexerTypeSelectorProps {
   onSelect: (type: IndexerType, preset?: IndexerPreset) => void
@@ -14,13 +14,15 @@ export function IndexerTypeSelector({ onSelect, onCancel }: IndexerTypeSelectorP
       </CardHeader>
       <CardContent className="space-y-6">
         <p className="text-sm text-muted-foreground">
-          Bookaneer supports any indexer that uses the Newznab/Torznab standard.
-          Select a preset or choose Custom to configure manually.
+          Bookaneer supports any indexer that uses the Newznab/Torznab standard. Select a preset or
+          choose Custom to configure manually.
         </p>
 
         {/* Usenet Section */}
         <div className="space-y-3">
-          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Usenet</h4>
+          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+            Usenet
+          </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {INDEXER_PRESETS.usenet.map((preset) => (
               <button
@@ -30,7 +32,9 @@ export function IndexerTypeSelector({ onSelect, onCancel }: IndexerTypeSelectorP
                 className="p-4 rounded-lg border border-border bg-card hover:bg-accent hover:border-primary transition-colors text-left group"
               >
                 <div className="font-medium group-hover:text-primary">{preset.name}</div>
-                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{preset.description}</div>
+                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                  {preset.description}
+                </div>
               </button>
             ))}
           </div>
@@ -38,7 +42,9 @@ export function IndexerTypeSelector({ onSelect, onCancel }: IndexerTypeSelectorP
 
         {/* Torrents Section */}
         <div className="space-y-3">
-          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Torrents</h4>
+          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+            Torrents
+          </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {INDEXER_PRESETS.torrents.map((preset) => (
               <button
@@ -48,7 +54,9 @@ export function IndexerTypeSelector({ onSelect, onCancel }: IndexerTypeSelectorP
                 className="p-4 rounded-lg border border-border bg-card hover:bg-accent hover:border-primary transition-colors text-left group"
               >
                 <div className="font-medium group-hover:text-primary">{preset.name}</div>
-                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{preset.description}</div>
+                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                  {preset.description}
+                </div>
               </button>
             ))}
           </div>

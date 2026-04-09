@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router"
 import type { Book } from "../../lib/api"
-import { Card, CardContent, Badge, Button } from "../ui"
 import { cn } from "../../lib/utils"
+import { Badge, Button, Card, CardContent } from "../ui"
 
 interface BookCardProps {
   book: Book
@@ -14,7 +14,7 @@ export function BookCard({ book, onClick, selected }: BookCardProps) {
     <Card
       className={cn(
         "cursor-pointer transition-colors hover:bg-accent/50",
-        selected && "ring-2 ring-primary"
+        selected && "ring-2 ring-primary",
       )}
       onClick={onClick}
       role="button"

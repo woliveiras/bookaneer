@@ -1,1 +1,1 @@
-export { DownloadClientList } from "./DownloadClientList"
+export { DownloadClientTypeSelector } from "./DownloadClientTypeSelector"

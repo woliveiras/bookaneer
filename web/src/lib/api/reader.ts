@@ -1,5 +1,11 @@
-import { fetchAPI, getStoredApiKey, API_BASE } from "./client"
-import type { ReaderBookFile, ReadingProgress, SaveProgressInput, Bookmark, CreateBookmarkInput } from "../types"
+import type {
+  Bookmark,
+  CreateBookmarkInput,
+  ReaderBookFile,
+  ReadingProgress,
+  SaveProgressInput,
+} from "../types"
+import { API_BASE, fetchAPI, getStoredApiKey } from "./client"
 
 export const readerApi = {
   getBookFile: (id: number) => fetchAPI<ReaderBookFile>(`/reader/${id}`),

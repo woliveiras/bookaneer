@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { metadataApi, digitalLibraryApi } from "../lib/api"
+import { digitalLibraryApi, metadataApi } from "../lib/api"
 
 // Search authors across metadata providers
 export function useMetadataSearchAuthors(query: string, enabled = true) {

@@ -1,6 +1,6 @@
 import type { Author } from "../../lib/api"
-import { Card, CardContent, Badge } from "../ui"
 import { cn } from "../../lib/utils"
+import { Badge, Card, CardContent } from "../ui"
 
 interface AuthorCardProps {
   author: Author
@@ -13,7 +13,7 @@ export function AuthorCard({ author, onClick, selected }: AuthorCardProps) {
     <Card
       className={cn(
         "cursor-pointer transition-colors hover:bg-accent/50",
-        selected && "ring-2 ring-primary"
+        selected && "ring-2 ring-primary",
       )}
       onClick={onClick}
       role="button"
@@ -56,7 +56,10 @@ export function AuthorCard({ author, onClick, selected }: AuthorCardProps) {
               <p className="mt-2 text-sm text-muted-foreground">
                 {author.bookCount} book{author.bookCount !== 1 ? "s" : ""}
                 {author.bookFileCount !== undefined && (
-                  <> · {author.bookFileCount} file{author.bookFileCount !== 1 ? "s" : ""}</>
+                  <>
+                    {" "}
+                    · {author.bookFileCount} file{author.bookFileCount !== 1 ? "s" : ""}
+                  </>
                 )}
               </p>
             )}

@@ -1,5 +1,12 @@
+import type {
+  Author,
+  AuthorStats,
+  CreateAuthorInput,
+  ListAuthorsParams,
+  PaginatedResponse,
+  UpdateAuthorInput,
+} from "../types"
 import { fetchAPI } from "./client"
-import type { Author, AuthorStats, CreateAuthorInput, UpdateAuthorInput, ListAuthorsParams, PaginatedResponse } from "../types"
 
 export const authorApi = {
   list: (params?: ListAuthorsParams) => {

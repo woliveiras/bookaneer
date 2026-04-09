@@ -1,9 +1,16 @@
-import { renderHook, waitFor } from "@testing-library/react"
-import { describe, it, expect, vi, beforeEach } from "vitest"
-import type { ReactNode } from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { useAuthors, useAuthor, useAuthorStats, useCreateAuthor, useUpdateAuthor, useDeleteAuthor } from "./useAuthors"
+import { renderHook, waitFor } from "@testing-library/react"
+import type { ReactNode } from "react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { Author, AuthorStats, PaginatedResponse } from "../lib/api"
+import {
+  useAuthor,
+  useAuthorStats,
+  useAuthors,
+  useCreateAuthor,
+  useDeleteAuthor,
+  useUpdateAuthor,
+} from "./useAuthors"
 
 vi.mock("../lib/api", async () => {
   const actual = await vi.importActual<typeof import("../lib/api")>("../lib/api")

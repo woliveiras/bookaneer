@@ -1,10 +1,10 @@
-import { type ReactNode } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Link, Outlet } from "@tanstack/react-router"
+import type { ReactNode } from "react"
 import { AuthProvider, useAuth } from "../../contexts/AuthContext"
-import { Button } from "../ui"
+import { LoginPage } from "../../pages/LoginPage"
 import { RootFolderWarning } from "../common"
-import { LoginPage } from "../auth"
+import { Button } from "../ui"
 
 interface HealthResponse {
   status: string
@@ -52,9 +52,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
               <span className="text-destructive">Disconnected</span>
             )}
             {user && (
-              <span className="text-sm text-muted-foreground">
-                {user.username || "API Key"}
-              </span>
+              <span className="text-sm text-muted-foreground">{user.username || "API Key"}</span>
             )}
             <Button variant="outline" size="sm" onClick={logout}>
               Sign Out

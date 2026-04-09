@@ -1,8 +1,10 @@
 import { useState } from "react"
-import { SettingsGeneral, RootFolderList } from "../components/settings"
-import { IndexerList, IndexerOptions } from "../components/indexers"
-import { DownloadClientList } from "../components/download"
 import { AuthLayout } from "../components/layout/AppLayout"
+import { DownloadClientList } from "../containers/download/DownloadClientList"
+import { IndexerList } from "../containers/indexers/IndexerList"
+import { IndexerOptions } from "../containers/indexers/IndexerOptions"
+import { RootFolderList } from "../containers/settings/RootFolderSettings"
+import { SettingsGeneral } from "../containers/settings/SettingsGeneral"
 
 export function SettingsPage() {
   return (

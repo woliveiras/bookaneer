@@ -1,1 +1,1 @@
-export { LoginPage } from "./LoginPage"
+export { LoginForm } from "../../containers/auth/LoginForm"

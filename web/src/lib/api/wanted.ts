@@ -1,5 +1,12 @@
+import type {
+  ActiveCommand,
+  BlocklistItem,
+  HistoryEventType,
+  HistoryItem,
+  SearchCommandResponse,
+  WantedResponse,
+} from "../types"
 import { fetchAPI } from "./client"
-import type { WantedResponse, SearchCommandResponse, ActiveCommand, HistoryItem, HistoryEventType, BlocklistItem } from "../types"
 
 export const wantedApi = {
   getMissing: () => fetchAPI<WantedResponse>("/wanted/missing"),
@@ -14,7 +21,13 @@ export const wantedApi = {
       method: "POST",
     }),
 
-  manualGrab: (data: { bookId: number; downloadUrl: string; releaseTitle?: string; size?: number; quality?: string }) =>
+  manualGrab: (data: {
+    bookId: number
+    downloadUrl: string
+    releaseTitle?: string
+    size?: number
+    quality?: string
+  }) =>
     fetchAPI<SearchCommandResponse>("/release", {
       method: "POST",
       body: JSON.stringify(data),

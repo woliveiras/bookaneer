@@ -1,1 +1,1 @@
-export { Reader } from "./Reader"
+export { TocList } from "./TocList"

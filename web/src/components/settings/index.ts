@@ -1,2 +1,1 @@
-export { SettingsGeneral } from "./SettingsGeneral"
-export { RootFolderList } from "./RootFolderSettings"
+// Pure component exports only — containers are in containers/settings/

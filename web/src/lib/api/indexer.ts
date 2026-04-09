@@ -1,5 +1,13 @@
-import { fetchAPI, getStoredApiKey, API_BASE } from "./client"
-import type { Indexer, CreateIndexerInput, UpdateIndexerInput, SearchResponse, TestIndexerResponse, IndexerOptions, UpdateIndexerOptionsInput } from "../types"
+import type {
+  CreateIndexerInput,
+  Indexer,
+  IndexerOptions,
+  SearchResponse,
+  TestIndexerResponse,
+  UpdateIndexerInput,
+  UpdateIndexerOptionsInput,
+} from "../types"
+import { API_BASE, fetchAPI, getStoredApiKey } from "./client"
 
 export const indexerApi = {
   list: () => fetchAPI<Indexer[]>("/indexer"),

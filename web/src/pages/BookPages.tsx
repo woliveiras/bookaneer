@@ -1,16 +1,20 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { Link, useNavigate, useParams } from "@tanstack/react-router"
 import { useState } from "react"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { useNavigate, useParams, Link } from "@tanstack/react-router"
 import { AuthLayout } from "../components/layout/AppLayout"
-import { Reader } from "../components/reader"
 import { Button } from "../components/ui"
+import { Reader } from "../containers/reader/Reader"
 import { bookApi } from "../lib/api"
 
 export function ReaderPage() {
   const { bookId } = useParams({ from: "/read/$bookId" })
   const navigate = useNavigate()
 
-  const { data: book, isLoading, error } = useQuery({
+  const {
+    data: book,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["book", bookId],
     queryFn: () => bookApi.get(Number(bookId)),
   })
@@ -48,12 +52,7 @@ export function ReaderPage() {
     )
   }
 
-  return (
-    <Reader
-      bookFileId={book.files[0].id}
-      onClose={() => navigate({ to: "/books" })}
-    />
-  )
+  return <Reader bookFileId={book.files[0].id} onClose={() => navigate({ to: "/books" })} />
 }
 
 export function LibraryBookDetailPage() {
@@ -62,7 +61,11 @@ export function LibraryBookDetailPage() {
   const queryClient = useQueryClient()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-  const { data: book, isLoading, error } = useQuery({
+  const {
+    data: book,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["book", bookId],
     queryFn: () => bookApi.get(Number(bookId)),
   })
@@ -102,11 +105,7 @@ export function LibraryBookDetailPage() {
     <AuthLayout>
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate({ to: "/books" })}
-          >
+          <Button variant="outline" size="sm" onClick={() => navigate({ to: "/books" })}>
             ← Back
           </Button>
         </div>
@@ -115,15 +114,9 @@ export function LibraryBookDetailPage() {
           {/* Cover */}
           <div className="shrink-0 w-32 h-48 bg-muted rounded-lg overflow-hidden">
             {book.imageUrl ? (
-              <img
-                src={book.imageUrl}
-                alt={book.title}
-                className="w-full h-full object-cover"
-              />
+              <img src={book.imageUrl} alt={book.title} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-4xl">
-                📖
-              </div>
+              <div className="w-full h-full flex items-center justify-center text-4xl">📖</div>
             )}
           </div>
 
@@ -162,16 +155,10 @@ export function LibraryBookDetailPage() {
               </p>
             )}
 
-            {book.isbn13 && (
-              <p className="text-sm text-muted-foreground">
-                ISBN: {book.isbn13}
-              </p>
-            )}
+            {book.isbn13 && <p className="text-sm text-muted-foreground">ISBN: {book.isbn13}</p>}
 
             {book.overview && (
-              <p className="text-sm text-muted-foreground line-clamp-4">
-                {book.overview}
-              </p>
+              <p className="text-sm text-muted-foreground line-clamp-4">{book.overview}</p>
             )}
 
             <div className="flex gap-2 pt-4">
@@ -224,14 +211,11 @@ export function LibraryBookDetailPage() {
                 <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
                   <h3 className="text-lg font-semibold mb-2">Delete Book?</h3>
                   <p className="text-muted-foreground mb-4">
-                    Are you sure you want to delete "{book.title}"? This will
-                    remove it from your library.
+                    Are you sure you want to delete "{book.title}"? This will remove it from your
+                    library.
                   </p>
                   <div className="flex gap-2 justify-end">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowDeleteConfirm(false)}
-                    >
+                    <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
                       Cancel
                     </Button>
                     <Button
@@ -249,5 +233,5 @@ export function LibraryBookDetailPage() {
         </div>
       </div>
     </AuthLayout>
-  );
+  )
 }

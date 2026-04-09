@@ -25,7 +25,11 @@ export function saveDismissedCommands(dismissed: Set<string>) {
 }
 
 // Map command names to user-friendly descriptions
-export function getCommandDescription(command: ActiveCommand): { title: string; subtitle?: string; bookTitle?: string } {
+export function getCommandDescription(command: ActiveCommand): {
+  title: string
+  subtitle?: string
+  bookTitle?: string
+} {
   const name = command.name
   const payload = command.payload || {}
   const bookTitle = payload.bookTitle as string | undefined

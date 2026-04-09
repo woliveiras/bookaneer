@@ -1,11 +1,11 @@
-import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useNavigate, useParams } from "@tanstack/react-router"
+import { useState } from "react"
 import { AuthLayout } from "../components/layout/AppLayout"
-import { BookList } from "../components/books"
 import { Button } from "../components/ui"
-import { authorApi } from "../lib/api"
+import { BookList } from "../containers/books/BookList"
 import { useDeleteAuthor } from "../hooks/useAuthors"
+import { authorApi } from "../lib/api"
 
 export function AuthorDetailPage() {
   const { authorId } = useParams({ from: "/author/$authorId" })
@@ -14,7 +14,11 @@ export function AuthorDetailPage() {
   const [deleteFiles, setDeleteFiles] = useState(true)
   const deleteAuthor = useDeleteAuthor()
 
-  const { data: author, isLoading, error } = useQuery({
+  const {
+    data: author,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["author", authorId],
     queryFn: () => authorApi.get(Number(authorId)),
   })
@@ -26,7 +30,7 @@ export function AuthorDetailPage() {
         onSuccess: () => {
           navigate({ to: "/authors" })
         },
-      }
+      },
     )
   }
 
@@ -61,11 +65,7 @@ export function AuthorDetailPage() {
             </Button>
             <h2 className="text-2xl font-bold">{author.name}</h2>
           </div>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => setShowDeleteModal(true)}
-          >
+          <Button variant="destructive" size="sm" onClick={() => setShowDeleteModal(true)}>
             Delete Author
           </Button>
         </div>
@@ -86,8 +86,8 @@ export function AuthorDetailPage() {
           <div className="relative bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
             <h3 className="text-lg font-semibold mb-4">Delete Author</h3>
             <p className="text-muted-foreground mb-4">
-              Are you sure you want to delete <strong>{author.name}</strong>?
-              This action cannot be undone.
+              Are you sure you want to delete <strong>{author.name}</strong>? This action cannot be
+              undone.
             </p>
 
             <label className="flex items-center gap-2 mb-6 cursor-pointer">
@@ -97,16 +97,11 @@ export function AuthorDetailPage() {
                 onChange={(e) => setDeleteFiles(e.target.checked)}
                 className="w-4 h-4 rounded border-border"
               />
-              <span className="text-sm">
-                Delete all downloaded files for this author
-              </span>
+              <span className="text-sm">Delete all downloaded files for this author</span>
             </label>
 
             <div className="flex gap-3 justify-end">
-              <Button
-                variant="outline"
-                onClick={() => setShowDeleteModal(false)}
-              >
+              <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
                 Cancel
               </Button>
               <Button

@@ -1,6 +1,10 @@
-import { fetchAPI } from "./client"
-import type { GeneralSettings, RootFolder, CreateRootFolderInput, UpdateRootFolderInput } from "../types"
-import { getStoredApiKey, API_BASE } from "./client"
+import type {
+  CreateRootFolderInput,
+  GeneralSettings,
+  RootFolder,
+  UpdateRootFolderInput,
+} from "../types"
+import { API_BASE, fetchAPI, getStoredApiKey } from "./client"
 
 export const settingsApi = {
   getGeneral: () => fetchAPI<GeneralSettings>("/settings/general"),

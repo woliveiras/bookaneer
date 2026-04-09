@@ -1,11 +1,5 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react"
-import {
-  type User,
-  authApi,
-  getStoredApiKey,
-  setStoredApiKey,
-  clearStoredApiKey,
-} from "../lib/api"
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from "react"
+import { authApi, clearStoredApiKey, getStoredApiKey, setStoredApiKey, type User } from "../lib/api"
 
 interface AuthContextValue {
   user: User | null

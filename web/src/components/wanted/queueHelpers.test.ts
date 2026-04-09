@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach } from "vitest"
-import {
-  getDismissedCommands,
-  saveDismissedCommands,
-  getCommandDescription,
-  getStatusInfo,
-} from "./queueHelpers"
+import { beforeEach, describe, expect, it } from "vitest"
 import type { ActiveCommand } from "../../lib/api"
+import {
+  getCommandDescription,
+  getDismissedCommands,
+  getStatusInfo,
+  saveDismissedCommands,
+} from "./queueHelpers"
 
 beforeEach(() => {
   localStorage.clear()
@@ -42,8 +42,12 @@ describe("saveDismissedCommands", () => {
 describe("getCommandDescription", () => {
   it("returns book info for AutomaticSearch", () => {
     const cmd: ActiveCommand = {
-      id: "cmd-1", name: "AutomaticSearch", status: "running",
-      priority: 1, trigger: "manual", queuedAt: "2025-01-01T00:00:00Z",
+      id: "cmd-1",
+      name: "AutomaticSearch",
+      status: "running",
+      priority: 1,
+      trigger: "manual",
+      queuedAt: "2025-01-01T00:00:00Z",
       payload: { bookTitle: "Dune", authorName: "Herbert" },
     }
     const desc = getCommandDescription(cmd)
@@ -53,8 +57,12 @@ describe("getCommandDescription", () => {
 
   it("returns generic title for MissingBookSearch", () => {
     const cmd: ActiveCommand = {
-      id: "cmd-2", name: "MissingBookSearch", status: "running",
-      priority: 1, trigger: "manual", queuedAt: "2025-01-01T00:00:00Z",
+      id: "cmd-2",
+      name: "MissingBookSearch",
+      status: "running",
+      priority: 1,
+      trigger: "manual",
+      queuedAt: "2025-01-01T00:00:00Z",
       payload: {},
     }
     const desc = getCommandDescription(cmd)
@@ -63,8 +71,12 @@ describe("getCommandDescription", () => {
 
   it("falls back to command name for unknown commands", () => {
     const cmd: ActiveCommand = {
-      id: "cmd-3", name: "CustomCommand", status: "running",
-      priority: 1, trigger: "manual", queuedAt: "2025-01-01T00:00:00Z",
+      id: "cmd-3",
+      name: "CustomCommand",
+      status: "running",
+      priority: 1,
+      trigger: "manual",
+      queuedAt: "2025-01-01T00:00:00Z",
       payload: {},
     }
     const desc = getCommandDescription(cmd)

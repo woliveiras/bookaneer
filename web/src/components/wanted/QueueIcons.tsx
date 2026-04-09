@@ -45,7 +45,10 @@ export function QueuedIcon() {
         <path d="M5 19h14" />
       </svg>
       {/* Subtle pulse animation */}
-      <div className="absolute inset-0 rounded-full bg-amber-400 animate-pulse opacity-50" style={{ animationDuration: "2s" }} />
+      <div
+        className="absolute inset-0 rounded-full bg-amber-400 animate-pulse opacity-50"
+        style={{ animationDuration: "2s" }}
+      />
     </div>
   )
 }
@@ -69,7 +72,10 @@ export function SearchingIcon() {
         <path d="m21 21-4.3-4.3" />
       </svg>
       {/* Animated ring */}
-      <div className="absolute inset-0 rounded-full border-2 border-blue-500/30 animate-ping" style={{ animationDuration: "1.5s" }} />
+      <div
+        className="absolute inset-0 rounded-full border-2 border-blue-500/30 animate-ping"
+        style={{ animationDuration: "1.5s" }}
+      />
     </div>
   )
 }

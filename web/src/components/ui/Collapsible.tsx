@@ -1,5 +1,5 @@
-import { useState, ReactNode } from "react"
 import { ChevronDown, ChevronRight } from "lucide-react"
+import { type ReactNode, useState } from "react"
 
 export interface CollapsibleProps {
   title: string

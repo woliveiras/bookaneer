@@ -1,5 +1,5 @@
+import type { LoginResponse, User } from "../types/auth"
 import { fetchAPI } from "./client"
-import type { User, LoginResponse } from "../types/auth"
 
 export const authApi = {
   login: (apiKey: string) =>

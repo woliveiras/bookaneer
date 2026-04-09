@@ -8,10 +8,10 @@ import { Card, CardContent } from "../ui"
  */
 export function RootFolderWarning() {
   const { data: rootFolders, isLoading } = useRootFolders()
-  
+
   // Don't show while loading
   if (isLoading) return null
-  
+
   // Don't show if root folder is configured
   const hasRootFolder = rootFolders && rootFolders.length > 0
   if (hasRootFolder) return null
@@ -28,10 +28,7 @@ export function RootFolderWarning() {
             <p className="text-sm text-muted-foreground mt-1">
               Downloads will fail because there's no folder configured to save books.
             </p>
-            <Link 
-              to="/settings" 
-              className="text-sm text-primary hover:underline mt-2 inline-block"
-            >
+            <Link to="/settings" className="text-sm text-primary hover:underline mt-2 inline-block">
               Go to Settings to add a root folder →
             </Link>
           </div>

@@ -1,6 +1,6 @@
-import type { ReactNode } from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { render, type RenderOptions } from "@testing-library/react"
+import { type RenderOptions, render } from "@testing-library/react"
+import type { ReactNode } from "react"
 
 function createTestQueryClient() {
   return new QueryClient({

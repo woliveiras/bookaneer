@@ -43,7 +43,15 @@ export interface CreateDownloadClientInput {
   watchFolder?: string
 }
 
-export type DownloadStatus = "queued" | "downloading" | "paused" | "completed" | "seeding" | "failed" | "extracted" | "processing"
+export type DownloadStatus =
+  | "queued"
+  | "downloading"
+  | "paused"
+  | "completed"
+  | "seeding"
+  | "failed"
+  | "extracted"
+  | "processing"
 
 export interface QueueItem {
   id: number

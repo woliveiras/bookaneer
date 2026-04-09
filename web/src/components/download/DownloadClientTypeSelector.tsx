@@ -1,5 +1,5 @@
 import type { DownloadClientType } from "../../lib/api"
-import { Button, Card, CardHeader, CardTitle, CardContent } from "../ui"
+import { Button, Card, CardContent, CardHeader, CardTitle } from "../ui"
 import { DOWNLOAD_CLIENT_PRESETS, type DownloadClientPreset } from "./download-client-presets"
 
 interface DownloadClientTypeSelectorProps {
@@ -7,7 +7,10 @@ interface DownloadClientTypeSelectorProps {
   onCancel: () => void
 }
 
-export function DownloadClientTypeSelector({ onSelect, onCancel }: DownloadClientTypeSelectorProps) {
+export function DownloadClientTypeSelector({
+  onSelect,
+  onCancel,
+}: DownloadClientTypeSelectorProps) {
   return (
     <Card>
       <CardHeader>
@@ -20,7 +23,9 @@ export function DownloadClientTypeSelector({ onSelect, onCancel }: DownloadClien
 
         {/* Usenet Section */}
         <div className="space-y-3">
-          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Usenet</h4>
+          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+            Usenet
+          </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {DOWNLOAD_CLIENT_PRESETS.usenet.map((preset) => (
               <button
@@ -38,7 +43,9 @@ export function DownloadClientTypeSelector({ onSelect, onCancel }: DownloadClien
 
         {/* Torrents Section */}
         <div className="space-y-3">
-          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Torrents</h4>
+          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+            Torrents
+          </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {DOWNLOAD_CLIENT_PRESETS.torrents.map((preset) => (
               <button

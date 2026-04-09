@@ -9,7 +9,10 @@ export interface DownloadClientPreset {
   description: string
 }
 
-export const DOWNLOAD_CLIENT_PRESETS: { usenet: DownloadClientPreset[]; torrents: DownloadClientPreset[] } = {
+export const DOWNLOAD_CLIENT_PRESETS: {
+  usenet: DownloadClientPreset[]
+  torrents: DownloadClientPreset[]
+} = {
   usenet: [
     {
       id: "sabnzbd",

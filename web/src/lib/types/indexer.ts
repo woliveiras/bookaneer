@@ -72,12 +72,12 @@ export interface TestIndexerResponse {
 }
 
 export interface IndexerOptions {
-  minimumAge: number         // Minutes
-  retention: number          // Days (0 = unlimited)
-  maximumSize: number        // MB (0 = unlimited)
-  rssSyncInterval: number    // Minutes (0 = disabled)
+  minimumAge: number // Minutes
+  retention: number // Days (0 = unlimited)
+  maximumSize: number // MB (0 = unlimited)
+  rssSyncInterval: number // Minutes (0 = disabled)
   preferIndexerFlags: boolean
-  availabilityDelay: number  // Days
+  availabilityDelay: number // Days
   updatedAt: string
 }
 

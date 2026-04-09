@@ -1,5 +1,13 @@
-import { fetchAPI, getStoredApiKey, API_BASE } from "./client"
-import type { DownloadClient, CreateDownloadClientInput, TestDownloadClientResponse, QueueItem, Grab, CreateGrabInput, GrabStatus } from "../types"
+import type {
+  CreateDownloadClientInput,
+  CreateGrabInput,
+  DownloadClient,
+  Grab,
+  GrabStatus,
+  QueueItem,
+  TestDownloadClientResponse,
+} from "../types"
+import { API_BASE, fetchAPI, getStoredApiKey } from "./client"
 
 export const downloadClientApi = {
   list: () => fetchAPI<DownloadClient[]>("/downloadclient"),
