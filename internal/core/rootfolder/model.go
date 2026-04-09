@@ -26,4 +26,18 @@ type UpdateRootFolderInput struct {
 	Path                    *string `json:"path,omitempty"`
 	Name                    *string `json:"name,omitempty"`
 	DefaultQualityProfileID *int64  `json:"defaultQualityProfileId,omitempty"`
+	MoveFiles               bool    `json:"moveFiles,omitempty"` // If true, move existing files to new path
+}
+
+// MigrationProgress represents the progress of a root folder migration.
+type MigrationProgress struct {
+	RootFolderID int64  `json:"rootFolderId"`
+	OldPath      string `json:"oldPath"`
+	NewPath      string `json:"newPath"`
+	TotalAuthors int    `json:"totalAuthors"`
+	MovedAuthors int    `json:"movedAuthors"`
+	TotalFiles   int    `json:"totalFiles"`
+	MovedFiles   int    `json:"movedFiles"`
+	Status       string `json:"status"` // pending, in_progress, completed, failed
+	Error        string `json:"error,omitempty"`
 }

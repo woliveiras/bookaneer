@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { rootFolderApi, type CreateRootFolderInput } from "../lib/api"
+import { rootFolderApi, type CreateRootFolderInput, type UpdateRootFolderInput } from "../lib/api"
 
 export function useRootFolders() {
   return useQuery({
@@ -29,10 +29,22 @@ export function useCreateRootFolder() {
 export function useUpdateRootFolder() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<CreateRootFolderInput> }) =>
+    mutationFn: ({ id, data }: { id: number; data: UpdateRootFolderInput }) =>
       rootFolderApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rootFolders"] })
+    },
+  })
+}
+
+export function useMigrateRootFolder() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, newPath }: { id: number; newPath: string }) =>
+      rootFolderApi.migrate(id, newPath),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rootFolders"] })
+      queryClient.invalidateQueries({ queryKey: ["authors"] })
     },
   })
 }

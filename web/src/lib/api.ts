@@ -862,6 +862,13 @@ export interface CreateRootFolderInput {
   defaultQualityProfileId?: number
 }
 
+export interface UpdateRootFolderInput {
+  path?: string
+  name?: string
+  defaultQualityProfileId?: number
+  moveFiles?: boolean
+}
+
 // Root Folder API
 export const rootFolderApi = {
   list: () => fetchAPI<RootFolder[]>("/rootfolder"),
@@ -874,10 +881,16 @@ export const rootFolderApi = {
       body: JSON.stringify(data),
     }),
 
-  update: (id: number, data: Partial<CreateRootFolderInput>) =>
+  update: (id: number, data: UpdateRootFolderInput) =>
     fetchAPI<RootFolder>(`/rootfolder/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
+    }),
+
+  migrate: (id: number, newPath: string) =>
+    fetchAPI<RootFolder>(`/rootfolder/${id}/migrate`, {
+      method: "POST",
+      body: JSON.stringify({ newPath }),
     }),
 
   delete: (id: number) =>

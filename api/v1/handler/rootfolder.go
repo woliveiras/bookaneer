@@ -27,6 +27,7 @@ func (h *RootFolderHandler) Register(g *echo.Group) {
 	g.POST("/rootfolder", h.Create)
 	g.PUT("/rootfolder/:id", h.Update)
 	g.DELETE("/rootfolder/:id", h.Delete)
+	g.POST("/rootfolder/:id/migrate", h.Migrate)
 }
 
 // List returns all root folders.
@@ -125,4 +126,41 @@ func (h *RootFolderHandler) Delete(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusNoContent)
+}
+
+// MigrateInput is the input for the migrate endpoint.
+type MigrateInput struct {
+	NewPath string `json:"newPath"`
+}
+
+// Migrate moves all files from the current root folder path to a new path.
+// This is a blocking operation that moves all files and updates database paths.
+func (h *RootFolderHandler) Migrate(c echo.Context) error {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid root folder id")
+	}
+
+	var input MigrateInput
+	if err := c.Bind(&input); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+
+	if input.NewPath == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "newPath is required")
+	}
+
+	rf, err := h.svc.MoveRootFolder(c.Request().Context(), id, input.NewPath)
+	if err != nil {
+		if errors.Is(err, rootfolder.ErrNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, "root folder not found")
+		}
+		if errors.Is(err, rootfolder.ErrPathNotAccessible) {
+			return echo.NewHTTPError(http.StatusBadRequest, "path is not accessible")
+		}
+		// Include detailed error for migration failures
+		return echo.NewHTTPError(http.StatusInternalServerError, "migration failed: "+err.Error())
+	}
+
+	return c.JSON(http.StatusOK, rf)
 }

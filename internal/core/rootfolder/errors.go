@@ -14,4 +14,7 @@ var (
 
 	// ErrPathNotAccessible is returned when the path is not accessible.
 	ErrPathNotAccessible = errors.New("path is not accessible")
+
+	// ErrMigrationFailed is returned when file migration fails.
+	ErrMigrationFailed = errors.New("migration failed")
 )

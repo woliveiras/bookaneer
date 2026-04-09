@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useRootFolders, useCreateRootFolder, useUpdateRootFolder, useDeleteRootFolder } from "../../hooks/useRootFolders"
-import type { RootFolder, CreateRootFolderInput } from "../../lib/api"
+import type { RootFolder, CreateRootFolderInput, UpdateRootFolderInput } from "../../lib/api"
 import { Button, Input, Label, Card, CardHeader, CardTitle, CardContent, Badge } from "../ui"
 
 function formatBytes(bytes: number): string {
@@ -13,7 +13,7 @@ function formatBytes(bytes: number): string {
 
 interface RootFolderFormProps {
   folder?: RootFolder
-  onSubmit: (data: CreateRootFolderInput) => Promise<void>
+  onSubmit: (data: CreateRootFolderInput | UpdateRootFolderInput) => Promise<void>
   onCancel: () => void
   isLoading: boolean
 }
@@ -23,7 +23,11 @@ function RootFolderForm({ folder, onSubmit, onCancel, isLoading }: RootFolderFor
     path: folder?.path || "",
     name: folder?.name || "",
   })
+  const [moveFiles, setMoveFiles] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const isEditing = !!folder
+  const pathChanged = isEditing && formData.path !== folder.path
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,7 +43,11 @@ function RootFolderForm({ folder, onSubmit, onCancel, isLoading }: RootFolderFor
     }
 
     try {
-      await onSubmit(formData)
+      if (isEditing && pathChanged) {
+        await onSubmit({ ...formData, moveFiles })
+      } else {
+        await onSubmit(formData)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save root folder")
     }
@@ -88,12 +96,44 @@ function RootFolderForm({ folder, onSubmit, onCancel, isLoading }: RootFolderFor
             </p>
           </div>
 
+          {/* Move files option - only show when editing and path changed */}
+          {isEditing && pathChanged && (
+            <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-md space-y-3">
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="moveFiles"
+                  checked={moveFiles}
+                  onChange={(e) => setMoveFiles(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <div>
+                  <Label htmlFor="moveFiles" className="text-amber-600 font-medium cursor-pointer">
+                    Move existing files to new location
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    When enabled, all author folders and book files will be moved from the old path to the new path. 
+                    This operation may take some time depending on library size.
+                  </p>
+                </div>
+              </div>
+              {!moveFiles && (
+                <p className="text-xs text-amber-600">
+                  ⚠️ Without this option, existing files stay in place and you'll need to move them manually.
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Saving..." : "Save"}
+              {isLoading 
+                ? (pathChanged && moveFiles ? "Moving files..." : "Saving...") 
+                : (pathChanged && moveFiles ? "Save & Move Files" : "Save")
+              }
             </Button>
           </div>
         </form>
@@ -119,14 +159,14 @@ export function RootFolderList() {
     return <div className="text-destructive">Error loading root folders: {error.message}</div>
   }
 
-  const handleCreate = async (data: CreateRootFolderInput) => {
-    await createFolder.mutateAsync(data)
+  const handleCreate = async (data: CreateRootFolderInput | UpdateRootFolderInput) => {
+    await createFolder.mutateAsync(data as CreateRootFolderInput)
     setShowAddForm(false)
   }
 
-  const handleUpdate = async (data: CreateRootFolderInput) => {
+  const handleUpdate = async (data: CreateRootFolderInput | UpdateRootFolderInput) => {
     if (!editingFolder) return
-    await updateFolder.mutateAsync({ id: editingFolder.id, data })
+    await updateFolder.mutateAsync({ id: editingFolder.id, data: data as UpdateRootFolderInput })
     setEditingFolder(null)
   }
 
