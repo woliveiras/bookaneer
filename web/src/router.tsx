@@ -400,6 +400,8 @@ interface BookDetailsSearch {
   publishedYear?: string
   coverUrl?: string
   isbn13?: string
+  autoSearch?: string
+  bookId?: string
 }
 
 // Book details route (child of search)
@@ -414,6 +416,8 @@ const bookDetailsRoute = createRoute({
     publishedYear: search.publishedYear as string | undefined,
     coverUrl: search.coverUrl as string | undefined,
     isbn13: search.isbn13 as string | undefined,
+    autoSearch: search.autoSearch as string | undefined,
+    bookId: search.bookId as string | undefined,
   }),
   component: function BookDetailsPage() {
     const search = bookDetailsRoute.useSearch()
@@ -444,7 +448,11 @@ const bookDetailsRoute = createRoute({
 
     return (
       <AuthLayout>
-        <BookDetails book={book} />
+        <BookDetails 
+          book={book} 
+          autoSearch={search.autoSearch === "true"} 
+          existingBookId={search.bookId ? parseInt(search.bookId) : undefined}
+        />
       </AuthLayout>
     )
   },
@@ -870,6 +878,8 @@ const libraryBookDetailRoute = createRoute({
                   isbn13: book.isbn13 || undefined,
                   coverUrl: book.imageUrl || undefined,
                   publishedYear: book.releaseDate ? String(new Date(book.releaseDate).getFullYear()) : undefined,
+                  autoSearch: "true",
+                  bookId: String(book.id),
                 } })}>
                   🔍 Manual Search
                 </Button>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useNavigate, Link } from "@tanstack/react-router"
 import { useDigitalLibrarySearch } from "../../hooks/useMetadata"
 import { useSearch, type SearchParams } from "../../hooks/useIndexers"
@@ -95,9 +95,12 @@ function LibraryResult({ result, onGrab, isGrabbing }: LibraryResultProps) {
   const [grabbing, setGrabbing] = useState(false)
   
   const handleGrab = async () => {
+    const url = result.downloadUrl || result.infoUrl
+    if (!url) return
+    
     setGrabbing(true)
     try {
-      await onGrab(result.downloadUrl || result.infoUrl, result.title, result.size)
+      await onGrab(url, result.title, result.size)
     } finally {
       setGrabbing(false)
     }
@@ -186,16 +189,25 @@ function WavesSVG() {
 
 interface BookDetailsProps {
   book: MetadataBookResult
+  autoSearch?: boolean
+  existingBookId?: number
 }
 
-export function BookDetails({ book }: BookDetailsProps) {
+export function BookDetails({ book, autoSearch = false, existingBookId }: BookDetailsProps) {
   const navigate = useNavigate()
   
-  // Search state - only start when user clicks
-  const [searchStarted, setSearchStarted] = useState(false)
+  // Search state - start automatically if autoSearch is true
+  const [searchStarted, setSearchStarted] = useState(autoSearch)
+  
+  // Auto-start search when autoSearch prop changes
+  useEffect(() => {
+    if (autoSearch && !searchStarted) {
+      setSearchStarted(true)
+    }
+  }, [autoSearch, searchStarted])
   
   // Add to library state
-  const [addedToLibrary, setAddedToLibrary] = useState(false)
+  const [addedToLibrary, setAddedToLibrary] = useState(!!existingBookId)
   const [addingToLibrary, setAddingToLibrary] = useState(false)
   const [addError, setAddError] = useState<string | null>(null)
   const [createdBookId, setCreatedBookId] = useState<number | null>(null)
@@ -220,8 +232,16 @@ export function BookDetails({ book }: BookDetailsProps) {
   const [sortBy, setSortBy] = useState<string>("score")
   const [searchInResults, setSearchInResults] = useState("")
 
+  // Track if we have an existing book ID (for manual search from book page)
+  const [bookIdToUse, setBookIdToUse] = useState<number | undefined>(existingBookId)
+
   // Ensure book is in library and return bookId
   const ensureBookInLibrary = async (): Promise<number> => {
+    // If we already have a book ID (from existing book in library), use it
+    if (bookIdToUse) {
+      return bookIdToUse
+    }
+    
     if (createdBookId) {
       return createdBookId
     }
@@ -272,6 +292,7 @@ export function BookDetails({ book }: BookDetailsProps) {
       })
       
       setCreatedBookId(newBook.id)
+      setBookIdToUse(newBook.id)
       setAddedToLibrary(true)
       return newBook.id
     } catch (err) {
