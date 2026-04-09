@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useWantedMissing, useSearchAllMissing, useSearchBook } from "../../hooks/useWanted"
 import { useUpdateBook } from "../../hooks/useBooks"
-import { Button, Card, CardContent, CardHeader, CardTitle } from "../ui"
+import { Button, Card, CardContent } from "../ui"
 import { useQueryClient } from "@tanstack/react-query"
 import type { Book } from "../../lib/api"
 
@@ -13,6 +13,7 @@ export function WantedList() {
   const updateBookMutation = useUpdateBook()
   const [searchingBooks, setSearchingBooks] = useState<Set<number>>(new Set())
   const [removingBooks, setRemovingBooks] = useState<Set<number>>(new Set())
+  const [bookToRemove, setBookToRemove] = useState<Book | null>(null)
 
   const handleSearchAll = async () => {
     try {
@@ -37,11 +38,18 @@ export function WantedList() {
     }
   }
 
-  const handleRemoveFromWanted = async (bookId: number) => {
+  const handleRemoveFromWanted = (book: Book) => {
+    setBookToRemove(book)
+  }
+
+  const confirmRemove = async () => {
+    if (!bookToRemove) return
+    const bookId = bookToRemove.id
     setRemovingBooks(prev => new Set(prev).add(bookId))
     try {
       await updateBookMutation.mutateAsync({ id: bookId, data: { monitored: false } })
       queryClient.invalidateQueries({ queryKey: ["wanted"] })
+      setBookToRemove(null)
     } catch (err) {
       console.error("Failed to remove from wanted:", err)
     } finally {
@@ -135,10 +143,35 @@ export function WantedList() {
               book={book}
               onSearch={() => handleSearchBook(book.id)}
               isSearching={searchingBooks.has(book.id)}
-              onRemove={() => handleRemoveFromWanted(book.id)}
+              onRemove={() => handleRemoveFromWanted(book)}
               isRemoving={removingBooks.has(book.id)}
             />
           ))}
+        </div>
+      )}
+
+      {/* Remove confirmation modal */}
+      {bookToRemove && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4 border">
+            <h3 className="text-lg font-semibold mb-2">Remove from Wanted?</h3>
+            <p className="text-muted-foreground mb-4">
+              Are you sure you want to stop monitoring "{bookToRemove.title}"? 
+              This will remove it from the Wanted list.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setBookToRemove(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmRemove}
+                disabled={removingBooks.has(bookToRemove.id)}
+              >
+                {removingBooks.has(bookToRemove.id) ? "Removing..." : "Remove"}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
