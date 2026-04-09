@@ -114,6 +114,9 @@ func (p *Provider) Search(ctx context.Context, query string) ([]library.SearchRe
 
 		authors := parseStringOrSlice(doc.Creator)
 
+		// Get the actual file name from metadata
+		downloadURL := p.getDownloadURL(doc.Identifier, format)
+
 		result := library.SearchResult{
 			ID:          doc.Identifier,
 			Title:       doc.Title,
@@ -122,7 +125,7 @@ func (p *Provider) Search(ctx context.Context, query string) ([]library.SearchRe
 			Language:    lang,
 			Format:      format,
 			InfoURL:     fmt.Sprintf("%s/details/%s", p.baseURL, doc.Identifier),
-			DownloadURL: fmt.Sprintf("%s/download/%s/%s.%s", p.baseURL, doc.Identifier, doc.Identifier, format),
+			DownloadURL: downloadURL,
 			CoverURL:    fmt.Sprintf("%s/services/img/%s", p.baseURL, doc.Identifier),
 			Provider:    "internet-archive",
 		}
@@ -149,6 +152,56 @@ func (p *Provider) bestFormat(formats []string) string {
 	}
 
 	return best
+}
+
+// getDownloadURL gets the actual download URL by fetching item metadata to find the real filename.
+func (p *Provider) getDownloadURL(identifier, format string) string {
+	// Fetch metadata to find the actual file name
+	metadataURL := fmt.Sprintf("%s/metadata/%s/files", p.baseURL, identifier)
+
+	req, err := http.NewRequest(http.MethodGet, metadataURL, nil)
+	if err != nil {
+		// Fallback to default naming
+		return fmt.Sprintf("%s/download/%s/%s.%s", p.baseURL, identifier, identifier, format)
+	}
+	req.Header.Set("User-Agent", userAgent)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	req = req.WithContext(ctx)
+
+	resp, err := p.httpClient.Do(req)
+	if err != nil {
+		return fmt.Sprintf("%s/download/%s/%s.%s", p.baseURL, identifier, identifier, format)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Sprintf("%s/download/%s/%s.%s", p.baseURL, identifier, identifier, format)
+	}
+
+	var filesResp struct {
+		Result []struct {
+			Name   string `json:"name"`
+			Format string `json:"format"`
+		} `json:"result"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&filesResp); err != nil {
+		return fmt.Sprintf("%s/download/%s/%s.%s", p.baseURL, identifier, identifier, format)
+	}
+
+	// Find the file matching our desired format
+	formatLower := strings.ToLower(format)
+	for _, f := range filesResp.Result {
+		nameLower := strings.ToLower(f.Name)
+		// Check if file ends with .epub, .pdf, or .mobi
+		if strings.HasSuffix(nameLower, "."+formatLower) {
+			return fmt.Sprintf("%s/download/%s/%s", p.baseURL, identifier, f.Name)
+		}
+	}
+
+	// Fallback to default
+	return fmt.Sprintf("%s/download/%s/%s.%s", p.baseURL, identifier, identifier, format)
 }
 
 func (p *Provider) GetDownloadLink(ctx context.Context, id string) (string, error) {
