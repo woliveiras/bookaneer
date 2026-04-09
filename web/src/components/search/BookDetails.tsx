@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react"
-import { useNavigate } from "@tanstack/react-router"
+import { useNavigate, Link } from "@tanstack/react-router"
 import { useDigitalLibrarySearch } from "../../hooks/useMetadata"
 import { useSearch, type SearchParams } from "../../hooks/useIndexers"
 import { useCreateBook } from "../../hooks/useBooks"
 import { useCreateAuthor, useAuthors } from "../../hooks/useAuthors"
 import { useManualGrab } from "../../hooks/useWanted"
+import { useRootFolders } from "../../hooks/useRootFolders"
 import { Button, Card, CardContent, Badge, Input } from "../ui"
 import type { MetadataBookResult, SearchResult, DigitalLibraryResult } from "../../lib/api"
 
@@ -207,8 +208,11 @@ export function BookDetails({ book }: BookDetailsProps) {
   const createBook = useCreateBook()
   const createAuthor = useCreateAuthor()
   const manualGrab = useManualGrab()
+  const { data: rootFolders } = useRootFolders()
   const authorName = book.authors?.[0] || "Unknown Author"
   const { data: existingAuthors } = useAuthors({ search: authorName, limit: 1 })
+  
+  const hasRootFolder = rootFolders && rootFolders.length > 0
   
   // Filters state
   const [formatFilter, setFormatFilter] = useState<string>("all")
@@ -539,6 +543,14 @@ export function BookDetails({ book }: BookDetailsProps) {
                   Search digital libraries and torrent indexers right now for "{book.title}".
                   Review results and grab what you want.
                 </p>
+                {!hasRootFolder && (
+                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-md p-3">
+                    <p className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">⚠️ No Root Folder</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Configure a root folder in <Link to="/settings" className="text-primary hover:underline">Settings</Link> before downloading.
+                    </p>
+                  </div>
+                )}
                 <Button size="lg" onClick={() => setSearchStarted(true)} className="w-full md:w-auto">
                   🏴 Start Manual Search
                 </Button>

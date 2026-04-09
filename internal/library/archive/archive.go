@@ -196,7 +196,7 @@ func (p *Provider) getDownloadURL(identifier, format string) string {
 		nameLower := strings.ToLower(f.Name)
 		// Check if file ends with .epub, .pdf, or .mobi
 		if strings.HasSuffix(nameLower, "."+formatLower) {
-			return fmt.Sprintf("%s/download/%s/%s", p.baseURL, identifier, f.Name)
+			return fmt.Sprintf("%s/download/%s/%s", p.baseURL, identifier, url.PathEscape(f.Name))
 		}
 	}
 
