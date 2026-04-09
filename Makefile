@@ -44,9 +44,11 @@ dev-frontend:
 # --- Test ---
 test:
 	go test ./...
+	cd web && pnpm test
 
 test-race:
 	go test -race ./...
+	cd web && pnpm test
 
 test-cover:
 	@mkdir -p $(DATA_DIR)
@@ -86,6 +88,9 @@ migrate-create:
 web-build:
 	cd web && pnpm build
 
+web-test:
+	cd web && pnpm test
+
 web-lint:
 	cd web && pnpm lint
 
@@ -119,7 +124,8 @@ help:
 	@echo "  make dev-frontend   Start only frontend"
 	@echo "  make build          Build binary to dist/"
 	@echo "  make build-all      Cross-compile for linux/darwin"
-	@echo "  make test           Run tests"
+	@echo "  make test           Run all tests (Backend + frontend)"
+	@echo "  make web-test       Run frontend tests only"
 	@echo "  make test-race      Run tests with race detector"
 	@echo "  make test-cover     Run tests with coverage report"
 	@echo "  make lint           Run golangci-lint and eslint"

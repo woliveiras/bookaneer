@@ -9,6 +9,20 @@ import {
 } from "../../hooks/useReader"
 import { readerApi } from "../../lib/api"
 import { Button, Badge } from "../ui"
+import {
+  FORMAT_LABELS,
+  THEMES,
+  FONTS,
+  DEFAULT_SETTINGS,
+  loadSettings,
+  saveSettings,
+  type ThemeKey,
+  type ReaderSettings,
+  type TocItem,
+  type FoliateView,
+  type RelocateDetail,
+} from "./readerConfig"
+import { TocList } from "./TocList"
 
 // Import foliate-js view component
 import "foliate-js/view.js"
@@ -20,104 +34,9 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString()
 
-// Supported formats and their labels
-const FORMAT_LABELS: Record<string, string> = {
-  epub: "EPUB",
-  pdf: "PDF",
-  mobi: "MOBI",
-  azw3: "AZW3",
-  fb2: "FB2",
-  cbz: "CBZ",
-}
-
-// Theme presets
-const THEMES = {
-  light: { bg: "#ffffff", fg: "#000000", name: "Light" },
-  sepia: { bg: "#f4ecd8", fg: "#5b4636", name: "Sepia" },
-  dark: { bg: "#1a1a1a", fg: "#e0e0e0", name: "Dark" },
-} as const
-
-type ThemeKey = keyof typeof THEMES
-
-// Font families
-const FONTS = [
-  { value: "serif", label: "Serif" },
-  { value: "sans-serif", label: "Sans Serif" },
-  { value: "Georgia, serif", label: "Georgia" },
-  { value: "'Literata', serif", label: "Literata" },
-] as const
-
-// Reader settings stored in localStorage
-interface ReaderSettings {
-  theme: ThemeKey
-  fontSize: number
-  fontFamily: string
-  lineHeight: number
-}
-
-const DEFAULT_SETTINGS: ReaderSettings = {
-  theme: "light",
-  fontSize: 100,
-  fontFamily: "serif",
-  lineHeight: 1.5,
-}
-
-function loadSettings(): ReaderSettings {
-  try {
-    const stored = localStorage.getItem("bookaneer_reader_settings")
-    if (stored) {
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) }
-    }
-  } catch {
-    // Ignore parse errors
-  }
-  return DEFAULT_SETTINGS
-}
-
-function saveSettings(settings: ReaderSettings): void {
-  localStorage.setItem("bookaneer_reader_settings", JSON.stringify(settings))
-}
-
 interface ReaderProps {
   bookFileId: number
   onClose: () => void
-}
-
-interface TocItem {
-  label: string
-  href: string
-  subitems?: TocItem[]
-}
-
-interface FoliateView extends HTMLElement {
-  open: (source: Blob | string) => Promise<void>
-  goTo: (target: string | number | { fraction: number }) => Promise<void>
-  goToFraction: (fraction: number) => Promise<void>
-  prev: () => Promise<void>
-  next: () => Promise<void>
-  renderer?: {
-    setStyles?: (css: string) => void
-    setAttribute?: (name: string, value: string) => void
-  }
-  book?: {
-    toc?: TocItem[]
-    metadata?: {
-      title?: string
-      author?: string | string[]
-    }
-  }
-}
-
-interface RelocateDetail {
-  cfi?: string
-  fraction?: number
-  location?: {
-    current: number
-    total: number
-  }
-  tocItem?: {
-    label?: string
-  }
 }
 
 export function Reader({ bookFileId, onClose }: ReaderProps) {
@@ -747,32 +666,4 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
   )
 }
 
-// TOC List component
-interface TocListProps {
-  items: TocItem[]
-  onSelect: (href: string) => void
-  theme: { bg: string; fg: string }
-  depth?: number
-}
 
-function TocList({ items, onSelect, theme, depth = 0 }: TocListProps) {
-  return (
-    <ul className={depth > 0 ? "ml-4 mt-1" : ""}>
-      {items.map((item, index) => (
-        <li key={`${item.href}-${index}`}>
-          <button
-            type="button"
-            onClick={() => onSelect(item.href)}
-            className="w-full text-left py-1.5 px-2 rounded hover:bg-black/10 dark:hover:bg-white/10 text-sm"
-            style={{ color: theme.fg }}
-          >
-            {item.label}
-          </button>
-          {item.subitems && item.subitems.length > 0 && (
-            <TocList items={item.subitems} onSelect={onSelect} theme={theme} depth={depth + 1} />
-          )}
-        </li>
-      ))}
-    </ul>
-  )
-}
