@@ -55,8 +55,9 @@ export function useDeleteAuthor() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: number) => authorApi.delete(id),
-    onSuccess: (_, id) => {
+    mutationFn: ({ id, deleteFiles }: { id: number; deleteFiles?: boolean }) =>
+      authorApi.delete(id, deleteFiles),
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["authors"] })
       queryClient.removeQueries({ queryKey: ["author", id] })
     },

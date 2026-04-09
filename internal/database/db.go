@@ -12,7 +12,7 @@ import (
 // Open opens a SQLite database with optimal settings for a web application.
 func Open(path string) (*sql.DB, error) {
 	dsn := fmt.Sprintf(
-		"file:%s?_journal_mode=WAL&_busy_timeout=5000&_foreign_keys=ON&_synchronous=NORMAL",
+		"file:%s?_journal_mode=WAL&_busy_timeout=5000&_synchronous=NORMAL",
 		path,
 	)
 
@@ -27,6 +27,13 @@ func Open(path string) (*sql.DB, error) {
 	if err := db.Ping(); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("ping database: %w", err)
+	}
+
+	// Enable foreign key constraints (must be done per-connection)
+	// modernc.org/sqlite doesn't support this via DSN
+	if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("enable foreign keys: %w", err)
 	}
 
 	return db, nil

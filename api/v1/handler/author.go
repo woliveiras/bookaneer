@@ -131,13 +131,17 @@ func (h *AuthorHandler) Update(c echo.Context) error {
 }
 
 // Delete deletes an author.
+// Query params:
+//   - deleteFiles: if "true", also deletes the author's folder and all files
 func (h *AuthorHandler) Delete(c echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid author id")
 	}
 
-	if err := h.svc.Delete(c.Request().Context(), id); err != nil {
+	deleteFiles := c.QueryParam("deleteFiles") == "true"
+
+	if err := h.svc.Delete(c.Request().Context(), id, deleteFiles); err != nil {
 		if errors.Is(err, author.ErrNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "author not found")
 		}

@@ -251,8 +251,8 @@ export const authorApi = {
       body: JSON.stringify(data),
     }),
 
-  delete: (id: number) =>
-    fetchAPI<void>(`/author/${id}`, {
+  delete: (id: number, deleteFiles?: boolean) =>
+    fetchAPI<void>(`/author/${id}${deleteFiles ? "?deleteFiles=true" : ""}`, {
       method: "DELETE",
     }),
 }

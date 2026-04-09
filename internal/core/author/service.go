@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -320,7 +322,21 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateAuthorInput)
 }
 
 // Delete deletes an author by ID.
-func (s *Service) Delete(ctx context.Context, id int64) error {
+func (s *Service) Delete(ctx context.Context, id int64, deleteFiles bool) error {
+	// Get author info first (needed for deleting files)
+	author, err := s.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	// If deleteFiles is true, delete the author's folder and all files
+	if deleteFiles {
+		if err := s.deleteAuthorFiles(ctx, author); err != nil {
+			return fmt.Errorf("delete author files: %w", err)
+		}
+	}
+
+	// Delete author from database (CASCADE will delete books and book_files)
 	result, err := s.db.ExecContext(ctx, "DELETE FROM authors WHERE id = ?", id)
 	if err != nil {
 		return fmt.Errorf("delete author %d: %w", id, err)
@@ -335,6 +351,52 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 	}
 
 	return nil
+}
+
+// deleteAuthorFiles deletes all files in the author's folder.
+func (s *Service) deleteAuthorFiles(ctx context.Context, author *Author) error {
+	// Get first root folder
+	var rootPath string
+	err := s.db.QueryRowContext(ctx, `SELECT path FROM root_folders ORDER BY id LIMIT 1`).Scan(&rootPath)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil // No root folder, nothing to delete
+		}
+		return fmt.Errorf("get root folder: %w", err)
+	}
+
+	// Build author folder path
+	authorFolder := sanitizeFolderName(author.Name)
+	authorPath := filepath.Join(rootPath, authorFolder)
+
+	// Check if folder exists
+	if _, err := os.Stat(authorPath); os.IsNotExist(err) {
+		return nil // Folder doesn't exist, nothing to delete
+	}
+
+	// Delete the entire author folder
+	if err := os.RemoveAll(authorPath); err != nil {
+		return fmt.Errorf("remove author folder %s: %w", authorPath, err)
+	}
+
+	return nil
+}
+
+// sanitizeFolderName sanitizes a name for use as a folder name.
+func sanitizeFolderName(name string) string {
+	// Replace characters that are invalid in filenames
+	replacer := strings.NewReplacer(
+		"/", "-",
+		"\\", "-",
+		":", "-",
+		"*", "",
+		"?", "",
+		"\"", "'",
+		"<", "",
+		">", "",
+		"|", "-",
+	)
+	return strings.TrimSpace(replacer.Replace(name))
 }
 
 // GetStats returns statistics for an author.
