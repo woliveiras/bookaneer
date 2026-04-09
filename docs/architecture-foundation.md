@@ -1,10 +1,10 @@
-# Phase 1 Architecture — Foundation
+# Architecture — Foundation
 
-This document describes the architecture implemented in Phase 1 of Bookaneer.
+This document describes the foundational architecture of Bookaneer.
 
 ## Overview
 
-Phase 1 establishes the foundational infrastructure:
+The foundational infrastructure:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -125,7 +125,7 @@ e.Use(middleware.CORS())        // CORS headers
 React SPA with:
 - **Vite** — Build tooling
 - **TanStack Query** — Data fetching and caching
-- **TanStack Router** — Type-safe routing (Phase 2)
+- **TanStack Router** — Type-safe routing
 - **Tailwind CSS v4** — Styling
 - **shadcn/ui** — Component library
 - **lucide-react** — Icons
@@ -221,7 +221,7 @@ No global state. All dependencies passed explicitly via constructors.
 
 ## Security
 
-### Implemented in Phase 1:
+### Implemented:
 
 - ✅ API key authentication
 - ✅ bcrypt password hashing (cost=10)
@@ -229,7 +229,7 @@ No global state. All dependencies passed explicitly via constructors.
 - ✅ CORS headers
 - ✅ Request ID for tracing
 
-### Planned for Phase 2+:
+### Planned:
 
 - Session tokens with expiry
 - CSRF protection
@@ -239,7 +239,7 @@ No global state. All dependencies passed explicitly via constructors.
 
 ---
 
-## Next Steps (Phase 2)
+## Next Steps
 
 1. **Authors & Books CRUD** — Domain services
 2. **Metadata providers** — OpenLibrary integration
