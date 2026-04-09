@@ -47,7 +47,7 @@ func (s *Service) grabFromLibrary(ctx context.Context, b *book.Book, r *library.
 		clientIDPtr = &cfg.ID
 	}
 	if err := s.recordDownload(ctx, b.ID, clientIDPtr, nil, r.Title, r.Size, r.Format, r.DownloadURL, downloadID, expectedSavePath); err != nil {
-		slog.Error("Failed to record download", "error", err)
+		return nil, fmt.Errorf("record download in queue: %w", err)
 	}
 
 	// Record in history
@@ -124,7 +124,7 @@ func (s *Service) grabFromIndexer(ctx context.Context, b *book.Book, r *search.R
 		clientIDPtr = &cfg.ID
 	}
 	if err := s.recordDownload(ctx, b.ID, clientIDPtr, indexerID, r.Title, r.Size, format, r.DownloadURL, downloadID, ""); err != nil {
-		slog.Error("Failed to record download", "error", err)
+		return nil, fmt.Errorf("record download in queue: %w", err)
 	}
 
 	protocol := "torrent"
@@ -211,7 +211,7 @@ func (s *Service) GrabRelease(ctx context.Context, bookID int64, downloadURL, re
 		clientIDPtr = &cfg.ID
 	}
 	if err := s.recordDownload(ctx, b.ID, clientIDPtr, nil, releaseTitle, size, format, downloadURL, downloadID, expectedSavePath); err != nil {
-		slog.Error("Failed to record download", "error", err)
+		return nil, fmt.Errorf("record download in queue: %w", err)
 	}
 
 	s.recordHistory(ctx, b.ID, b.AuthorID, "grabbed", releaseTitle, format, map[string]any{
