@@ -207,26 +207,32 @@ func (s *Service) grabFromLibrary(ctx context.Context, b *book.Book, r *library.
 		return nil, fmt.Errorf("no direct download client configured: %w", err)
 	}
 
-	// Build filename
-	filename := fmt.Sprintf("%s - %s.%s", b.AuthorName, b.Title, r.Format)
-	filename = sanitizeFilename(filename)
+	// Build author folder and filename
+	// Structure: RootFolder/AuthorName/AuthorName - BookTitle.format
+	authorFolder := sanitizeFilename(b.AuthorName)
+	filename := fmt.Sprintf("%s - %s.%s", sanitizeFilename(b.AuthorName), sanitizeFilename(b.Title), r.Format)
 
-	// Add to download client
+	// Build expected save path (including author folder)
+	authorDir := filepath.Join(cfg.DownloadDir, authorFolder)
+	expectedSavePath := filepath.Join(authorDir, filename)
+
+	// Add to download client with the full path including author folder
 	downloadID, err := client.Add(ctx, download.AddItem{
 		Name:        filename,
 		DownloadURL: r.DownloadURL,
 		Category:    "books",
+		SavePath:    authorDir, // Tell client to save in author folder
 	})
 	if err != nil {
 		return nil, fmt.Errorf("add to download client: %w", err)
 	}
 
-	// Record in download queue (use nil for embedded client)
+	// Record in download queue with expected save path (use nil for embedded client)
 	var clientIDPtr *int64
 	if cfg.ID != 0 {
 		clientIDPtr = &cfg.ID
 	}
-	if err := s.recordDownload(ctx, b.ID, clientIDPtr, nil, r.Title, r.Size, r.Format, r.DownloadURL, downloadID); err != nil {
+	if err := s.recordDownload(ctx, b.ID, clientIDPtr, nil, r.Title, r.Size, r.Format, r.DownloadURL, downloadID, expectedSavePath); err != nil {
 		slog.Error("Failed to record download", "error", err)
 	}
 
@@ -345,12 +351,13 @@ func (s *Service) grabFromIndexer(ctx context.Context, b *book.Book, r *search.R
 	// Get indexer ID
 	indexerID := &r.IndexerID
 
+	// For indexer downloads, we don't know the exact save path yet (depends on client)
 	// Record in download queue (use nil for embedded client)
 	var clientIDPtr *int64
 	if cfg.ID != 0 {
 		clientIDPtr = &cfg.ID
 	}
-	if err := s.recordDownload(ctx, b.ID, clientIDPtr, indexerID, r.Title, r.Size, format, r.DownloadURL, downloadID); err != nil {
+	if err := s.recordDownload(ctx, b.ID, clientIDPtr, indexerID, r.Title, r.Size, format, r.DownloadURL, downloadID, ""); err != nil {
 		slog.Error("Failed to record download", "error", err)
 	}
 
@@ -386,11 +393,11 @@ func (s *Service) grabFromIndexer(ctx context.Context, b *book.Book, r *search.R
 
 // recordDownload adds an entry to the download_queue table.
 // clientID can be nil for embedded client (no database entry).
-func (s *Service) recordDownload(ctx context.Context, bookID int64, clientID *int64, indexerID *int64, title string, size int64, format, downloadURL, externalID string) error {
+func (s *Service) recordDownload(ctx context.Context, bookID int64, clientID *int64, indexerID *int64, title string, size int64, format, downloadURL, externalID, savePath string) error {
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO download_queue (book_id, download_client_id, indexer_id, external_id, title, size, format, status, download_url)
-		VALUES (?, ?, ?, ?, ?, ?, ?, 'queued', ?)
-	`, bookID, clientID, indexerID, externalID, title, size, format, downloadURL)
+		INSERT INTO download_queue (book_id, download_client_id, indexer_id, external_id, title, size, format, status, download_url, save_path)
+		VALUES (?, ?, ?, ?, ?, ?, ?, 'queued', ?, ?)
+	`, bookID, clientID, indexerID, externalID, title, size, format, downloadURL, savePath)
 	return err
 }
 
@@ -641,6 +648,12 @@ func (s *Service) UpdateQueueItemStatus(ctx context.Context, id int64, status st
 	return err
 }
 
+// UpdateQueueItemStatusWithPath updates the status and save_path of a queue item.
+func (s *Service) UpdateQueueItemStatusWithPath(ctx context.Context, id int64, status string, progress float64, savePath string) error {
+	_, err := s.db.ExecContext(ctx, `UPDATE download_queue SET status = ?, progress = ?, save_path = ? WHERE id = ?`, status, progress, savePath, id)
+	return err
+}
+
 // RemoveFromQueue removes an item from the download queue.
 func (s *Service) RemoveFromQueue(ctx context.Context, id int64) error {
 	_, err := s.db.ExecContext(ctx, `DELETE FROM download_queue WHERE id = ?`, id)
@@ -671,17 +684,7 @@ func (s *Service) GrabRelease(ctx context.Context, bookID int64, downloadURL, re
 	}
 	filename = sanitizeFilename(filename)
 
-	// Add to download client
-	downloadID, err := client.Add(ctx, download.AddItem{
-		Name:        filename,
-		DownloadURL: downloadURL,
-		Category:    "books",
-	})
-	if err != nil {
-		return nil, fmt.Errorf("add to download client: %w", err)
-	}
-
-	// Determine format from URL or title
+	// Determine format from URL or title first (needed for filename)
 	format := "unknown"
 	urlLower := strings.ToLower(downloadURL + releaseTitle)
 	switch {
@@ -693,12 +696,34 @@ func (s *Service) GrabRelease(ctx context.Context, bookID int64, downloadURL, re
 		format = "mobi"
 	}
 
-	// Record in download queue (use nil for embedded client)
+	// Add format extension to filename if missing
+	if format != "unknown" && !strings.HasSuffix(strings.ToLower(filename), "."+format) {
+		filename = filename + "." + format
+	}
+
+	// Build author folder and expected save path
+	// Structure: RootFolder/AuthorName/AuthorName - BookTitle.format
+	authorFolder := sanitizeFilename(b.AuthorName)
+	authorDir := filepath.Join(cfg.DownloadDir, authorFolder)
+	expectedSavePath := filepath.Join(authorDir, filename)
+
+	// Add to download client
+	downloadID, err := client.Add(ctx, download.AddItem{
+		Name:        filename,
+		DownloadURL: downloadURL,
+		Category:    "books",
+		SavePath:    authorDir, // Tell client to save in author folder
+	})
+	if err != nil {
+		return nil, fmt.Errorf("add to download client: %w", err)
+	}
+
+	// Record in download queue with expected save path (use nil for embedded client)
 	var clientIDPtr *int64
 	if cfg.ID != 0 {
 		clientIDPtr = &cfg.ID
 	}
-	if err := s.recordDownload(ctx, b.ID, clientIDPtr, nil, releaseTitle, size, format, downloadURL, downloadID); err != nil {
+	if err := s.recordDownload(ctx, b.ID, clientIDPtr, nil, releaseTitle, size, format, downloadURL, downloadID, expectedSavePath); err != nil {
 		slog.Error("Failed to record download", "error", err)
 	}
 
@@ -732,11 +757,20 @@ type ProcessDownloadsResult struct {
 	Checked   int `json:"checked"`
 	Completed int `json:"completed"`
 	Failed    int `json:"failed"`
+	Imported  int `json:"imported"`
 }
 
 // ProcessDownloads checks active downloads and updates their status.
 func (s *Service) ProcessDownloads(ctx context.Context) (*ProcessDownloadsResult, error) {
 	result := &ProcessDownloadsResult{}
+
+	// First, process any completed downloads that have a save_path but weren't imported
+	// This handles server restarts where the in-memory download state was lost
+	if imported, err := s.importPendingCompletedDownloads(ctx); err != nil {
+		slog.Warn("Failed to import pending downloads", "error", err)
+	} else {
+		result.Imported = imported
+	}
 
 	// Get active downloads (queued, downloading, paused)
 	rows, err := s.db.QueryContext(ctx, `
@@ -790,11 +824,18 @@ func (s *Service) ProcessDownloads(ctx context.Context) (*ProcessDownloadsResult
 			continue
 		}
 
-		// Update status based on download client response
+		// Update status based on download client response (including save_path)
 		newStatus := string(status.Status)
-		if err := s.UpdateQueueItemStatus(ctx, d.ID, newStatus, status.Progress); err != nil {
-			slog.Warn("Failed to update queue status", "id", d.ID, "error", err)
-			continue
+		if status.SavePath != "" {
+			if err := s.UpdateQueueItemStatusWithPath(ctx, d.ID, newStatus, status.Progress, status.SavePath); err != nil {
+				slog.Warn("Failed to update queue status", "id", d.ID, "error", err)
+				continue
+			}
+		} else {
+			if err := s.UpdateQueueItemStatus(ctx, d.ID, newStatus, status.Progress); err != nil {
+				slog.Warn("Failed to update queue status", "id", d.ID, "error", err)
+				continue
+			}
 		}
 
 		switch status.Status {
@@ -813,6 +854,7 @@ func (s *Service) ProcessDownloads(ctx context.Context) (*ProcessDownloadsResult
 						"queueId", d.ID,
 						"path", status.SavePath,
 					)
+					result.Imported++
 				}
 			}
 		case download.StatusFailed:
@@ -825,6 +867,75 @@ func (s *Service) ProcessDownloads(ctx context.Context) (*ProcessDownloadsResult
 	}
 
 	return result, nil
+}
+
+// importPendingCompletedDownloads imports downloads that completed but weren't imported
+// (e.g., because the server restarted before import could happen).
+func (s *Service) importPendingCompletedDownloads(ctx context.Context) (int, error) {
+	// Find completed downloads with save_path that haven't been imported yet
+	// (not imported = no entry in book_files for that book_id)
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT q.id, q.book_id, q.save_path
+		FROM download_queue q
+		WHERE q.status = 'completed'
+		  AND q.save_path != ''
+		  AND NOT EXISTS (SELECT 1 FROM book_files bf WHERE bf.book_id = q.book_id)
+	`)
+	if err != nil {
+		return 0, fmt.Errorf("query pending imports: %w", err)
+	}
+
+	// Collect all pending imports first, then close rows before processing
+	// This avoids SQLite lock issues when doing writes during iteration
+	type pendingImport struct {
+		queueID  int64
+		bookID   int64
+		savePath string
+	}
+	var pending []pendingImport
+	for rows.Next() {
+		var p pendingImport
+		if err := rows.Scan(&p.queueID, &p.bookID, &p.savePath); err != nil {
+			slog.Warn("Failed to scan pending import", "error", err)
+			continue
+		}
+		pending = append(pending, p)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return 0, fmt.Errorf("iterate pending imports: %w", err)
+	}
+	rows.Close() // Close before processing to avoid SQLite locks
+
+	var imported int
+	for _, p := range pending {
+		// Check if file still exists
+		if _, err := os.Stat(p.savePath); os.IsNotExist(err) {
+			slog.Warn("Download file no longer exists, marking as failed",
+				"queueId", p.queueID,
+				"path", p.savePath,
+			)
+			_ = s.UpdateQueueItemStatus(ctx, p.queueID, "failed", 0)
+			continue
+		}
+
+		// Import the download
+		if err := s.importCompletedDownload(ctx, p.queueID, p.savePath); err != nil {
+			slog.Warn("Failed to import pending download",
+				"queueId", p.queueID,
+				"path", p.savePath,
+				"error", err,
+			)
+		} else {
+			slog.Info("Successfully imported pending download",
+				"queueId", p.queueID,
+				"path", p.savePath,
+			)
+			imported++
+		}
+	}
+
+	return imported, nil
 }
 
 // restartDownload restarts a download that was lost (e.g., after server restart).
@@ -903,9 +1014,17 @@ func (s *Service) importCompletedDownload(ctx context.Context, queueID int64, so
 	filename := fmt.Sprintf("%s - %s.%s", sanitizeFilename(b.AuthorName), sanitizeFilename(b.Title), format)
 	destPath := filepath.Join(authorDir, filename)
 
-	// Copy file to library (copy instead of move for safety)
-	if err := copyFile(sourcePath, destPath); err != nil {
-		return fmt.Errorf("copy file: %w", err)
+	// Check if source and destination are the same file
+	// This happens when the download was saved directly to the library location
+	srcAbs, _ := filepath.Abs(sourcePath)
+	dstAbs, _ := filepath.Abs(destPath)
+	if srcAbs != dstAbs {
+		// Copy file to library (copy instead of move for safety)
+		if err := copyFile(sourcePath, destPath); err != nil {
+			return fmt.Errorf("copy file: %w", err)
+		}
+	} else {
+		slog.Debug("Source and destination are the same, skipping copy", "path", destPath)
 	}
 
 	// Get file info

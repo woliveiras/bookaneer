@@ -12,10 +12,11 @@ import (
 
 // Service manages download clients and queue operations.
 type Service struct {
-	db             *sql.DB
-	mu             sync.RWMutex
-	clients        map[int64]Client
-	embeddedClient Client // Auto-configured direct downloader
+	db                   *sql.DB
+	mu                   sync.RWMutex
+	clients              map[int64]Client
+	embeddedClient       Client        // Auto-configured direct downloader
+	embeddedClientConfig *ClientConfig // Cached config with DownloadDir
 }
 
 // NewService creates a new download service.
@@ -481,20 +482,16 @@ func (s *Service) GetDirectClient(ctx context.Context) (Client, *ClientConfig, e
 // getEmbeddedDirectClient returns or creates the embedded direct downloader
 // that uses the first root folder as download destination.
 func (s *Service) getEmbeddedDirectClient(ctx context.Context) (Client, *ClientConfig, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	// Return existing embedded client if already created
-	if s.embeddedClient != nil {
-		return s.embeddedClient, &ClientConfig{
-			ID:      0,
-			Name:    "Embedded Downloader",
-			Type:    ClientTypeDirect,
-			Enabled: true,
-		}, nil
+	// Fast path: return cached client without holding lock during DB query
+	s.mu.RLock()
+	if s.embeddedClient != nil && s.embeddedClientConfig != nil {
+		client, cfg := s.embeddedClient, s.embeddedClientConfig
+		s.mu.RUnlock()
+		return client, cfg, nil
 	}
+	s.mu.RUnlock()
 
-	// Get the first root folder for download destination
+	// Get the first root folder BEFORE acquiring write lock
 	var rootPath string
 	err := s.db.QueryRowContext(ctx, `SELECT path FROM root_folders ORDER BY id LIMIT 1`).Scan(&rootPath)
 	if err == sql.ErrNoRows {
@@ -502,6 +499,15 @@ func (s *Service) getEmbeddedDirectClient(ctx context.Context) (Client, *ClientC
 	}
 	if err != nil {
 		return nil, nil, fmt.Errorf("get root folder: %w", err)
+	}
+
+	// Now acquire lock to create client
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Double-check: another goroutine may have created it while we were querying
+	if s.embeddedClient != nil && s.embeddedClientConfig != nil {
+		return s.embeddedClient, s.embeddedClientConfig, nil
 	}
 
 	// Create embedded direct client
@@ -516,14 +522,15 @@ func (s *Service) getEmbeddedDirectClient(ctx context.Context) (Client, *ClientC
 	}
 
 	s.embeddedClient = client
-
-	return client, &ClientConfig{
+	s.embeddedClientConfig = &ClientConfig{
 		ID:          0,
 		Name:        "Embedded Downloader",
 		Type:        ClientTypeDirect,
 		DownloadDir: rootPath,
 		Enabled:     true,
-	}, nil
+	}
+
+	return client, s.embeddedClientConfig, nil
 }
 
 // GetUsenetClient returns a configured usenet download client (SABnzbd, NZBGet).

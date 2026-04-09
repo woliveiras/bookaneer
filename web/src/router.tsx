@@ -13,6 +13,7 @@ import { UnifiedSearch } from "./components/search/UnifiedSearch"
 import { BookDetails } from "./components/search/BookDetails"
 import { WantedList, QueueList, HistoryList, BlocklistList } from "./components/wanted"
 import { Button } from "./components/ui"
+import { RootFolderWarning } from "./components/common"
 import { bookApi, authorApi, wantedApi, type MetadataBookResult, type ActiveCommand } from "./lib/api"
 
 // Types
@@ -86,6 +87,7 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        <RootFolderWarning />
         {children}
       </main>
     </div>

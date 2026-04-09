@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react"
 import { Link } from "@tanstack/react-router"
 import { useDownloadQueue, useRemoveFromQueue, useActiveCommands, useRecentCommands } from "../../hooks/useWanted"
-import { useRootFolders } from "../../hooks/useRootFolders"
 import { Button, Card, CardContent, Progress } from "../ui"
 import type { QueueItem, ActiveCommand } from "../../lib/api"
 
@@ -155,12 +154,9 @@ export function QueueList() {
   const { data: queue, isLoading, error, refetch } = useDownloadQueue()
   const { data: activeCommands } = useActiveCommands()
   const { data: recentCommands } = useRecentCommands(50)
-  const { data: rootFolders } = useRootFolders()
   const removeMutation = useRemoveFromQueue()
   const [itemToRemove, setItemToRemove] = useState<QueueItem | null>(null)
   const [dismissedCommands, setDismissedCommands] = useState<Set<string>>(getDismissedCommands)
-
-  const hasRootFolder = rootFolders && rootFolders.length > 0
 
   // Sync dismissed commands to localStorage
   useEffect(() => {
@@ -248,26 +244,6 @@ export function QueueList() {
 
   return (
     <div className="space-y-6">
-      {/* Warning: No root folder configured */}
-      {!hasRootFolder && (
-        <Card className="border-yellow-500/50 bg-yellow-500/10">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <span className="text-xl">⚠️</span>
-              <div>
-                <h4 className="font-medium text-yellow-600 dark:text-yellow-400">No Root Folder Configured</h4>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Downloads will fail because there's no folder configured to save books.
-                </p>
-                <Link to="/settings" className="text-sm text-primary hover:underline mt-2 inline-block">
-                  Go to Settings to add a root folder →
-                </Link>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

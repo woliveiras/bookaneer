@@ -1,8 +1,6 @@
 import { useState } from "react"
-import { Link } from "@tanstack/react-router"
 import { useWantedMissing, useSearchAllMissing, useSearchBook } from "../../hooks/useWanted"
 import { useUpdateBook } from "../../hooks/useBooks"
-import { useRootFolders } from "../../hooks/useRootFolders"
 import { Button, Card, CardContent } from "../ui"
 import { useQueryClient } from "@tanstack/react-query"
 import type { Book } from "../../lib/api"
@@ -10,15 +8,12 @@ import type { Book } from "../../lib/api"
 export function WantedList() {
   const queryClient = useQueryClient()
   const { data, isLoading, error, refetch } = useWantedMissing()
-  const { data: rootFolders } = useRootFolders()
   const searchAllMutation = useSearchAllMissing()
   const searchBookMutation = useSearchBook()
   const updateBookMutation = useUpdateBook()
   const [searchingBooks, setSearchingBooks] = useState<Set<number>>(new Set())
   const [removingBooks, setRemovingBooks] = useState<Set<number>>(new Set())
   const [bookToRemove, setBookToRemove] = useState<Book | null>(null)
-
-  const hasRootFolder = rootFolders && rootFolders.length > 0
 
   const handleSearchAll = async () => {
     try {
@@ -91,26 +86,6 @@ export function WantedList() {
 
   return (
     <div className="space-y-6">
-      {/* Warning: No root folder configured */}
-      {!hasRootFolder && (
-        <Card className="border-yellow-500/50 bg-yellow-500/10">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <span className="text-xl">⚠️</span>
-              <div>
-                <h4 className="font-medium text-yellow-600 dark:text-yellow-400">No Root Folder Configured</h4>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Downloads will fail because there's no folder configured to save books.
-                </p>
-                <Link to="/settings" className="text-sm text-primary hover:underline mt-2 inline-block">
-                  Go to Settings to add a root folder →
-                </Link>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Header with actions */}
       <div className="flex items-center justify-between">
         <div>
