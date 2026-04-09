@@ -1,0 +1,105 @@
+import { useState } from "react"
+import { SettingsGeneral, RootFolderList } from "../components/settings"
+import { IndexerList, IndexerOptions } from "../components/indexers"
+import { DownloadClientList } from "../components/download"
+import { AuthLayout } from "../components/layout/AppLayout"
+
+export function SettingsPage() {
+  return (
+    <AuthLayout>
+      <h2 className="text-2xl font-bold mb-6">Settings</h2>
+      <div className="space-y-4">
+        <GeneralSettings />
+        <RootFolderSettings />
+        <IndexerSettings />
+        <DownloadClientSettings />
+      </div>
+    </AuthLayout>
+  )
+}
+
+function GeneralSettings() {
+  const [isOpen, setIsOpen] = useState(true)
+  return (
+    <div className="border rounded-lg">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-full p-4 text-left hover:bg-accent/50 transition-colors"
+      >
+        <span className="text-lg font-semibold">General</span>
+        <span className="text-muted-foreground">{isOpen ? "▼" : "▶"}</span>
+      </button>
+      {isOpen && (
+        <div className="p-4 border-t">
+          <SettingsGeneral />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RootFolderSettings() {
+  const [isOpen, setIsOpen] = useState(true)
+  return (
+    <div className="border rounded-lg">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-full p-4 text-left hover:bg-accent/50 transition-colors"
+      >
+        <span className="text-lg font-semibold">Root Folders</span>
+        <span className="text-muted-foreground">{isOpen ? "▼" : "▶"}</span>
+      </button>
+      {isOpen && (
+        <div className="p-4 border-t">
+          <RootFolderList />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function IndexerSettings() {
+  const [isOpen, setIsOpen] = useState(false)
+  return (
+    <div className="border rounded-lg">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-full p-4 text-left hover:bg-accent/50 transition-colors"
+      >
+        <span className="text-lg font-semibold">Indexers</span>
+        <span className="text-muted-foreground">{isOpen ? "▼" : "▶"}</span>
+      </button>
+      {isOpen && (
+        <div className="p-4 border-t space-y-6">
+          <IndexerList />
+          <hr className="border-border" />
+          <IndexerOptions />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DownloadClientSettings() {
+  const [isOpen, setIsOpen] = useState(false)
+  return (
+    <div className="border rounded-lg">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-full p-4 text-left hover:bg-accent/50 transition-colors"
+      >
+        <span className="text-lg font-semibold">Download Clients</span>
+        <span className="text-muted-foreground">{isOpen ? "▼" : "▶"}</span>
+      </button>
+      {isOpen && (
+        <div className="p-4 border-t">
+          <DownloadClientList />
+        </div>
+      )}
+    </div>
+  )
+}
