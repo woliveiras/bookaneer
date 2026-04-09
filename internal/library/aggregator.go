@@ -3,6 +3,7 @@ package library
 import (
 	"context"
 	"log/slog"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -18,11 +19,33 @@ func NewAggregator(providers ...Provider) *Aggregator {
 	return &Aggregator{providers: providers}
 }
 
+// sanitizeQuery removes special characters that can break search APIs.
+// Keeps only alphanumeric characters, spaces, and basic punctuation.
+func sanitizeQuery(query string) string {
+	// Remove problematic characters for search APIs: ; ( ) ' " [ ] { }
+	re := regexp.MustCompile(`[;()\[\]{}'"]+`)
+	query = re.ReplaceAllString(query, " ")
+
+	// Collapse multiple spaces
+	query = regexp.MustCompile(`\s+`).ReplaceAllString(query, " ")
+
+	// Trim and return
+	return strings.TrimSpace(query)
+}
+
 // Search searches all providers in parallel and combines results.
 func (a *Aggregator) Search(ctx context.Context, query string) ([]SearchResult, error) {
 	if len(a.providers) == 0 {
 		return []SearchResult{}, nil
 	}
+
+	// Sanitize query to remove problematic characters
+	query = sanitizeQuery(query)
+	if query == "" {
+		return []SearchResult{}, nil
+	}
+
+	slog.Debug("library search", "query", query)
 
 	type providerResult struct {
 		name    string
