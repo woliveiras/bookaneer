@@ -422,8 +422,17 @@ function SearchCommandCard({ command, onDismiss, canDismiss }: SearchCommandCard
   const bookId = command.payload?.bookId as number | undefined
 
   return (
-    <Card className={hasError && command.status !== "running" ? "border-red-500/30" : ""}>
-      <CardContent className="p-4">
+    <Card className={`relative overflow-hidden ${hasError && command.status !== "running" ? "border-red-500/30" : ""}`}>
+      {/* Shimmer gradient overlay when searching */}
+      {statusInfo.spinning && (
+        <div 
+          className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite]"
+          style={{
+            background: "linear-gradient(90deg, transparent 0%, rgba(59, 130, 246, 0.1) 50%, transparent 100%)",
+          }}
+        />
+      )}
+      <CardContent className="p-4 relative z-10">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 flex-1 min-w-0">
             {/* Status indicator */}
@@ -517,9 +526,22 @@ function QueueItemCard({ item, onRemove, isRemoving }: QueueItemCardProps) {
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`
   }
 
+  const isActive = item.status === "queued" || item.status === "downloading"
+
   return (
-    <Card className={item.status === "failed" ? "border-red-500/30" : ""}>
-      <CardContent className="p-4">
+    <Card className={`relative overflow-hidden ${item.status === "failed" ? "border-red-500/30" : ""}`}>
+      {/* Shimmer gradient overlay when downloading or queued */}
+      {isActive && (
+        <div 
+          className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite]"
+          style={{
+            background: item.status === "downloading" 
+              ? "linear-gradient(90deg, transparent 0%, rgba(59, 130, 246, 0.15) 50%, transparent 100%)"
+              : "linear-gradient(90deg, transparent 0%, rgba(245, 158, 11, 0.1) 50%, transparent 100%)",
+          }}
+        />
+      )}
+      <CardContent className="p-4 relative z-10">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 flex-1 min-w-0">
             {/* Status indicator */}
