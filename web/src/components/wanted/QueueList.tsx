@@ -7,6 +7,82 @@ import type { QueueItem, ActiveCommand } from "../../lib/api"
 
 const DISMISSED_STORAGE_KEY = "bookaneer-dismissed-commands"
 
+// Animated download icon for "downloading" status
+function DownloadingIcon() {
+  return (
+    <div className="relative flex items-center justify-center h-6 w-6">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-5 w-5 text-blue-500"
+      >
+        {/* Arrow pointing down with animation */}
+        <path d="M12 3v12" className="animate-pulse" />
+        <path d="m8 11 4 4 4-4" className="animate-bounce" />
+        {/* Base line */}
+        <path d="M8 21h8" />
+        <path d="M12 17v4" />
+      </svg>
+      {/* Animated ring */}
+      <div className="absolute inset-0 rounded-full border-2 border-blue-500/30 animate-ping" />
+    </div>
+  )
+}
+
+// Icon for "queued" status - waiting in line
+function QueuedIcon() {
+  return (
+    <div className="relative flex items-center justify-center h-6 w-6 rounded-full bg-amber-500">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="white"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-3.5 w-3.5"
+      >
+        {/* Download arrow */}
+        <path d="M12 5v8" />
+        <path d="m8 10 4 4 4-4" />
+        <path d="M5 19h14" />
+      </svg>
+      {/* Subtle pulse animation */}
+      <div className="absolute inset-0 rounded-full bg-amber-400 animate-pulse opacity-50" style={{ animationDuration: "2s" }} />
+    </div>
+  )
+}
+
+// Animated search icon for "searching" status
+function SearchingIcon() {
+  return (
+    <div className="relative flex items-center justify-center h-6 w-6">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-5 w-5 text-blue-500 animate-pulse"
+      >
+        {/* Magnifying glass */}
+        <circle cx="11" cy="11" r="8" />
+        <path d="m21 21-4.3-4.3" />
+      </svg>
+      {/* Animated ring */}
+      <div className="absolute inset-0 rounded-full border-2 border-blue-500/30 animate-ping" style={{ animationDuration: "1.5s" }} />
+    </div>
+  )
+}
+
 // Get dismissed command IDs from localStorage
 function getDismissedCommands(): Set<string> {
   try {
@@ -67,7 +143,7 @@ function getCommandDescription(command: ActiveCommand): { title: string; subtitl
 
 function getStatusInfo(status: string, hasError: boolean) {
   if (status === "running" || status === "queued") {
-    return { label: "Searching", color: "bg-blue-500", icon: "🔍", spinning: true }
+    return { label: "Searching...", color: "bg-blue-500", icon: "search", spinning: true }
   }
   if (status === "failed" || hasError) {
     return { label: "Not Found", color: "bg-red-500", icon: "✕", spinning: false }
@@ -351,11 +427,11 @@ function SearchCommandCard({ command, onDismiss, canDismiss }: SearchCommandCard
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 flex-1 min-w-0">
             {/* Status indicator */}
-            <div className="flex-shrink-0 mt-0.5">
+            <div className="shrink-0 mt-0.5">
               {statusInfo.spinning ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
+                <SearchingIcon />
               ) : (
-                <span className={`flex items-center justify-center h-5 w-5 rounded-full text-white text-xs ${statusInfo.color}`}>
+                <span className={`flex items-center justify-center h-6 w-6 rounded-full text-white text-xs ${statusInfo.color}`}>
                   {statusInfo.icon}
                 </span>
               )}
@@ -388,7 +464,7 @@ function SearchCommandCard({ command, onDismiss, canDismiss }: SearchCommandCard
             </div>
           </div>
 
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             {/* Link to book for retry */}
             {bookId && hasError && !statusInfo.spinning && (
               <Link to="/book/$bookId" params={{ bookId: String(bookId) }}>
@@ -447,15 +523,15 @@ function QueueItemCard({ item, onRemove, isRemoving }: QueueItemCardProps) {
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 flex-1 min-w-0">
             {/* Status indicator */}
-            <div className="flex-shrink-0 mt-0.5">
+            <div className="shrink-0 mt-0.5">
               {item.status === "downloading" ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
+                <DownloadingIcon />
               ) : item.status === "completed" ? (
-                <span className="flex items-center justify-center h-5 w-5 rounded-full bg-green-500 text-white text-xs">✓</span>
+                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-green-500 text-white text-xs">✓</span>
               ) : item.status === "failed" ? (
-                <span className="flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-xs">✕</span>
+                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-red-500 text-white text-xs">✕</span>
               ) : (
-                <span className="flex items-center justify-center h-5 w-5 rounded-full bg-gray-500 text-white text-xs">⏳</span>
+                <QueuedIcon />
               )}
             </div>
 
@@ -463,11 +539,29 @@ function QueueItemCard({ item, onRemove, isRemoving }: QueueItemCardProps) {
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="font-medium truncate">{item.bookTitle}</h3>
                 <span className={`text-xs px-2 py-0.5 rounded ${statusColors[item.status] || statusColors.queued}`}>
-                  {item.status === "downloading" ? "Downloading" : item.status}
+                  {item.status === "downloading" ? "Downloading..." : 
+                   item.status === "queued" ? "Queued" :
+                   item.status === "completed" ? "Completed" :
+                   item.status === "failed" ? "Failed" : item.status}
                 </span>
                 <span className="text-xs text-muted-foreground uppercase">{item.format}</span>
               </div>
               <p className="text-xs text-muted-foreground truncate">{item.title}</p>
+
+              {/* Progress bar for queued items - indeterminate */}
+              {item.status === "queued" && (
+                <div className="mt-2">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                    <span>Waiting to download...</span>
+                  </div>
+                  <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-amber-500 rounded-full animate-pulse"
+                      style={{ width: "30%" }}
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Progress bar for active downloads */}
               {item.status === "downloading" && (
@@ -502,7 +596,7 @@ function QueueItemCard({ item, onRemove, isRemoving }: QueueItemCardProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             {item.status === "failed" && (
               <Link to="/book/$bookId" params={{ bookId: String(item.bookId) }}>
                 <Button variant="outline" size="sm" title="Open book page to search alternatives">
