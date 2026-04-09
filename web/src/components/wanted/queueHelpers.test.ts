@@ -41,20 +41,32 @@ describe("saveDismissedCommands", () => {
 
 describe("getCommandDescription", () => {
   it("returns book info for AutomaticSearch", () => {
-    const cmd = { name: "AutomaticSearch", payload: { bookTitle: "Dune", authorName: "Herbert" } } as ActiveCommand
+    const cmd: ActiveCommand = {
+      id: "cmd-1", name: "AutomaticSearch", status: "running",
+      priority: 1, trigger: "manual", queuedAt: "2025-01-01T00:00:00Z",
+      payload: { bookTitle: "Dune", authorName: "Herbert" },
+    }
     const desc = getCommandDescription(cmd)
     expect(desc.title).toBe("Dune")
     expect(desc.subtitle).toBe("by Herbert")
   })
 
   it("returns generic title for MissingBookSearch", () => {
-    const cmd = { name: "MissingBookSearch", payload: {} } as ActiveCommand
+    const cmd: ActiveCommand = {
+      id: "cmd-2", name: "MissingBookSearch", status: "running",
+      priority: 1, trigger: "manual", queuedAt: "2025-01-01T00:00:00Z",
+      payload: {},
+    }
     const desc = getCommandDescription(cmd)
     expect(desc.title).toBe("All Missing Books")
   })
 
   it("falls back to command name for unknown commands", () => {
-    const cmd = { name: "CustomCommand", payload: {} } as ActiveCommand
+    const cmd: ActiveCommand = {
+      id: "cmd-3", name: "CustomCommand", status: "running",
+      priority: 1, trigger: "manual", queuedAt: "2025-01-01T00:00:00Z",
+      payload: {},
+    }
     const desc = getCommandDescription(cmd)
     expect(desc.title).toBe("CustomCommand")
   })

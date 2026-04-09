@@ -62,10 +62,8 @@ beforeEach(() => {
 describe("useAuthors", () => {
   it("fetches author list", async () => {
     const response: PaginatedResponse<Author> = {
-      items: [mockAuthor],
-      total: 1,
-      limit: 20,
-      offset: 0,
+      records: [mockAuthor],
+      totalRecords: 1,
     }
     vi.mocked(authorApi.list).mockResolvedValue(response)
 
@@ -77,7 +75,7 @@ describe("useAuthors", () => {
   })
 
   it("passes filter params to API", async () => {
-    const response: PaginatedResponse<Author> = { items: [], total: 0, limit: 20, offset: 0 }
+    const response: PaginatedResponse<Author> = { records: [], totalRecords: 0 }
     vi.mocked(authorApi.list).mockResolvedValue(response)
 
     const params = { monitored: true, search: "test" }

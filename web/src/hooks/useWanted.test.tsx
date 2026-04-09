@@ -14,6 +14,7 @@ import {
   useAddToBlocklist,
   useRemoveFromBlocklist,
 } from "./useWanted"
+import type { WantedResponse, SearchCommandResponse, QueueItem, ActiveCommand, HistoryItem, BlocklistItem } from "../lib/api"
 
 vi.mock("../lib/api", async () => {
   const actual = await vi.importActual<typeof import("../lib/api")>("../lib/api")
@@ -62,7 +63,14 @@ beforeEach(() => {
 
 describe("useWantedMissing", () => {
   it("fetches missing books", async () => {
-    const missing = { books: [], total: 0 }
+    const missing: WantedResponse = {
+      page: 1,
+      pageSize: 20,
+      totalRecords: 0,
+      sortKey: "title",
+      sortDirection: "asc",
+      records: [],
+    }
     vi.mocked(wantedApi.getMissing).mockResolvedValue(missing)
 
     const { result } = renderHook(() => useWantedMissing(), { wrapper: createWrapper() })
@@ -74,7 +82,8 @@ describe("useWantedMissing", () => {
 
 describe("useSearchAllMissing", () => {
   it("triggers search and resolves", async () => {
-    vi.mocked(wantedApi.searchAllMissing).mockResolvedValue(undefined)
+    const response: SearchCommandResponse = { commandId: "cmd-1", message: "Search started" }
+    vi.mocked(wantedApi.searchAllMissing).mockResolvedValue(response)
 
     const { result } = renderHook(() => useSearchAllMissing(), { wrapper: createWrapper() })
 
@@ -87,7 +96,8 @@ describe("useSearchAllMissing", () => {
 
 describe("useSearchBook", () => {
   it("triggers search for specific book", async () => {
-    vi.mocked(wantedApi.searchBook).mockResolvedValue(undefined)
+    const response: SearchCommandResponse = { commandId: "cmd-2", message: "Search started" }
+    vi.mocked(wantedApi.searchBook).mockResolvedValue(response)
 
     const { result } = renderHook(() => useSearchBook(), { wrapper: createWrapper() })
 
@@ -100,7 +110,11 @@ describe("useSearchBook", () => {
 
 describe("useDownloadQueue", () => {
   it("fetches queue items", async () => {
-    const items = [{ id: 1, title: "Book", status: "downloading" }]
+    const items: QueueItem[] = [{
+      id: 1, bookId: 1, externalId: "ext-1", title: "Book", size: 1024,
+      format: "epub", status: "downloading", progress: 50, downloadUrl: "",
+      addedAt: "2025-01-01T00:00:00Z", bookTitle: "Book", clientName: "SABnzbd",
+    }]
     vi.mocked(queueApi.list).mockResolvedValue(items)
 
     const { result } = renderHook(() => useDownloadQueue(), { wrapper: createWrapper() })
@@ -112,7 +126,10 @@ describe("useDownloadQueue", () => {
 
 describe("useActiveCommands", () => {
   it("fetches active commands", async () => {
-    const commands = [{ id: "cmd-1", status: "running" }]
+    const commands: ActiveCommand[] = [{
+      id: "cmd-1", name: "BookSearch", status: "running",
+      priority: 1, trigger: "manual", queuedAt: "2025-01-01T00:00:00Z",
+    }]
     vi.mocked(wantedApi.getActiveCommands).mockResolvedValue(commands)
 
     const { result } = renderHook(() => useActiveCommands(), { wrapper: createWrapper() })
@@ -137,7 +154,10 @@ describe("useRemoveFromQueue", () => {
 
 describe("useHistory", () => {
   it("fetches history with params", async () => {
-    const items = [{ id: 1, eventType: "grabbed" }]
+    const items: HistoryItem[] = [{
+      id: 1, eventType: "grabbed", sourceTitle: "Book.epub",
+      quality: "EPUB", data: {}, date: "2025-01-01T00:00:00Z",
+    }]
     vi.mocked(historyApi.list).mockResolvedValue(items)
 
     const params = { limit: 10 }
@@ -150,7 +170,11 @@ describe("useHistory", () => {
 
 describe("useBlocklist", () => {
   it("fetches blocklist", async () => {
-    const items = [{ id: 1, title: "Blocked" }]
+    const items: BlocklistItem[] = [{
+      id: 1, bookId: 1, sourceTitle: "Blocked", quality: "EPUB",
+      reason: "Bad quality", date: "2025-01-01T00:00:00Z",
+      bookTitle: "Blocked", authorName: "Author",
+    }]
     vi.mocked(blocklistApi.list).mockResolvedValue(items)
 
     const { result } = renderHook(() => useBlocklist(), { wrapper: createWrapper() })
@@ -166,10 +190,10 @@ describe("useAddToBlocklist", () => {
 
     const { result } = renderHook(() => useAddToBlocklist(), { wrapper: createWrapper() })
 
-    result.current.mutate({ title: "Bad Book", indexerId: 1, guid: "abc" })
+    result.current.mutate({ bookId: 1, sourceTitle: "Bad Book" })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(blocklistApi.add).toHaveBeenCalledWith({ title: "Bad Book", indexerId: 1, guid: "abc" }, expect.anything())
+    expect(blocklistApi.add).toHaveBeenCalledWith({ bookId: 1, sourceTitle: "Bad Book" }, expect.anything())
   })
 })
 

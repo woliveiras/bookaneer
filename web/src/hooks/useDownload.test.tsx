@@ -13,7 +13,7 @@ import {
   useGrabs,
   useCreateGrab,
 } from "./useDownload"
-import type { DownloadClient } from "../lib/api"
+import type { DownloadClient, QueueItem, Grab, CreateGrabInput } from "../lib/api"
 
 vi.mock("../lib/api", async () => {
   const actual = await vi.importActual<typeof import("../lib/api")>("../lib/api")
@@ -152,16 +152,20 @@ describe("useTestDownloadClient", () => {
 
     const { result } = renderHook(() => useTestDownloadClient(), { wrapper: createWrapper() })
 
-    result.current.mutate(1)
+    result.current.mutate({ name: "Test", type: "sabnzbd" as const })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(downloadClientApi.test).toHaveBeenCalledWith(1, expect.anything())
+    expect(downloadClientApi.test).toHaveBeenCalledWith({ name: "Test", type: "sabnzbd" }, expect.anything())
   })
 })
 
 describe("useQueue", () => {
   it("fetches queue items", async () => {
-    const items = [{ id: 1, bookId: 1, status: "downloading" }]
+    const items: QueueItem[] = [{
+      id: 1, bookId: 1, externalId: "ext-1", title: "Book", size: 1024,
+      format: "epub", status: "downloading", progress: 50, downloadUrl: "",
+      addedAt: "2025-01-01T00:00:00Z", bookTitle: "Book", clientName: "SABnzbd",
+    }]
     vi.mocked(queueApi.list).mockResolvedValue(items)
 
     const { result } = renderHook(() => useQueue(), { wrapper: createWrapper() })
@@ -173,7 +177,12 @@ describe("useQueue", () => {
 
 describe("useGrabs", () => {
   it("fetches grabs with filter params", async () => {
-    const grabs = [{ id: 1, bookId: 1, status: "sent" }]
+    const grabs: Grab[] = [{
+      id: 1, bookId: 1, indexerId: 1, releaseTitle: "Book.epub",
+      downloadUrl: "http://example.com/book", size: 1024, quality: "EPUB",
+      clientId: 1, downloadId: "dl-1", status: "sent", errorMessage: "",
+      grabbedAt: "2025-01-01T00:00:00Z",
+    }]
     vi.mocked(grabApi.list).mockResolvedValue(grabs)
 
     const params = { bookId: 1 }
@@ -186,11 +195,20 @@ describe("useGrabs", () => {
 
 describe("useCreateGrab", () => {
   it("creates grab and invalidates caches", async () => {
-    vi.mocked(grabApi.create).mockResolvedValue({ id: 1 })
+    const mockGrab: Grab = {
+      id: 1, bookId: 1, indexerId: 1, releaseTitle: "Book.epub",
+      downloadUrl: "http://example.com/book", size: 1024, quality: "EPUB",
+      clientId: 1, downloadId: "dl-1", status: "pending", errorMessage: "",
+      grabbedAt: "2025-01-01T00:00:00Z",
+    }
+    vi.mocked(grabApi.create).mockResolvedValue(mockGrab)
 
     const { result } = renderHook(() => useCreateGrab(), { wrapper: createWrapper() })
 
-    const input = { bookId: 1, indexerId: 1, guid: "abc", title: "Book" }
+    const input: CreateGrabInput = {
+      bookId: 1, indexerId: 1, releaseTitle: "Book.epub",
+      downloadUrl: "http://example.com/book", clientId: 1,
+    }
     result.current.mutate(input)
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
