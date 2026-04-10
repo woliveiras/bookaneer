@@ -113,7 +113,9 @@ func (s *Scheduler) getNextQueuedCommand(ctx context.Context) (*Command, error) 
 	}
 
 	cmd.QueuedAt, _ = time.Parse(time.RFC3339, queuedAt)
-	json.Unmarshal([]byte(payloadJSON), &cmd.Payload)
+	if err := json.Unmarshal([]byte(payloadJSON), &cmd.Payload); err != nil {
+		slog.Warn("failed to unmarshal command payload", "id", cmd.ID, "error", err)
+	}
 
 	return &cmd, nil
 }
@@ -183,8 +185,14 @@ func scanCommandRow(s scanner) (Command, error) {
 		cmd.EndedAt = &t
 	}
 
-	json.Unmarshal([]byte(payloadJSON), &cmd.Payload)
-	json.Unmarshal([]byte(resultJSON), &cmd.Result)
+	if err := json.Unmarshal([]byte(payloadJSON), &cmd.Payload); err != nil {
+		slog.Warn("failed to unmarshal command payload", "id", cmd.ID, "error", err)
+	}
+	if resultJSON != "" && resultJSON != "null" {
+		if err := json.Unmarshal([]byte(resultJSON), &cmd.Result); err != nil {
+			slog.Warn("failed to unmarshal command result", "id", cmd.ID, "error", err)
+		}
+	}
 
 	return cmd, nil
 }
