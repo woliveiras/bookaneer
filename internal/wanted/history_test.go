@@ -130,6 +130,34 @@ func TestAddAndRemoveBlocklist(t *testing.T) {
 	assert.Empty(t, items)
 }
 
+// TestGetHistory_ZeroLimitUsesDefault covers the `if limit <= 0 { limit = 50 }`
+// branch in GetHistory, ensuring a zero or negative limit is treated as 50.
+func TestGetHistory_ZeroLimitUsesDefault(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	authorID := testutil.SeedAuthor(t, db, "Author")
+	bookID := testutil.SeedBook(t, db, authorID, "Book")
+
+	for i := 0; i < 5; i++ {
+		_, _ = db.Exec(`INSERT INTO history (book_id, author_id, event_type, source_title, quality, data)
+			VALUES (?, ?, 'grabbed', 'Release', 'epub', '{}')`, bookID, authorID)
+	}
+
+	bookSvc := book.New(db)
+	downloadSvc := download.NewService(db)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc)
+	ctx := context.Background()
+
+	// limit=0 should silently default to 50.
+	items, err := svc.GetHistory(ctx, 0, "")
+	require.NoError(t, err)
+	assert.Len(t, items, 5) // all 5 within the 50-item default
+
+	// limit=-1 should also default to 50.
+	items, err = svc.GetHistory(ctx, -1, "")
+	require.NoError(t, err)
+	assert.Len(t, items, 5)
+}
+
 func TestGetHistory_NullBookAndAuthor(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 

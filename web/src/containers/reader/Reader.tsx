@@ -1,28 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from "react"
-import {
-  DEFAULT_SETTINGS,
-  FONTS,
-  FORMAT_LABELS,
-  type FoliateView,
-  loadSettings,
-  type ReaderSettings,
-  type RelocateDetail,
-  saveSettings,
-  THEMES,
-  type ThemeKey,
-  type TocItem,
-} from "../../components/reader/readerConfig"
+import { useState } from "react"
+import { FORMAT_LABELS, THEMES } from "../../components/reader/readerConfig"
 import { TocList } from "../../components/reader/TocList"
 import { Badge, Button } from "../../components/ui"
-import {
-  useBookmarks,
-  useCreateBookmark,
-  useDeleteBookmark,
-  useReaderBookFile,
-  useReadingProgress,
-  useSaveProgress,
-} from "../../hooks/useReader"
-import { readerApi } from "../../lib/api"
+import { useBookmarks, useCreateBookmark, useDeleteBookmark, useReaderBookFile } from "../../hooks/useReader"
+import { ReaderBookmarksPanel } from "./ReaderBookmarksPanel"
+import { ReaderSettingsPanel } from "./ReaderSettingsPanel"
+import { useReaderCore } from "./useReaderCore"
+import { useReaderKeyboard } from "./useReaderKeyboard"
 
 // Import foliate-js view component
 import "foliate-js/view.js"
@@ -41,229 +25,52 @@ interface ReaderProps {
 }
 
 export function Reader({ bookFileId, onClose }: ReaderProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const viewRef = useRef<FoliateView | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [currentLocation, setCurrentLocation] = useState<string>("")
-  const [currentCfi, setCurrentCfi] = useState<string>("")
-  const [progress, setProgress] = useState(0)
-
-  // UI panels
   const [showSettings, setShowSettings] = useState(false)
   const [showToc, setShowToc] = useState(false)
   const [showBookmarks, setShowBookmarks] = useState(false)
-  const [toc, setToc] = useState<TocItem[]>([])
 
-  // Reader settings
-  const [settings, setSettings] = useState<ReaderSettings>(loadSettings)
+  const {
+    containerRef,
+    isLoading,
+    error,
+    currentLocation,
+    currentCfi,
+    progress,
+    toc,
+    settings,
+    updateSettings,
+    handlePrev,
+    handleNext,
+    handleTocNavigate,
+    handleBookmarkNavigate,
+  } = useReaderCore(bookFileId)
 
   const { data: bookFile } = useReaderBookFile(bookFileId)
-  const { data: savedProgress } = useReadingProgress(bookFileId)
-  const saveProgressMutation = useSaveProgress(bookFileId)
-
-  // Bookmarks
   const { data: bookmarks } = useBookmarks(bookFileId)
   const createBookmarkMutation = useCreateBookmark(bookFileId)
   const deleteBookmarkMutation = useDeleteBookmark(bookFileId)
 
-  // Update settings and persist
-  const updateSettings = useCallback((updates: Partial<ReaderSettings>) => {
-    setSettings((prev) => {
-      const next = { ...prev, ...updates }
-      saveSettings(next)
-      return next
-    })
-  }, [])
+  const handleTocClick = async (href: string) => {
+    await handleTocNavigate(href)
+    setShowToc(false)
+  }
 
-  // Apply styles to foliate-view
-  const applyStyles = useCallback(() => {
-    const view = viewRef.current
-    if (!view?.renderer?.setStyles) return
+  const handleBookmarkClick = async (position: string) => {
+    await handleBookmarkNavigate(position)
+    setShowBookmarks(false)
+  }
 
-    const theme = THEMES[settings.theme]
-    const css = `
-      @import url('https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,700&display=swap');
-      
-      html {
-        background: ${theme.bg} !important;
-        color: ${theme.fg} !important;
-      }
-      body {
-        font-family: ${settings.fontFamily} !important;
-        font-size: ${settings.fontSize}% !important;
-        line-height: ${settings.lineHeight} !important;
-        background: ${theme.bg} !important;
-        color: ${theme.fg} !important;
-      }
-      a { color: ${settings.theme === "dark" ? "#6ea8fe" : "#0d6efd"}; }
-    `
-    view.renderer.setStyles(css)
-  }, [settings])
-
-  // Apply styles when settings change
-  useEffect(() => {
-    applyStyles()
-  }, [applyStyles])
-
-  // Debounced save progress
-  const saveProgressCallback = useCallback(
-    (cfi: string, percentage: number) => {
-      saveProgressMutation.mutate({ position: cfi, percentage })
-    },
-    [saveProgressMutation],
-  )
-
-  // Initialize reader
-  useEffect(() => {
-    const container = containerRef.current
-    if (!container || !bookFile) return
-
-    const initReader = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
-
-        // Create foliate-view element
-        const view = document.createElement("foliate-view") as FoliateView
-        view.style.width = "100%"
-        view.style.height = "100%"
-        viewRef.current = view
-
-        // Listen for location changes
-        view.addEventListener("relocate", ((e: CustomEvent<RelocateDetail>) => {
-          const detail = e.detail
-          if (detail.cfi) {
-            setCurrentLocation(detail.tocItem?.label || "")
-            setCurrentCfi(detail.cfi)
-            const percentage = detail.fraction || 0
-            setProgress(percentage)
-            saveProgressCallback(detail.cfi, percentage)
-          }
-        }) as EventListener)
-
-        // Listen for book loaded
-        view.addEventListener("load", (() => {
-          // Extract TOC
-          if (view.book?.toc) {
-            setToc(view.book.toc)
-          }
-          // Apply initial styles
-          applyStyles()
-        }) as EventListener)
-
-        // Clear container and append view
-        container.innerHTML = ""
-        container.appendChild(view)
-
-        // Fetch the book content
-        const contentUrl = readerApi.getContentUrl(bookFileId)
-        const response = await fetch(contentUrl)
-        if (!response.ok) {
-          throw new Error("Failed to fetch book content")
-        }
-        const blob = await response.blob()
-
-        // Open the book
-        await view.open(blob)
-
-        // Restore saved position if available
-        if (savedProgress?.position) {
-          try {
-            await view.goTo(savedProgress.position)
-          } catch {
-            console.warn("Could not restore position:", savedProgress.position)
-          }
-        }
-
-        setIsLoading(false)
-      } catch (err) {
-        console.error("Failed to initialize reader:", err)
-        setError(err instanceof Error ? err.message : "Failed to load book")
-        setIsLoading(false)
-      }
-    }
-
-    initReader()
-
-    return () => {
-      if (viewRef.current) {
-        container.innerHTML = ""
-      }
-      viewRef.current = null
-    }
-  }, [bookFile, bookFileId, savedProgress?.position, saveProgressCallback, applyStyles])
-
-  // Navigation handlers
-  const handlePrev = useCallback(async () => {
-    if (viewRef.current) {
-      await viewRef.current.prev()
-    }
-  }, [])
-
-  const handleNext = useCallback(async () => {
-    if (viewRef.current) {
-      await viewRef.current.next()
-    }
-  }, [])
-
-  const handleTocClick = useCallback(async (href: string) => {
-    if (viewRef.current) {
-      await viewRef.current.goTo(href)
-      setShowToc(false)
-    }
-  }, [])
-
-  const handleBookmarkClick = useCallback(async (position: string) => {
-    if (viewRef.current) {
-      await viewRef.current.goTo(position)
-      setShowBookmarks(false)
-    }
-  }, [])
-
-  const handleAddBookmark = useCallback(() => {
-    if (!currentCfi) return
-    const title = currentLocation || `Page ${Math.round(progress * 100)}%`
-    createBookmarkMutation.mutate({ position: currentCfi, title, note: "" })
-  }, [currentCfi, currentLocation, progress, createBookmarkMutation])
-
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't handle if settings, TOC, or bookmarks is open
-      if (showSettings || showToc || showBookmarks) {
-        if (e.key === "Escape") {
-          setShowSettings(false)
-          setShowToc(false)
-          setShowBookmarks(false)
-        }
-        return
-      }
-
-      if (e.key === "ArrowLeft" || e.key === "PageUp") {
-        e.preventDefault()
-        handlePrev()
-      } else if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") {
-        e.preventDefault()
-        handleNext()
-      } else if (e.key === "Escape") {
-        e.preventDefault()
-        onClose()
-      } else if (e.key === "t" || e.key === "T") {
-        e.preventDefault()
-        setShowToc((prev) => !prev)
-      } else if (e.key === "s" || e.key === "S") {
-        e.preventDefault()
-        setShowSettings((prev) => !prev)
-      } else if (e.key === "b" || e.key === "B") {
-        e.preventDefault()
-        setShowBookmarks((prev) => !prev)
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [handlePrev, handleNext, onClose, showSettings, showToc, showBookmarks])
+  useReaderKeyboard({
+    showSettings,
+    showToc,
+    showBookmarks,
+    setShowSettings,
+    setShowToc,
+    setShowBookmarks,
+    onPrev: handlePrev,
+    onNext: handleNext,
+    onClose,
+  })
 
   const theme = THEMES[settings.theme]
 
@@ -404,224 +211,26 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
 
         {/* Settings Panel */}
         {showSettings && (
-          <div
-            className="absolute right-0 top-0 bottom-0 w-80 overflow-y-auto border-l shadow-lg"
-            style={{
-              background: theme.bg,
-              borderColor: settings.theme === "dark" ? "#333" : "#e5e5e5",
-            }}
-          >
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold text-lg">Settings</h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowSettings(false)}
-                  aria-label="Close settings"
-                >
-                  ✕
-                </Button>
-              </div>
-
-              {/* Theme */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">Theme</label>
-                <div className="flex gap-2">
-                  {(Object.keys(THEMES) as ThemeKey[]).map((key) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => updateSettings({ theme: key })}
-                      className={`flex-1 py-2 px-3 rounded border text-sm ${
-                        settings.theme === key ? "ring-2 ring-blue-500" : ""
-                      }`}
-                      style={{
-                        background: THEMES[key].bg,
-                        color: THEMES[key].fg,
-                        borderColor: settings.theme === "dark" ? "#555" : "#ccc",
-                      }}
-                    >
-                      {THEMES[key].name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Font Size */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">
-                  Font Size: {settings.fontSize}%
-                </label>
-                <input
-                  type="range"
-                  min="75"
-                  max="200"
-                  step="5"
-                  value={settings.fontSize}
-                  onChange={(e) => updateSettings({ fontSize: Number(e.target.value) })}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs" style={{ opacity: 0.7 }}>
-                  <span>75%</span>
-                  <span>200%</span>
-                </div>
-              </div>
-
-              {/* Font Family */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">Font</label>
-                <select
-                  value={settings.fontFamily}
-                  onChange={(e) => updateSettings({ fontFamily: e.target.value })}
-                  className="w-full p-2 rounded border"
-                  style={{
-                    background: theme.bg,
-                    color: theme.fg,
-                    borderColor: settings.theme === "dark" ? "#555" : "#ccc",
-                  }}
-                >
-                  {FONTS.map((font) => (
-                    <option key={font.value} value={font.value}>
-                      {font.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Line Height */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">
-                  Line Height: {settings.lineHeight.toFixed(1)}
-                </label>
-                <input
-                  type="range"
-                  min="1"
-                  max="2.5"
-                  step="0.1"
-                  value={settings.lineHeight}
-                  onChange={(e) => updateSettings({ lineHeight: Number(e.target.value) })}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs" style={{ opacity: 0.7 }}>
-                  <span>1.0</span>
-                  <span>2.5</span>
-                </div>
-              </div>
-
-              {/* Keyboard shortcuts */}
-              <div
-                className="mt-8 pt-4 border-t"
-                style={{ borderColor: settings.theme === "dark" ? "#333" : "#e5e5e5" }}
-              >
-                <h3 className="font-medium mb-2">Keyboard Shortcuts</h3>
-                <dl className="text-sm space-y-1" style={{ opacity: 0.7 }}>
-                  <div className="flex justify-between">
-                    <dt>Previous page</dt>
-                    <dd>← / PageUp</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt>Next page</dt>
-                    <dd>→ / PageDown / Space</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt>Table of contents</dt>
-                    <dd>T</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt>Bookmarks</dt>
-                    <dd>B</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt>Settings</dt>
-                    <dd>S</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt>Close reader</dt>
-                    <dd>Esc</dd>
-                  </div>
-                </dl>
-              </div>
-            </div>
-          </div>
+          <ReaderSettingsPanel
+            settings={settings}
+            onUpdateSettings={updateSettings}
+            onClose={() => setShowSettings(false)}
+          />
         )}
 
         {/* Bookmarks Panel */}
         {showBookmarks && (
-          <div
-            className="absolute right-0 top-0 bottom-0 w-80 overflow-y-auto border-l shadow-lg"
-            style={{
-              background: theme.bg,
-              borderColor: settings.theme === "dark" ? "#333" : "#e5e5e5",
-            }}
-          >
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold text-lg">Bookmarks</h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowBookmarks(false)}
-                  aria-label="Close bookmarks"
-                >
-                  ✕
-                </Button>
-              </div>
-
-              {/* Add bookmark button */}
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full mb-4"
-                onClick={handleAddBookmark}
-                disabled={!currentCfi || createBookmarkMutation.isPending}
-                style={{
-                  borderColor: settings.theme === "dark" ? "#555" : "#ccc",
-                  color: theme.fg,
-                }}
-              >
-                {createBookmarkMutation.isPending ? "Adding..." : "🔖 Add Bookmark Here"}
-              </Button>
-
-              {/* Bookmark list */}
-              {bookmarks && bookmarks.length > 0 ? (
-                <ul className="space-y-2">
-                  {bookmarks.map((bookmark) => (
-                    <li
-                      key={bookmark.id}
-                      className="flex items-start justify-between p-2 rounded border"
-                      style={{ borderColor: settings.theme === "dark" ? "#333" : "#e5e5e5" }}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => handleBookmarkClick(bookmark.position)}
-                        className="flex-1 text-left text-sm hover:underline"
-                        style={{ color: theme.fg }}
-                      >
-                        {bookmark.title || "Untitled"}
-                        <span className="block text-xs" style={{ opacity: 0.6 }}>
-                          {new Date(bookmark.createdAt).toLocaleDateString()}
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => deleteBookmarkMutation.mutate(bookmark.id)}
-                        className="ml-2 text-red-500 hover:text-red-700 text-sm"
-                        aria-label="Delete bookmark"
-                        disabled={deleteBookmarkMutation.isPending}
-                      >
-                        🗑️
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p style={{ opacity: 0.7 }} className="text-sm">
-                  No bookmarks yet. Add one by clicking the button above.
-                </p>
-              )}
-            </div>
-          </div>
+          <ReaderBookmarksPanel
+            settings={settings}
+            bookmarks={bookmarks}
+            currentCfi={currentCfi}
+            currentLocation={currentLocation}
+            progress={progress}
+            onNavigate={handleBookmarkClick}
+            onClose={() => setShowBookmarks(false)}
+            createBookmarkMutation={createBookmarkMutation}
+            deleteBookmarkMutation={deleteBookmarkMutation}
+          />
         )}
       </div>
 

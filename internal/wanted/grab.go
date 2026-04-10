@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"path/filepath"
 	"strings"
 
 	"github.com/woliveiras/bookaneer/internal/core/book"
@@ -23,12 +22,10 @@ func (s *Service) grabFromLibrary(ctx context.Context, b *book.Book, r *library.
 
 	// Build author folder and filename
 	// Structure: RootFolder/AuthorName/AuthorName - BookTitle.format
-	authorFolder := sanitizeFilename(b.AuthorName)
 	filename := fmt.Sprintf("%s - %s.%s", sanitizeFilename(b.AuthorName), sanitizeFilename(b.Title), r.Format)
 
 	// Build expected save path (including author folder)
-	authorDir := filepath.Join(cfg.DownloadDir, authorFolder)
-	expectedSavePath := filepath.Join(authorDir, filename)
+	authorDir, expectedSavePath := buildAuthorSavePath(cfg.DownloadDir, b.AuthorName, filename)
 
 	// Add to download client with the full path including author folder
 	downloadID, err := client.Add(ctx, download.AddItem{
@@ -106,16 +103,7 @@ func (s *Service) grabFromIndexer(ctx context.Context, b *book.Book, r *search.R
 	}
 
 	// Determine format from title
-	format := "unknown"
-	titleLower := strings.ToLower(r.Title)
-	switch {
-	case strings.Contains(titleLower, "epub"):
-		format = "epub"
-	case strings.Contains(titleLower, "pdf"):
-		format = "pdf"
-	case strings.Contains(titleLower, "mobi"):
-		format = "mobi"
-	}
+	format := detectEbookFormat(r.Title)
 
 	indexerID := &r.IndexerID
 
@@ -177,24 +165,13 @@ func (s *Service) GrabRelease(ctx context.Context, bookID int64, downloadURL, re
 	}
 	filename = sanitizeFilename(filename)
 
-	format := "unknown"
-	urlLower := strings.ToLower(downloadURL + releaseTitle)
-	switch {
-	case strings.Contains(urlLower, "epub"):
-		format = "epub"
-	case strings.Contains(urlLower, "pdf"):
-		format = "pdf"
-	case strings.Contains(urlLower, "mobi"):
-		format = "mobi"
-	}
+	format := detectEbookFormat(downloadURL + releaseTitle)
 
 	if format != "unknown" && !strings.HasSuffix(strings.ToLower(filename), "."+format) {
 		filename = filename + "." + format
 	}
 
-	authorFolder := sanitizeFilename(b.AuthorName)
-	authorDir := filepath.Join(cfg.DownloadDir, authorFolder)
-	expectedSavePath := filepath.Join(authorDir, filename)
+	authorDir, expectedSavePath := buildAuthorSavePath(cfg.DownloadDir, b.AuthorName, filename)
 
 	downloadID, err := client.Add(ctx, download.AddItem{
 		Name:        filename,

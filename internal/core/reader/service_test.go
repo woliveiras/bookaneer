@@ -308,3 +308,61 @@ func TestListBookFiles_WithMultipleFiles(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, files, 2)
 }
+
+func TestGetBookFile_DBClosed(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	svc := reader.New(db)
+	db.Close()
+
+	_, err := svc.GetBookFile(context.Background(), 1)
+	require.Error(t, err)
+	require.NotErrorIs(t, err, reader.ErrBookFileNotFound)
+}
+
+func TestListBookFiles_DBClosed(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	svc := reader.New(db)
+	db.Close()
+
+	_, err := svc.ListBookFiles(context.Background(), 1)
+	require.Error(t, err)
+}
+
+func TestGetProgress_DBClosed(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	svc := reader.New(db)
+	db.Close()
+
+	_, err := svc.GetProgress(context.Background(), 1, 1)
+	require.Error(t, err)
+	require.NotErrorIs(t, err, reader.ErrProgressNotFound)
+}
+
+func TestListBookmarks_DBClosed(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	svc := reader.New(db)
+	db.Close()
+
+	_, err := svc.ListBookmarks(context.Background(), 1, 1)
+	require.Error(t, err)
+}
+
+func TestGetBookmark_DBClosed(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	svc := reader.New(db)
+	db.Close()
+
+	_, err := svc.GetBookmark(context.Background(), 1, 1)
+	require.Error(t, err)
+	require.NotErrorIs(t, err, reader.ErrBookmarkNotFound)
+}
+
+func TestDeleteBookmark_DBClosed(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	svc := reader.New(db)
+	db.Close()
+
+	err := svc.DeleteBookmark(context.Background(), 1, 1)
+	require.Error(t, err)
+	require.NotErrorIs(t, err, reader.ErrBookmarkNotFound)
+}

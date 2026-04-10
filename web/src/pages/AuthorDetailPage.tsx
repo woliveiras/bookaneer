@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useState } from "react"
 import { AuthLayout } from "../components/layout/AppLayout"
+import { PageError, PageLoading } from "../components/common"
 import { Button } from "../components/ui"
 import { BookList } from "../containers/books/BookList"
 import { useDeleteAuthor } from "../hooks/useAuthors"
@@ -37,9 +38,7 @@ export function AuthorDetailPage() {
   if (isLoading) {
     return (
       <AuthLayout>
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-        </div>
+        <PageLoading />
       </AuthLayout>
     )
   }
@@ -47,10 +46,11 @@ export function AuthorDetailPage() {
   if (error || !author) {
     return (
       <AuthLayout>
-        <div className="text-center py-12">
-          <p className="text-destructive mb-4">Failed to load author</p>
-          <Button onClick={() => navigate({ to: "/authors" })}>Back to Authors</Button>
-        </div>
+        <PageError
+          message="Failed to load author"
+          onBack={() => navigate({ to: "/authors" })}
+          backLabel="Back to Authors"
+        />
       </AuthLayout>
     )
   }

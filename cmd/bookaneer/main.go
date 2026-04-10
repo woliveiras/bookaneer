@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"flag"
 	"fmt"
@@ -87,176 +88,23 @@ func run() error {
 	setupLogging(cfg.LogLevel)
 	slog.Info("starting bookaneer", "version", version, "dataDir", cfg.DataDir)
 
-	db, err := database.Open(cfg.DatabasePath())
+	db, err := setupDatabase(cfg)
 	if err != nil {
-		return fmt.Errorf("open database: %w", err)
+		return err
 	}
 	defer db.Close()
 
-	if err := database.Migrate(db, bookaneer.MigrationsFS, "migrations"); err != nil {
-		return fmt.Errorf("run migrations: %w", err)
-	}
-
-	authSvc := auth.New(db)
-	if err := authSvc.EnsureAPIKey(context.Background()); err != nil {
-		return fmt.Errorf("ensure api key: %w", err)
-	}
-
-	// Create default admin user if no users exist
-	// Supports BOOKANEER_ADMIN_PASSWORD env var for Docker deployments
-	envPassword := os.Getenv("BOOKANEER_ADMIN_PASSWORD")
-	adminPassword, err := authSvc.EnsureDefaultAdmin(context.Background(), envPassword)
+	authSvc, err := setupAuth(db, cfg)
 	if err != nil {
-		return fmt.Errorf("ensure default admin: %w", err)
-	}
-	if adminPassword != "" {
-		slog.Info("===========================================")
-		slog.Info("Default admin user created")
-		slog.Info("Username: admin")
-		if envPassword != "" {
-			slog.Info("Password: <set via BOOKANEER_ADMIN_PASSWORD>")
-		} else {
-			slog.Info("Password: " + adminPassword)
-			// Save to file for Docker users who miss the log
-			credentialsFile := filepath.Join(cfg.DataDir, "admin_credentials.txt")
-			content := fmt.Sprintf("Bookaneer Default Admin Credentials\n\nUsername: admin\nPassword: %s\n\nDelete this file after you have saved these credentials.\n", adminPassword)
-			if err := os.WriteFile(credentialsFile, []byte(content), 0600); err != nil {
-				slog.Warn("could not save credentials file", "error", err)
-			} else {
-				slog.Info("Credentials also saved to: " + credentialsFile)
-			}
-		}
-		slog.Info("Please change your password after first login!")
-		slog.Info("===========================================")
+		return err
 	}
 
-	// Log the API key for external integrations
-	apiKey, err := authSvc.GetAPIKey(context.Background())
-	if err == nil && apiKey != "" {
-		slog.Info("API key for external integrations (OPDS, scripts, etc)", "apiKey", apiKey)
-	}
-
-	e := echo.New()
-	e.HideBanner = true
-	e.HidePort = true
-
-	e.Use(middleware.Recover())
-	e.Use(middleware.RequestID())
-	e.Use(apimw.Logger())
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"*"},
-		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
-		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, "X-Api-Key"},
-	}))
-
+	e := setupEcho(authSvc)
 	api := e.Group("/api/v1")
 
-	systemHandler := handler.NewSystemHandler(version, buildTime, cfg)
-	api.GET("/system/status", systemHandler.Status)
-	api.GET("/system/health", systemHandler.Health)
-
-	// Tags endpoint (Prowlarr compatibility - returns empty array for now)
-	api.GET("/tag", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, []interface{}{})
-	})
-
-	protected := api.Group("")
-	protected.Use(apimw.Auth(authSvc))
-
-	authHandler := handler.NewAuthHandler(authSvc)
-	api.POST("/auth/login", authHandler.Login)
-	protected.GET("/auth/me", authHandler.Me)
-	protected.POST("/auth/logout", authHandler.Logout)
-
-	// Settings handler (protected - shows API key)
-	settingsHandler := handler.NewSettingsHandler(authSvc, cfg)
-	settingsHandler.Register(protected)
-
-	// Core domain services
-	authorSvc := author.New(db)
-	bookSvc := book.New(db)
-	seriesSvc := series.New(db)
-	rootFolderSvc := rootfolder.New(db)
-	qualityProfileSvc := qualityprofile.New(db)
-	libraryScanner := library.NewScanner(db)
-
-	// Ensure default quality profile exists
-	if err := qualityProfileSvc.EnsureDefault(context.Background()); err != nil {
-		slog.Warn("could not ensure default quality profile", "error", err)
+	if err := registerRoutes(api, db, cfg, authSvc); err != nil {
+		return err
 	}
-
-	// Scheduler (background job processor) - created early so handlers can queue jobs
-	jobScheduler := scheduler.New(db, 3)
-
-	// Core domain handlers
-	authorHandler := handler.NewAuthorHandler(authorSvc)
-	authorHandler.Register(protected)
-
-	bookHandler := handler.NewBookHandler(bookSvc, jobScheduler)
-	bookHandler.Register(protected)
-
-	seriesHandler := handler.NewSeriesHandler(seriesSvc)
-	seriesHandler.Register(protected)
-
-	rootFolderHandler := handler.NewRootFolderHandler(rootFolderSvc)
-	rootFolderHandler.Register(protected)
-
-	qualityProfileHandler := handler.NewQualityProfileHandler(qualityProfileSvc)
-	qualityProfileHandler.Register(protected)
-
-	libraryHandler := handler.NewLibraryHandler(libraryScanner)
-	libraryHandler.Register(protected)
-
-	// Reader service (EPUB serving + reading progress)
-	readerSvc := reader.New(db)
-	readerHandler := handler.NewReaderHandler(readerSvc)
-	readerHandler.Register(protected)
-
-	// Metadata providers (OpenLibrary + GoogleBooks)
-	httpClient := &http.Client{Timeout: 30 * time.Second}
-	olProvider := openlibrary.New(httpClient, "Bookaneer/1.0 (https://github.com/woliveiras/bookaneer)")
-	gbProvider := googlebooks.New(httpClient, "") // No API key needed for basic usage
-
-	metaAggregator := metadata.NewAggregator(slog.Default(), olProvider, gbProvider)
-	metadataHandler := handler.NewMetadataHandler(metaAggregator)
-	protected.GET("/metadata/authors", metadataHandler.SearchAuthors)
-	protected.GET("/metadata/books", metadataHandler.SearchBooks)
-	protected.GET("/metadata/authors/:foreignId", metadataHandler.GetAuthor)
-	protected.GET("/metadata/books/:foreignId", metadataHandler.GetBook)
-	protected.GET("/metadata/isbn/:isbn", metadataHandler.LookupISBN)
-	protected.GET("/metadata/providers", metadataHandler.ListProviders)
-
-	// Search service (Newznab/Torznab indexers)
-	searchSvc := search.NewService(db)
-	if err := searchSvc.LoadIndexers(context.Background()); err != nil {
-		slog.Warn("could not load indexers", "error", err)
-	}
-	searchHandler := handler.NewSearchHandler(searchSvc)
-	searchHandler.Register(protected)
-
-	// Digital library providers (Anna's Archive, LibGen, Internet Archive)
-	annasProvider := annas.New()
-	libgenProvider := libgen.New()
-	archiveProvider := archive.New()
-	libAggregator := digitallibrary.NewAggregator(annasProvider, libgenProvider, archiveProvider)
-	digitalLibraryHandler := handler.NewDigitalLibraryHandler(libAggregator)
-	digitalLibraryHandler.Register(protected)
-
-	// Download service (SABnzbd, qBittorrent, Transmission, Blackhole, Direct)
-	downloadSvc := download.NewService(db)
-	downloadHandler := handler.NewDownloadHandler(downloadSvc)
-	downloadHandler.Register(protected)
-
-	// Wanted service (monitors books and grabs from libraries/indexers)
-	wantedSvc := wanted.New(db, bookSvc, libAggregator, searchSvc, downloadSvc)
-
-	// Register wanted handlers and start scheduler
-	jobScheduler.RegisterWantedHandlers(wantedSvc)
-	jobScheduler.Start(context.Background())
-
-	// Wanted/Queue handler
-	wantedHandler := handler.NewWantedHandler(wantedSvc, jobScheduler)
-	wantedHandler.Register(protected)
 
 	if err := serveFrontend(e); err != nil {
 		return fmt.Errorf("setup frontend: %w", err)
@@ -276,9 +124,6 @@ func run() error {
 
 	slog.Info("shutting down...")
 
-	// Stop the scheduler gracefully
-	jobScheduler.Stop()
-
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -287,6 +132,174 @@ func run() error {
 	}
 
 	slog.Info("goodbye")
+	return nil
+}
+
+// setupDatabase opens the database and runs migrations.
+func setupDatabase(cfg *config.Config) (*sql.DB, error) {
+	db, err := database.Open(cfg.DatabasePath())
+	if err != nil {
+		return nil, fmt.Errorf("open database: %w", err)
+	}
+	if err := database.Migrate(db, bookaneer.MigrationsFS, "migrations"); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("run migrations: %w", err)
+	}
+	return db, nil
+}
+
+// setupAuth initialises the auth service, ensures the API key and default admin exist.
+func setupAuth(db *sql.DB, cfg *config.Config) (*auth.Service, error) {
+	ctx := context.Background()
+	authSvc := auth.New(db)
+
+	if err := authSvc.EnsureAPIKey(ctx); err != nil {
+		return nil, fmt.Errorf("ensure api key: %w", err)
+	}
+
+	envPassword := os.Getenv("BOOKANEER_ADMIN_PASSWORD")
+	adminPassword, err := authSvc.EnsureDefaultAdmin(ctx, envPassword)
+	if err != nil {
+		return nil, fmt.Errorf("ensure default admin: %w", err)
+	}
+	if adminPassword != "" {
+		logAdminCredentials(cfg, adminPassword, envPassword)
+	}
+
+	if apiKey, err := authSvc.GetAPIKey(ctx); err == nil && apiKey != "" {
+		slog.Info("API key for external integrations (OPDS, scripts, etc)", "apiKey", apiKey)
+	}
+
+	return authSvc, nil
+}
+
+// logAdminCredentials logs the newly-generated admin credentials and optionally
+// saves them to a file for Docker users who might miss the log output.
+func logAdminCredentials(cfg *config.Config, password, envPassword string) {
+	slog.Info("===========================================")
+	slog.Info("Default admin user created")
+	slog.Info("Username: admin")
+	if envPassword != "" {
+		slog.Info("Password: <set via BOOKANEER_ADMIN_PASSWORD>")
+	} else {
+		slog.Info("Password: " + password)
+		credentialsFile := filepath.Join(cfg.DataDir, "admin_credentials.txt")
+		content := fmt.Sprintf(
+			"Bookaneer Default Admin Credentials\n\nUsername: admin\nPassword: %s\n\nDelete this file after you have saved these credentials.\n",
+			password,
+		)
+		if err := os.WriteFile(credentialsFile, []byte(content), 0600); err != nil {
+			slog.Warn("could not save credentials file", "error", err)
+		} else {
+			slog.Info("Credentials also saved to: " + credentialsFile)
+		}
+	}
+	slog.Info("Please change your password after first login!")
+	slog.Info("===========================================")
+}
+
+// setupEcho creates and configures the Echo instance with global middleware.
+func setupEcho(authSvc *auth.Service) *echo.Echo {
+	e := echo.New()
+	e.HideBanner = true
+	e.HidePort = true
+
+	e.Use(middleware.Recover())
+	e.Use(middleware.RequestID())
+	e.Use(apimw.Logger())
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
+		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, "X-Api-Key"},
+	}))
+
+	return e
+}
+
+// registerRoutes wires all API handlers to the given router group.
+func registerRoutes(api *echo.Group, db *sql.DB, cfg *config.Config, authSvc *auth.Service) error {
+	ctx := context.Background()
+
+	// Public endpoints
+	systemHandler := handler.NewSystemHandler(version, buildTime, cfg)
+	api.GET("/system/status", systemHandler.Status)
+	api.GET("/system/health", systemHandler.Health)
+	api.GET("/tag", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, []interface{}{})
+	})
+
+	authHandler := handler.NewAuthHandler(authSvc)
+	api.POST("/auth/login", authHandler.Login)
+
+	// Protected group
+	protected := api.Group("")
+	protected.Use(apimw.Auth(authSvc))
+
+	protected.GET("/auth/me", authHandler.Me)
+	protected.POST("/auth/logout", authHandler.Logout)
+
+	settingsHandler := handler.NewSettingsHandler(authSvc, cfg)
+	settingsHandler.Register(protected)
+
+	// Core domain services + handlers
+	authorSvc := author.New(db)
+	bookSvc := book.New(db)
+	seriesSvc := series.New(db)
+	rootFolderSvc := rootfolder.New(db)
+	qualityProfileSvc := qualityprofile.New(db)
+	libraryScanner := library.NewScanner(db)
+
+	if err := qualityProfileSvc.EnsureDefault(ctx); err != nil {
+		slog.Warn("could not ensure default quality profile", "error", err)
+	}
+
+	jobScheduler := scheduler.New(db, 3)
+
+	handler.NewAuthorHandler(authorSvc).Register(protected)
+	handler.NewBookHandler(bookSvc, jobScheduler).Register(protected)
+	handler.NewSeriesHandler(seriesSvc).Register(protected)
+	handler.NewRootFolderHandler(rootFolderSvc).Register(protected)
+	handler.NewQualityProfileHandler(qualityProfileSvc).Register(protected)
+	handler.NewLibraryHandler(libraryScanner).Register(protected)
+	handler.NewReaderHandler(reader.New(db)).Register(protected)
+
+	// Metadata providers
+	httpClient := &http.Client{Timeout: 30 * time.Second}
+	metaAggregator := metadata.NewAggregator(
+		slog.Default(),
+		openlibrary.New(httpClient, "Bookaneer/1.0 (https://github.com/woliveiras/bookaneer)"),
+		googlebooks.New(httpClient, ""),
+	)
+	metadataHandler := handler.NewMetadataHandler(metaAggregator)
+	protected.GET("/metadata/authors", metadataHandler.SearchAuthors)
+	protected.GET("/metadata/books", metadataHandler.SearchBooks)
+	protected.GET("/metadata/authors/:foreignId", metadataHandler.GetAuthor)
+	protected.GET("/metadata/books/:foreignId", metadataHandler.GetBook)
+	protected.GET("/metadata/isbn/:isbn", metadataHandler.LookupISBN)
+	protected.GET("/metadata/providers", metadataHandler.ListProviders)
+
+	// Search service (Newznab/Torznab indexers)
+	searchSvc := search.NewService(db)
+	if err := searchSvc.LoadIndexers(ctx); err != nil {
+		slog.Warn("could not load indexers", "error", err)
+	}
+	handler.NewSearchHandler(searchSvc).Register(protected)
+
+	// Digital library providers
+	libAggregator := digitallibrary.NewAggregator(annas.New(), libgen.New(), archive.New())
+	handler.NewDigitalLibraryHandler(libAggregator).Register(protected)
+
+	// Download service
+	downloadSvc := download.NewService(db)
+	handler.NewDownloadHandler(downloadSvc).Register(protected)
+
+	// Wanted service
+	wantedSvc := wanted.New(db, bookSvc, libAggregator, searchSvc, downloadSvc)
+	jobScheduler.RegisterWantedHandlers(wantedSvc)
+	jobScheduler.Start(ctx)
+
+	handler.NewWantedHandler(wantedSvc, jobScheduler).Register(protected)
+
 	return nil
 }
 

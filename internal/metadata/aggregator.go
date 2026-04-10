@@ -2,7 +2,6 @@ package metadata
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 )
 
@@ -47,9 +46,6 @@ func (a *Aggregator) SearchAuthors(ctx context.Context, query string) ([]AuthorR
 				"error", err,
 			)
 			lastErr = err
-			if errors.Is(err, ErrRateLimited) || errors.Is(err, ErrProviderUnavailable) {
-				continue
-			}
 			continue
 		}
 		if len(results) > 0 {
@@ -99,17 +95,14 @@ func (a *Aggregator) GetAuthor(ctx context.Context, provider, foreignID string) 
 		return nil, ErrNoProviders
 	}
 
-	// If a specific provider is requested, use only that one
 	if provider != "" {
-		for _, p := range a.providers {
-			if p.Name() == provider {
-				return p.GetAuthor(ctx, foreignID)
-			}
+		p, ok := a.findProvider(provider)
+		if !ok {
+			return nil, ErrNotFound
 		}
-		return nil, ErrNotFound
+		return p.GetAuthor(ctx, foreignID)
 	}
 
-	// Otherwise, try all providers
 	var lastErr error
 	for _, p := range a.providers {
 		author, err := p.GetAuthor(ctx, foreignID)
@@ -120,9 +113,6 @@ func (a *Aggregator) GetAuthor(ctx context.Context, provider, foreignID string) 
 				"error", err,
 			)
 			lastErr = err
-			if errors.Is(err, ErrNotFound) {
-				continue
-			}
 			continue
 		}
 		return author, nil
@@ -140,17 +130,14 @@ func (a *Aggregator) GetBook(ctx context.Context, provider, foreignID string) (*
 		return nil, ErrNoProviders
 	}
 
-	// If a specific provider is requested, use only that one
 	if provider != "" {
-		for _, p := range a.providers {
-			if p.Name() == provider {
-				return p.GetBook(ctx, foreignID)
-			}
+		p, ok := a.findProvider(provider)
+		if !ok {
+			return nil, ErrNotFound
 		}
-		return nil, ErrNotFound
+		return p.GetBook(ctx, foreignID)
 	}
 
-	// Otherwise, try all providers
 	var lastErr error
 	for _, p := range a.providers {
 		book, err := p.GetBook(ctx, foreignID)
@@ -170,6 +157,16 @@ func (a *Aggregator) GetBook(ctx context.Context, provider, foreignID string) (*
 		return nil, lastErr
 	}
 	return nil, ErrNotFound
+}
+
+// findProvider returns the provider with the given name, or false if not found.
+func (a *Aggregator) findProvider(name string) (Provider, bool) {
+	for _, p := range a.providers {
+		if p.Name() == name {
+			return p, true
+		}
+	}
+	return nil, false
 }
 
 // GetBookByISBN fetches book details by ISBN, trying each provider.

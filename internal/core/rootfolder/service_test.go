@@ -273,3 +273,68 @@ func TestEnrichWithDiskInfo_Accessible(t *testing.T) {
 	assert.True(t, rf.Accessible)
 	assert.Greater(t, rf.TotalSpace, int64(0))
 }
+
+// ── Permission / filesystem error paths ──────────────────────────────────────
+
+// TestCreate_StatError covers the branch where os.Stat returns an error that
+// is not os.IsNotExist (e.g., ENOTDIR when a path component is a file).
+func TestCreate_StatError(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	s := New(db)
+	ctx := context.Background()
+
+	// Make a regular file, then use it as a path prefix so os.Stat on the
+	// child path gets ENOTDIR — not a "not found" error.
+	fileAsDir := filepath.Join(t.TempDir(), "notadir")
+	require.NoError(t, os.WriteFile(fileAsDir, []byte("data"), 0644))
+
+	path := filepath.Join(fileAsDir, "subdir")
+	_, err := s.Create(ctx, CreateRootFolderInput{Path: path, Name: "Test"})
+	require.ErrorIs(t, err, ErrPathNotAccessible)
+}
+
+// TestCreate_MkdirAllFails covers the branch where the path does not exist but
+// os.MkdirAll fails due to a permissions problem on the parent directory.
+func TestCreate_MkdirAllFails(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("root can write anywhere; skipping")
+	}
+
+	db := testutil.OpenTestDB(t)
+	s := New(db)
+	ctx := context.Background()
+
+	base := t.TempDir()
+	readOnly := filepath.Join(base, "readonly")
+	require.NoError(t, os.Mkdir(readOnly, 0555))
+	t.Cleanup(func() { os.Chmod(readOnly, 0755) }) // restore for cleanup
+
+	path := filepath.Join(readOnly, "newlib")
+	_, err := s.Create(ctx, CreateRootFolderInput{Path: path, Name: "Test"})
+	require.Error(t, err)
+}
+
+// TestUpdate_MkdirAllFails covers the branch in Update where the new path
+// doesn't exist and MkdirAll fails (read-only parent directory).
+func TestUpdate_MkdirAllFails(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("root can write anywhere; skipping")
+	}
+
+	db := testutil.OpenTestDB(t)
+	s := New(db)
+	ctx := context.Background()
+
+	dir := t.TempDir()
+	created, err := s.Create(ctx, CreateRootFolderInput{Path: dir, Name: "Original"})
+	require.NoError(t, err)
+
+	base := t.TempDir()
+	readOnly := filepath.Join(base, "readonly")
+	require.NoError(t, os.Mkdir(readOnly, 0555))
+	t.Cleanup(func() { os.Chmod(readOnly, 0755) })
+
+	newPath := filepath.Join(readOnly, "newlib")
+	_, err = s.Update(ctx, created.ID, UpdateRootFolderInput{Path: &newPath})
+	require.Error(t, err)
+}

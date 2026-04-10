@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -48,4 +49,36 @@ func sanitizeFilename(name string) string {
 		"?", "_", "\"", "_", "<", "_", ">", "_", "|", "_",
 	)
 	return replacer.Replace(name)
+}
+
+// detectEbookFormat infers the ebook format from a string (title, URL, etc.).
+// Returns "epub", "pdf", "mobi", or "unknown".
+func detectEbookFormat(s string) string {
+	s = strings.ToLower(s)
+	switch {
+	case strings.Contains(s, "epub"):
+		return "epub"
+	case strings.Contains(s, "pdf"):
+		return "pdf"
+	case strings.Contains(s, "mobi"):
+		return "mobi"
+	}
+	return "unknown"
+}
+
+// isEbookFormat reports whether the string contains a known ebook format keyword.
+func isEbookFormat(s string) bool {
+	s = strings.ToLower(s)
+	return strings.Contains(s, "epub") ||
+		strings.Contains(s, "pdf") ||
+		strings.Contains(s, "mobi") ||
+		strings.Contains(s, "ebook")
+}
+
+// buildAuthorSavePath returns the author directory and the full expected save path
+// for a download given a download root dir, author name, and filename.
+func buildAuthorSavePath(downloadDir, authorName, filename string) (authorDir, savePath string) {
+	authorDir = filepath.Join(downloadDir, sanitizeFilename(authorName))
+	savePath = filepath.Join(authorDir, filename)
+	return
 }

@@ -258,3 +258,76 @@ func TestUpdate_EmptyInput(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "Unchanged", updated.Name)
 }
+
+func TestList_Empty(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	svc := qualityprofile.New(db)
+
+	profiles, err := svc.List(context.Background())
+	require.NoError(t, err)
+	assert.Empty(t, profiles)
+}
+
+func TestFindByID_DBClosed(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	svc := qualityprofile.New(db)
+	db.Close()
+
+	_, err := svc.FindByID(context.Background(), 1)
+	require.Error(t, err)
+	require.NotErrorIs(t, err, qualityprofile.ErrNotFound)
+}
+
+func TestList_DBClosed(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	svc := qualityprofile.New(db)
+	db.Close()
+
+	_, err := svc.List(context.Background())
+	require.Error(t, err)
+}
+
+func TestCreate_DBClosed(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	svc := qualityprofile.New(db)
+	db.Close()
+
+	_, err := svc.Create(context.Background(), qualityprofile.CreateQualityProfileInput{Name: "Test"})
+	require.Error(t, err)
+}
+
+func TestDelete_DBClosed(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	svc := qualityprofile.New(db)
+	db.Close()
+
+	err := svc.Delete(context.Background(), 1)
+	require.Error(t, err)
+	require.NotErrorIs(t, err, qualityprofile.ErrNotFound)
+	require.NotErrorIs(t, err, qualityprofile.ErrInUse)
+}
+
+func TestEnsureDefault_DBClosed(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	svc := qualityprofile.New(db)
+	db.Close()
+
+	err := svc.EnsureDefault(context.Background())
+	require.Error(t, err)
+}
+
+func TestEnsureDefault_WhenDefaultExists(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	svc := qualityprofile.New(db)
+	ctx := context.Background()
+
+	_, err := svc.Create(ctx, qualityprofile.CreateQualityProfileInput{Name: "Existing", Cutoff: "epub"})
+	require.NoError(t, err)
+
+	err = svc.EnsureDefault(ctx)
+	require.NoError(t, err)
+
+	profiles, err := svc.List(ctx)
+	require.NoError(t, err)
+	assert.Len(t, profiles, 1, "should not create additional default when one exists")
+}

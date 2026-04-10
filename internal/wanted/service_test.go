@@ -179,3 +179,22 @@ func TestSearchAllWanted_NoBooks(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, results)
 }
+
+// TestSearchAllWanted_WithBooksAndNoProviders covers the SearchAllWanted loop
+// body where SearchAndGrab fails for every book (no providers configured) and
+// the function returns an empty result list without an error.
+func TestSearchAllWanted_WithBooksAndNoProviders(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	bookSvc := book.New(db)
+	downloadSvc := download.NewService(db)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc)
+	ctx := context.Background()
+
+	authorID := testutil.SeedAuthor(t, db, "Tolkien")
+	testutil.SeedBook(t, db, authorID, "The Hobbit")
+	testutil.SeedBook(t, db, authorID, "LOTR")
+
+	results, err := svc.SearchAllWanted(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, results)
+}

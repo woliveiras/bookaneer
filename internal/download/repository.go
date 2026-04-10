@@ -7,82 +7,30 @@ import (
 	"time"
 )
 
-// ListClients returns all download clients from the database.
-func (s *Service) ListClients(ctx context.Context) ([]ClientConfig, error) {
-	query := `
-		SELECT id, name, type, host, port, use_tls, username, password, api_key, 
-		       category, recent_priority, older_priority, remove_completed_after, 
-		       enabled, priority, nzb_folder, torrent_folder, watch_folder, download_dir,
-		       created_at, updated_at
-		FROM download_clients
-		ORDER BY priority ASC, name ASC
-	`
-
-	rows, err := s.db.QueryContext(ctx, query)
-	if err != nil {
-		return nil, fmt.Errorf("query clients: %w", err)
-	}
-	defer rows.Close()
-
-	var clients []ClientConfig
-	for rows.Next() {
-		var cfg ClientConfig
-		var username, password, apiKey, category sql.NullString
-		var nzbFolder, torrentFolder, watchFolder, downloadDir sql.NullString
-
-		err := rows.Scan(
-			&cfg.ID, &cfg.Name, &cfg.Type, &cfg.Host, &cfg.Port, &cfg.UseTLS,
-			&username, &password, &apiKey, &category,
-			&cfg.RecentPriority, &cfg.OlderPriority, &cfg.RemoveCompletedAfter,
-			&cfg.Enabled, &cfg.Priority, &nzbFolder, &torrentFolder, &watchFolder, &downloadDir,
-			&cfg.CreatedAt, &cfg.UpdatedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("scan client: %w", err)
-		}
-
-		cfg.Username = username.String
-		cfg.Password = password.String
-		cfg.APIKey = apiKey.String
-		cfg.Category = category.String
-		cfg.NzbFolder = nzbFolder.String
-		cfg.TorrentFolder = torrentFolder.String
-		cfg.WatchFolder = watchFolder.String
-		cfg.DownloadDir = downloadDir.String
-
-		clients = append(clients, cfg)
-	}
-
-	return clients, rows.Err()
+// clientScanner abstracts sql.Row and sql.Rows for shared scanning.
+type clientScanner interface {
+	Scan(dest ...any) error
 }
 
-// GetClient returns a download client by ID.
-func (s *Service) GetClient(ctx context.Context, id int64) (*ClientConfig, error) {
-	query := `
-		SELECT id, name, type, host, port, use_tls, username, password, api_key, 
-		       category, recent_priority, older_priority, remove_completed_after, 
-		       enabled, priority, nzb_folder, torrent_folder, watch_folder, download_dir,
-		       created_at, updated_at
-		FROM download_clients
-		WHERE id = ?
-	`
-
+// scanClientConfig scans a full download_clients row (21 columns) into a ClientConfig.
+// Column order: id, name, type, host, port, use_tls, username, password, api_key,
+// category, recent_priority, older_priority, remove_completed_after,
+// enabled, priority, nzb_folder, torrent_folder, watch_folder, download_dir,
+// created_at, updated_at
+func scanClientConfig(s clientScanner) (ClientConfig, error) {
 	var cfg ClientConfig
 	var username, password, apiKey, category sql.NullString
 	var nzbFolder, torrentFolder, watchFolder, downloadDir sql.NullString
 
-	err := s.db.QueryRowContext(ctx, query, id).Scan(
+	err := s.Scan(
 		&cfg.ID, &cfg.Name, &cfg.Type, &cfg.Host, &cfg.Port, &cfg.UseTLS,
 		&username, &password, &apiKey, &category,
 		&cfg.RecentPriority, &cfg.OlderPriority, &cfg.RemoveCompletedAfter,
 		&cfg.Enabled, &cfg.Priority, &nzbFolder, &torrentFolder, &watchFolder, &downloadDir,
 		&cfg.CreatedAt, &cfg.UpdatedAt,
 	)
-	if err == sql.ErrNoRows {
-		return nil, ErrNotFound
-	}
 	if err != nil {
-		return nil, fmt.Errorf("query client: %w", err)
+		return cfg, err
 	}
 
 	cfg.Username = username.String
@@ -94,6 +42,47 @@ func (s *Service) GetClient(ctx context.Context, id int64) (*ClientConfig, error
 	cfg.WatchFolder = watchFolder.String
 	cfg.DownloadDir = downloadDir.String
 
+	return cfg, nil
+}
+
+const clientSelectColumns = `
+	SELECT id, name, type, host, port, use_tls, username, password, api_key, 
+	       category, recent_priority, older_priority, remove_completed_after, 
+	       enabled, priority, nzb_folder, torrent_folder, watch_folder, download_dir,
+	       created_at, updated_at
+	FROM download_clients
+`
+
+// ListClients returns all download clients from the database.
+func (s *Service) ListClients(ctx context.Context) ([]ClientConfig, error) {
+	rows, err := s.db.QueryContext(ctx, clientSelectColumns+`ORDER BY priority ASC, name ASC`)
+	if err != nil {
+		return nil, fmt.Errorf("query clients: %w", err)
+	}
+	defer rows.Close()
+
+	var clients []ClientConfig
+	for rows.Next() {
+		cfg, err := scanClientConfig(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan client: %w", err)
+		}
+		clients = append(clients, cfg)
+	}
+
+	return clients, rows.Err()
+}
+
+// GetClient returns a download client by ID.
+func (s *Service) GetClient(ctx context.Context, id int64) (*ClientConfig, error) {
+	row := s.db.QueryRowContext(ctx, clientSelectColumns+`WHERE id = ?`, id)
+	cfg, err := scanClientConfig(row)
+	if err == sql.ErrNoRows {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("query client: %w", err)
+	}
 	return &cfg, nil
 }
 

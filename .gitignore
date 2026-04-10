@@ -22,6 +22,7 @@ data/
 *.db
 *.db-wal
 *.db-shm
+bookaneer
 
 # IDE
 .idea/
@@ -39,3 +40,4 @@ Thumbs.db
 # Test logs
 *.log
 coverage/
+coverage*

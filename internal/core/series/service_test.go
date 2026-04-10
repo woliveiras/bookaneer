@@ -166,3 +166,73 @@ func TestRemoveBook_NotFound(t *testing.T) {
 	err := s.RemoveBook(ctx, created.ID, 999)
 	assert.ErrorIs(t, err, ErrBookNotFound)
 }
+
+func TestList_MonitoredFalse(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	s := New(db)
+	ctx := context.Background()
+
+	_, err := s.Create(ctx, CreateSeriesInput{Title: "Unmonitored", ForeignID: "mon-false-1", Monitored: false})
+	require.NoError(t, err)
+	_, err = s.Create(ctx, CreateSeriesInput{Title: "Monitored", ForeignID: "mon-false-2", Monitored: true})
+	require.NoError(t, err)
+
+	m := false
+	items, total, err := s.List(ctx, ListSeriesFilter{Monitored: &m})
+	require.NoError(t, err)
+	assert.Equal(t, 1, total)
+	require.Len(t, items, 1)
+	assert.False(t, items[0].Monitored)
+}
+
+func TestList_SortByBookCount(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	s := New(db)
+	ctx := context.Background()
+
+	_, err := s.Create(ctx, CreateSeriesInput{Title: "Series BC", ForeignID: "sbc-1"})
+	require.NoError(t, err)
+
+	items, _, err := s.List(ctx, ListSeriesFilter{SortBy: "bookCount"})
+	require.NoError(t, err)
+	assert.NotEmpty(t, items)
+}
+
+func TestFindByID_DBClosed(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	s := New(db)
+	db.Close()
+
+	_, err := s.FindByID(context.Background(), 1)
+	require.Error(t, err)
+	require.NotErrorIs(t, err, ErrNotFound)
+}
+
+func TestList_DBClosed(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	s := New(db)
+	db.Close()
+
+	_, _, err := s.List(context.Background(), ListSeriesFilter{})
+	require.Error(t, err)
+}
+
+func TestCreate_DBClosed(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	s := New(db)
+	db.Close()
+
+	_, err := s.Create(context.Background(), CreateSeriesInput{Title: "Test"})
+	require.Error(t, err)
+	require.NotErrorIs(t, err, ErrDuplicate)
+}
+
+func TestDelete_DBClosed(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	s := New(db)
+	db.Close()
+
+	err := s.Delete(context.Background(), 1)
+	require.Error(t, err)
+	require.NotErrorIs(t, err, ErrNotFound)
+}

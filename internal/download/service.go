@@ -9,6 +9,16 @@ import (
 	"time"
 )
 
+// parseTimestamp parses a timestamp string, trying RFC3339 first then the
+// SQLite default format ("2006-01-02 15:04:05") as fallback.
+func parseTimestamp(s string) time.Time {
+	t, _ := time.Parse(time.RFC3339, s)
+	if t.IsZero() {
+		t, _ = time.Parse("2006-01-02 15:04:05", s)
+	}
+	return t
+}
+
 // Service manages download clients and queue operations.
 type Service struct {
 	db                   *sql.DB
@@ -111,10 +121,7 @@ func (s *Service) ListGrabs(ctx context.Context) ([]GrabItem, error) {
 			return nil, fmt.Errorf("scan grab: %w", err)
 		}
 
-		g.GrabbedAt, _ = time.Parse(time.RFC3339, grabbedAtStr)
-		if g.GrabbedAt.IsZero() {
-			g.GrabbedAt, _ = time.Parse("2006-01-02 15:04:05", grabbedAtStr)
-		}
+		g.GrabbedAt = parseTimestamp(grabbedAtStr)
 		if clientID.Valid {
 			g.ClientID = clientID.Int64
 		}
@@ -125,10 +132,7 @@ func (s *Service) ListGrabs(ctx context.Context) ([]GrabItem, error) {
 		}
 		g.ErrorMessage = errorMsg.String
 		if completedAtStr.Valid {
-			t, _ := time.Parse(time.RFC3339, completedAtStr.String)
-			if t.IsZero() {
-				t, _ = time.Parse("2006-01-02 15:04:05", completedAtStr.String)
-			}
+			t := parseTimestamp(completedAtStr.String)
 			if !t.IsZero() {
 				g.CompletedAt = &t
 			}
@@ -196,10 +200,7 @@ func (s *Service) SendGrab(ctx context.Context, grabID int64, clientID int64) er
 		return fmt.Errorf("query grab: %w", err)
 	}
 
-	grab.GrabbedAt, _ = time.Parse(time.RFC3339, grabbedAtStr)
-	if grab.GrabbedAt.IsZero() {
-		grab.GrabbedAt, _ = time.Parse("2006-01-02 15:04:05", grabbedAtStr)
-	}
+	grab.GrabbedAt = parseTimestamp(grabbedAtStr)
 	if clientIDNull.Valid {
 		grab.ClientID = clientIDNull.Int64
 	}
@@ -207,12 +208,6 @@ func (s *Service) SendGrab(ctx context.Context, grabID int64, clientID int64) er
 		grab.DownloadID = downloadIDStr.String
 	}
 	grab.ErrorMessage = errorMsg.String
-	if err == sql.ErrNoRows {
-		return ErrNotFound
-	}
-	if err != nil {
-		return fmt.Errorf("query grab: %w", err)
-	}
 
 	// Get the client
 	cfg, err := s.GetClient(ctx, clientID)

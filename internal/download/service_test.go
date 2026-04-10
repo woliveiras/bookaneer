@@ -2,6 +2,7 @@ package download_test
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"testing"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/woliveiras/bookaneer/internal/download"
 	_ "github.com/woliveiras/bookaneer/internal/download/direct"
 	"github.com/woliveiras/bookaneer/internal/testutil"
+	_ "modernc.org/sqlite"
 )
 
 func TestNewService(t *testing.T) {
@@ -177,6 +179,149 @@ func TestTestClient_Direct(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestTestClient_UnknownType(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	svc := download.NewService(db)
+	err := svc.TestClient(context.Background(), &download.ClientConfig{
+		Type: "totally-nonexistent-type",
+	})
+	require.Error(t, err)
+}
+
+func TestSendGrab_ClientNotFound(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	svc := download.NewService(db)
+	ctx := context.Background()
+
+	authorID := testutil.SeedAuthor(t, db, "Author")
+	bookID := testutil.SeedBook(t, db, authorID, "Book")
+	_, err := db.Exec(`INSERT INTO indexers (name, type, base_url, enabled) VALUES ('idx', 'newznab', 'http://x.com', 1)`)
+	require.NoError(t, err)
+	var indexerID int64
+	require.NoError(t, db.QueryRow("SELECT id FROM indexers LIMIT 1").Scan(&indexerID))
+
+	// A placeholder client is needed to satisfy the FK constraint on grabs.client_id.
+	placeholderCfg := &download.ClientConfig{
+		Name: "Placeholder", Type: download.ClientTypeDirect, Host: "localhost", Enabled: false,
+	}
+	require.NoError(t, svc.CreateClient(ctx, placeholderCfg))
+
+	grab := &download.GrabItem{
+		BookID: bookID, IndexerID: indexerID, ClientID: placeholderCfg.ID,
+		ReleaseTitle: "Book", DownloadURL: "http://a.com", Size: 100, Quality: "epub",
+	}
+	require.NoError(t, svc.CreateGrab(ctx, grab))
+
+	err = svc.SendGrab(ctx, grab.ID, 9999)
+	require.ErrorIs(t, err, download.ErrNotFound)
+}
+
+func TestSendGrab_DisabledClient(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	svc := download.NewService(db)
+	ctx := context.Background()
+
+	authorID := testutil.SeedAuthor(t, db, "Author")
+	bookID := testutil.SeedBook(t, db, authorID, "Book")
+	_, err := db.Exec(`INSERT INTO indexers (name, type, base_url, enabled) VALUES ('idx', 'newznab', 'http://x.com', 1)`)
+	require.NoError(t, err)
+	var indexerID int64
+	require.NoError(t, db.QueryRow("SELECT id FROM indexers LIMIT 1").Scan(&indexerID))
+
+	dir := t.TempDir()
+	clientCfg := &download.ClientConfig{
+		Name:        "Disabled",
+		Type:        download.ClientTypeDirect,
+		DownloadDir: dir,
+		Enabled:     false,
+	}
+	require.NoError(t, svc.CreateClient(ctx, clientCfg))
+
+	grab := &download.GrabItem{
+		BookID: bookID, IndexerID: indexerID, ClientID: clientCfg.ID,
+		ReleaseTitle: "Book", DownloadURL: "http://a.com", Size: 100, Quality: "epub",
+	}
+	require.NoError(t, svc.CreateGrab(ctx, grab))
+
+	err = svc.SendGrab(ctx, grab.ID, clientCfg.ID)
+	require.ErrorIs(t, err, download.ErrClientDisabled)
+}
+
+func TestSendGrab_WithDirectClient(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	svc := download.NewService(db)
+	ctx := context.Background()
+
+	authorID := testutil.SeedAuthor(t, db, "Author")
+	bookID := testutil.SeedBook(t, db, authorID, "Book")
+	_, err := db.Exec(`INSERT INTO indexers (name, type, base_url, enabled) VALUES ('idx', 'newznab', 'http://x.com', 1)`)
+	require.NoError(t, err)
+	var indexerID int64
+	require.NoError(t, db.QueryRow("SELECT id FROM indexers LIMIT 1").Scan(&indexerID))
+
+	dir := t.TempDir()
+	clientCfg := &download.ClientConfig{
+		Name:        "Direct",
+		Type:        download.ClientTypeDirect,
+		DownloadDir: dir,
+		Enabled:     true,
+	}
+	require.NoError(t, svc.CreateClient(ctx, clientCfg))
+
+	grab := &download.GrabItem{
+		BookID: bookID, IndexerID: indexerID, ClientID: clientCfg.ID,
+		ReleaseTitle: "Test Book EPUB",
+		DownloadURL:  "http://example.com/book.epub", Size: 1024, Quality: "epub",
+	}
+	require.NoError(t, svc.CreateGrab(ctx, grab))
+
+	err = svc.SendGrab(ctx, grab.ID, clientCfg.ID)
+	require.NoError(t, err)
+
+	grabs, err := svc.ListGrabs(ctx)
+	require.NoError(t, err)
+	require.Len(t, grabs, 1)
+	assert.Equal(t, download.GrabStatusSent, grabs[0].Status)
+	assert.NotEmpty(t, grabs[0].DownloadID)
+}
+
+func TestListGrabs_WithCompletedAt(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	svc := download.NewService(db)
+	ctx := context.Background()
+
+	authorID := testutil.SeedAuthor(t, db, "Author")
+	bookID := testutil.SeedBook(t, db, authorID, "Book")
+	_, err := db.Exec(`INSERT INTO indexers (name, type, base_url, enabled) VALUES ('idx', 'newznab', 'http://x.com', 1)`)
+	require.NoError(t, err)
+	var indexerID int64
+	require.NoError(t, db.QueryRow("SELECT id FROM indexers LIMIT 1").Scan(&indexerID))
+
+	// A download client is required to satisfy the grabs.client_id FK constraint.
+	clientCfg := &download.ClientConfig{
+		Name: "Direct", Type: download.ClientTypeDirect, DownloadDir: t.TempDir(), Enabled: true,
+	}
+	require.NoError(t, svc.CreateClient(ctx, clientCfg))
+
+	grab := &download.GrabItem{
+		BookID: bookID, IndexerID: indexerID, ClientID: clientCfg.ID,
+		ReleaseTitle: "Completed Book",
+		DownloadURL:  "http://a.com", Size: 500, Quality: "epub",
+	}
+	require.NoError(t, svc.CreateGrab(ctx, grab))
+
+	_, err = db.ExecContext(ctx,
+		"UPDATE grabs SET completed_at = datetime('now'), status = ? WHERE id = ?",
+		download.GrabStatusCompleted, grab.ID)
+	require.NoError(t, err)
+
+	grabs, err := svc.ListGrabs(ctx)
+	require.NoError(t, err)
+	require.Len(t, grabs, 1)
+	assert.Equal(t, download.GrabStatusCompleted, grabs[0].Status)
+	assert.NotNil(t, grabs[0].CompletedAt)
+}
+
 func TestGetDirectClient_Cached(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	svc := download.NewService(db)
@@ -192,4 +337,51 @@ func TestGetDirectClient_Cached(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, c1, c2)
 	assert.Equal(t, cfg1.Name, cfg2.Name)
+}
+
+// ── DB-closed error paths ──────────────────────────────────────────────────────
+
+// TestGetQueue_DBError covers the error path in GetQueue when the underlying
+// ListClients call fails because the DB is closed.
+func TestGetQueue_DBError(t *testing.T) {
+	// Use the openClosedDB helper defined in repository_test.go (same package).
+	db, err := openClosedDBForService()
+	require.NoError(t, err)
+	svc := download.NewService(db)
+	_, queueErr := svc.GetQueue(context.Background())
+	require.Error(t, queueErr)
+}
+
+// TestListGrabs_DBError covers the db.QueryContext error path in ListGrabs.
+func TestListGrabs_DBError(t *testing.T) {
+	db, err := openClosedDBForService()
+	require.NoError(t, err)
+	svc := download.NewService(db)
+	_, listErr := svc.ListGrabs(context.Background())
+	require.Error(t, listErr)
+}
+
+// TestCreateGrab_DBError covers the db.ExecContext error path in CreateGrab.
+func TestCreateGrab_DBError(t *testing.T) {
+	db, err := openClosedDBForService()
+	require.NoError(t, err)
+	svc := download.NewService(db)
+	grabErr := svc.CreateGrab(context.Background(), &download.GrabItem{
+		BookID: 1, IndexerID: 1, ReleaseTitle: "Book", DownloadURL: "http://a.com",
+	})
+	require.Error(t, grabErr)
+}
+
+// openClosedDBForService is a package-level helper (mirrors openClosedDB in repository_test.go)
+// that works without *testing.T so it can be used in inline variable declarations.
+// It returns (nil, nil) on unexpected SQL open errors.
+func openClosedDBForService() (*sql.DB, error) {
+	db, err := sql.Open("sqlite", ":memory:")
+	if err != nil {
+		return nil, err
+	}
+	if err := db.Close(); err != nil {
+		return nil, err
+	}
+	return db, nil
 }

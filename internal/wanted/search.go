@@ -139,11 +139,7 @@ func (s *Service) searchIndexers(ctx context.Context, b *book.Book, query string
 	// Filter for ebook formats
 	var filtered []search.Result
 	for _, r := range results {
-		title := strings.ToLower(r.Title)
-		if strings.Contains(title, "epub") ||
-			strings.Contains(title, "pdf") ||
-			strings.Contains(title, "mobi") ||
-			strings.Contains(title, "ebook") {
+		if isEbookFormat(r.Title) {
 			filtered = append(filtered, r)
 		}
 	}

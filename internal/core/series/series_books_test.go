@@ -259,3 +259,39 @@ func TestList_MonitoredFilter(t *testing.T) {
 		assert.True(t, item.Monitored)
 	}
 }
+
+func TestRemoveBook_DBClosed(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	svc := series.New(db)
+	ctx := context.Background()
+
+	s, err := svc.Create(ctx, series.CreateSeriesInput{Title: "Series DBClose"})
+	require.NoError(t, err)
+	authorID := testutil.SeedAuthor(t, db, "Author DBClose")
+	bookID := testutil.SeedBook(t, db, authorID, "Book DBClose")
+	err = svc.AddBook(ctx, s.ID, series.AddBookInput{BookID: bookID, Position: "1"})
+	require.NoError(t, err)
+
+	db.Close()
+	err = svc.RemoveBook(ctx, s.ID, bookID)
+	require.Error(t, err)
+	require.NotErrorIs(t, err, series.ErrBookNotFound)
+}
+
+func TestUpdateBookPosition_DBClosed(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	svc := series.New(db)
+	ctx := context.Background()
+
+	s, err := svc.Create(ctx, series.CreateSeriesInput{Title: "Series DBClose2"})
+	require.NoError(t, err)
+	authorID := testutil.SeedAuthor(t, db, "Author DBClose2")
+	bookID := testutil.SeedBook(t, db, authorID, "Book DBClose2")
+	err = svc.AddBook(ctx, s.ID, series.AddBookInput{BookID: bookID, Position: "1"})
+	require.NoError(t, err)
+
+	db.Close()
+	err = svc.UpdateBookPosition(ctx, s.ID, bookID, "2")
+	require.Error(t, err)
+	require.NotErrorIs(t, err, series.ErrBookNotFound)
+}

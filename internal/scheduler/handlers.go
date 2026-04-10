@@ -8,16 +8,16 @@ import (
 	"github.com/woliveiras/bookaneer/internal/wanted"
 )
 
-// RegisterWantedHandlers registers handlers that use the wanted service.
-func (s *Scheduler) RegisterWantedHandlers(wantedService *wanted.Service) {
-	// BookSearch: Search and grab a specific book by ID
-	s.RegisterHandler(CommandBookSearch, func(ctx context.Context, cmd *Command) error {
+// makeBookSearchHandler returns a CommandHandler that searches and grabs a specific book by ID.
+// Used by both CommandBookSearch and CommandAutomaticSearch.
+func makeBookSearchHandler(wantedSvc *wanted.Service) CommandHandler {
+	return func(ctx context.Context, cmd *Command) error {
 		bookID, ok := cmd.Payload["bookId"].(float64) // JSON numbers are float64
 		if !ok {
 			return fmt.Errorf("missing or invalid bookId in payload")
 		}
 
-		result, err := wantedService.SearchAndGrab(ctx, int64(bookID))
+		result, err := wantedSvc.SearchAndGrab(ctx, int64(bookID))
 		if err != nil {
 			return err
 		}
@@ -39,7 +39,14 @@ func (s *Scheduler) RegisterWantedHandlers(wantedService *wanted.Service) {
 		}
 
 		return nil
-	})
+	}
+}
+
+// RegisterWantedHandlers registers handlers that use the wanted service.
+func (s *Scheduler) RegisterWantedHandlers(wantedService *wanted.Service) {
+	// BookSearch and AutomaticSearch share the same logic: search and grab by bookId.
+	s.RegisterHandler(CommandBookSearch, makeBookSearchHandler(wantedService))
+	s.RegisterHandler(CommandAutomaticSearch, makeBookSearchHandler(wantedService))
 
 	// MissingBookSearch: Search all wanted (missing) books
 	s.RegisterHandler(CommandMissingBookSearch, func(ctx context.Context, cmd *Command) error {
@@ -85,7 +92,6 @@ func (s *Scheduler) RegisterWantedHandlers(wantedService *wanted.Service) {
 	})
 
 	// RssSync: Periodically search for wanted books using RSS-enabled sources
-	// This runs on a schedule and searches all wanted (missing) books
 	s.RegisterHandler(CommandRssSync, func(ctx context.Context, cmd *Command) error {
 		results, err := wantedService.SearchAllWanted(ctx)
 		if err != nil {
@@ -101,40 +107,7 @@ func (s *Scheduler) RegisterWantedHandlers(wantedService *wanted.Service) {
 		return nil
 	})
 
-	// AutomaticSearch: Triggered when a new book is added as monitored
-	// Searches for the book using automatic-search-enabled indexers
-	s.RegisterHandler(CommandAutomaticSearch, func(ctx context.Context, cmd *Command) error {
-		bookID, ok := cmd.Payload["bookId"].(float64)
-		if !ok {
-			return fmt.Errorf("missing or invalid bookId in payload")
-		}
-
-		result, err := wantedService.SearchAndGrab(ctx, int64(bookID))
-		if err != nil {
-			return err
-		}
-
-		if result != nil {
-			cmd.Result = map[string]any{
-				"grabbed":  true,
-				"title":    result.Title,
-				"source":   result.Source,
-				"provider": result.ProviderName,
-				"format":   result.Format,
-				"client":   result.ClientName,
-			}
-		} else {
-			cmd.Result = map[string]any{
-				"grabbed": false,
-				"message": "No suitable release found",
-			}
-		}
-
-		return nil
-	})
-
 	// DownloadMonitor: Periodically check status of active downloads
-	// Updates queue status and triggers post-processing for completed downloads
 	s.RegisterHandler(CommandDownloadMonitor, func(ctx context.Context, cmd *Command) error {
 		result, err := wantedService.ProcessDownloads(ctx)
 		if err != nil {

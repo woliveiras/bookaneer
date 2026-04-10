@@ -3,6 +3,7 @@ package scheduler
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -430,4 +431,163 @@ func TestCheckScheduledTasks_NoDueTasks(t *testing.T) {
 	cmds, err := s.ListCommands(ctx, 50)
 	require.NoError(t, err)
 	assert.Empty(t, cmds)
+}
+
+// TestMakeBookSearchHandler_MissingBookId tests the handler's validation path when the
+// bookId key is absent from the payload (covers 0% makeBookSearchHandler lines).
+func TestMakeBookSearchHandler_MissingBookId(t *testing.T) {
+	handler := makeBookSearchHandler(nil) // nil is safe: SearchAndGrab is never reached
+	cmd := &Command{
+		ID:      "test-missing",
+		Payload: map[string]any{},
+	}
+	err := handler(context.Background(), cmd)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "bookId")
+}
+
+// TestMakeBookSearchHandler_InvalidBookIdType covers the type-assertion failure path.
+func TestMakeBookSearchHandler_InvalidBookIdType(t *testing.T) {
+	handler := makeBookSearchHandler(nil)
+	cmd := &Command{
+		ID:      "test-invalid-type",
+		Payload: map[string]any{"bookId": "not-a-number"},
+	}
+	err := handler(context.Background(), cmd)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "bookId")
+}
+
+// TestRegisterWantedHandlers_RegistersAllHandlers verifies that all six command handlers
+// are registered after calling RegisterWantedHandlers (covers 0% RegisterWantedHandlers).
+// A nil *wanted.Service is safe here because the handlers are only stored in closures
+// during registration – they are never invoked.
+func TestRegisterWantedHandlers_RegistersAllHandlers(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	s := New(db, 3)
+
+	s.RegisterWantedHandlers(nil)
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	for _, name := range []CommandName{
+		CommandBookSearch,
+		CommandAutomaticSearch,
+		CommandMissingBookSearch,
+		CommandDownloadGrab,
+		CommandRssSync,
+		CommandDownloadMonitor,
+	} {
+		assert.NotNil(t, s.handlers[name], "handler for %s should be registered", name)
+	}
+}
+
+// TestCancelCommand_NonExistent verifies that cancelling a non-existent command
+// does not return an error (CancelCommand doesn't check rows affected).
+func TestCancelCommand_NonExistent(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	s := New(db, 3)
+	ctx := context.Background()
+
+	err := s.CancelCommand(ctx, "non-existent-id-xyz")
+	require.NoError(t, err)
+}
+
+// TestCancelCommand_AlreadyCompleted verifies that cancelling a completed command
+// simply overwrites its status without error.
+func TestCancelCommand_AlreadyCompleted(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	s := New(db, 3)
+	ctx := context.Background()
+
+	id, err := s.QueueCommand(ctx, CommandBookSearch, TriggerManual, nil)
+	require.NoError(t, err)
+	require.NoError(t, s.updateCommandStatus(ctx, id, StatusCompleted, nil))
+
+	err = s.CancelCommand(ctx, id)
+	require.NoError(t, err)
+}
+
+// TestDispatchPendingCommands_WithQueuedCommand verifies that dispatchPendingCommands
+// picks up a queued command, executes it via a goroutine, and marks it completed
+// (covers the "worker slot available" branch of dispatchPendingCommands).
+func TestDispatchPendingCommands_WithQueuedCommand(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	s := New(db, 3)
+	ctx := context.Background()
+
+	done := make(chan struct{})
+	s.RegisterHandler(CommandRssSync, func(_ context.Context, _ *Command) error {
+		close(done)
+		return nil
+	})
+
+	id, err := s.QueueCommand(ctx, CommandRssSync, TriggerManual, nil)
+	require.NoError(t, err)
+
+	s.dispatchPendingCommands(ctx)
+
+	select {
+	case <-done:
+	case <-context.Background().Done():
+		t.Fatal("handler was not invoked")
+	}
+	s.wg.Wait()
+
+	cmd, err := s.GetCommand(ctx, id)
+	require.NoError(t, err)
+	assert.Equal(t, StatusCompleted, cmd.Status)
+}
+
+// TestDispatchPendingCommands_WorkersFull verifies that when all worker slots are occupied,
+// dispatchPendingCommands leaves the command queued (covers the "default" select branch).
+func TestDispatchPendingCommands_WorkersFull(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	s := New(db, 1) // single worker slot
+	ctx := context.Background()
+
+	// Occupy the only worker slot so no new work can be dispatched.
+	s.workerSem <- struct{}{}
+
+	_, err := s.QueueCommand(ctx, CommandBookSearch, TriggerManual, nil)
+	require.NoError(t, err)
+
+	s.dispatchPendingCommands(ctx)
+
+	// Release slot before asserting so the test DB is still usable.
+	<-s.workerSem
+
+	cmds, err := s.GetActiveCommands(ctx)
+	require.NoError(t, err)
+	require.Len(t, cmds, 1)
+	assert.Equal(t, StatusQueued, cmds[0].Status)
+}
+
+// TestCheckScheduledTasks_UpdatesNextRunTime verifies that after dispatching a due task,
+// its next_run_at is pushed into the future (covers updateTaskNextRun call path).
+func TestCheckScheduledTasks_UpdatesNextRunTime(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	s := New(db, 3)
+	ctx := context.Background()
+
+	// Force one task to be due right now.
+	_, err := db.ExecContext(ctx,
+		`UPDATE scheduled_tasks SET next_run_at = datetime('now', '-1 minute') WHERE name = 'RssSync'`)
+	require.NoError(t, err)
+
+	// Set all other tasks far in the future to keep the test focused.
+	_, err = db.ExecContext(ctx,
+		`UPDATE scheduled_tasks SET next_run_at = datetime('now', '+1 year') WHERE name != 'RssSync'`)
+	require.NoError(t, err)
+
+	s.checkScheduledTasks(ctx)
+
+	// next_run_at should now be in the future.
+	var nextRunAt string
+	require.NoError(t, db.QueryRowContext(ctx,
+		`SELECT next_run_at FROM scheduled_tasks WHERE name = 'RssSync'`).Scan(&nextRunAt))
+
+	assert.NotEmpty(t, nextRunAt)
+	assert.Greater(t, nextRunAt, time.Now().UTC().Add(-5*time.Second).Format(time.RFC3339))
 }
