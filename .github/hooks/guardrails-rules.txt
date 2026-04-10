@@ -1,0 +1,49 @@
+# Guardrails Rules
+#
+# Format: ACTION PATTERN
+#   ACTION = BLOCK | ASK
+#   PATTERN = regex matched against the command string
+#
+# BLOCK: reject immediately, show reason
+# ASK:   prompt user for confirmation before executing
+#
+# Lines starting with # are comments. Blank lines are ignored.
+
+# --- Destructive version control ---
+BLOCK git push.*--force
+ASK   git push
+ASK   git reset --hard
+ASK   git clean -fd
+BLOCK git checkout -- .
+
+# --- Destructive file operations ---
+BLOCK rm -rf /
+BLOCK rm -rf ~
+ASK   rm -rf
+ASK   rm -r
+
+# --- Infrastructure ---
+BLOCK terraform destroy
+ASK   terraform apply
+ASK   terraform import
+ASK   terraform state rm
+
+# --- Privilege escalation ---
+ASK   sudo
+
+# --- Package install (avoid global/system changes) ---
+ASK   pip install(?!.*-r)
+ASK   npm install -g
+ASK   brew install
+
+# --- Database ---
+ASK   DROP TABLE
+ASK   DROP DATABASE
+ASK   TRUNCATE
+ASK   DELETE FROM(?!.*WHERE)
+
+# --- Secrets ---
+BLOCK curl.*Authorization.*Bearer
+BLOCK echo.*SECRET
+BLOCK echo.*TOKEN
+BLOCK echo.*PASSWORD

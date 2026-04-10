@@ -1,0 +1,11 @@
+{
+  "hooks": {
+    "pre-tool-use": [
+      {
+        "event": "preToolUse",
+        "script": ".github/hooks/scripts/block-dangerous-commands.sh",
+        "rulesFile": ".github/hooks/guardrails-rules.txt"
+      }
+    ]
+  }
+}
