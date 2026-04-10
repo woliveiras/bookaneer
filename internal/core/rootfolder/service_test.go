@@ -158,3 +158,118 @@ func TestDelete_NotFound(t *testing.T) {
 	err := s.Delete(ctx, 999)
 	assert.ErrorIs(t, err, ErrNotFound)
 }
+
+func TestCreate_PathIsFile(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	s := New(db)
+	ctx := context.Background()
+
+	// Create a file (not a directory)
+	filePath := filepath.Join(t.TempDir(), "notadir")
+	require.NoError(t, os.WriteFile(filePath, []byte("data"), 0644))
+
+	_, err := s.Create(ctx, CreateRootFolderInput{Path: filePath, Name: "Bad"})
+	require.ErrorIs(t, err, ErrPathNotAccessible)
+}
+
+func TestUpdate_PathUpdate(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	s := New(db)
+	ctx := context.Background()
+
+	dir := t.TempDir()
+	created, err := s.Create(ctx, CreateRootFolderInput{Path: dir, Name: "Original"})
+	require.NoError(t, err)
+
+	newDir := t.TempDir()
+	updated, err := s.Update(ctx, created.ID, UpdateRootFolderInput{Path: &newDir})
+	require.NoError(t, err)
+	assert.Equal(t, newDir, updated.Path)
+}
+
+func TestUpdate_PathIsFile(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	s := New(db)
+	ctx := context.Background()
+
+	dir := t.TempDir()
+	created, err := s.Create(ctx, CreateRootFolderInput{Path: dir, Name: "Test"})
+	require.NoError(t, err)
+
+	filePath := filepath.Join(t.TempDir(), "notadir")
+	require.NoError(t, os.WriteFile(filePath, []byte("data"), 0644))
+
+	_, err = s.Update(ctx, created.ID, UpdateRootFolderInput{Path: &filePath})
+	require.ErrorIs(t, err, ErrPathNotAccessible)
+}
+
+func TestUpdate_DefaultQualityProfileID(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	s := New(db)
+	ctx := context.Background()
+
+	// Create a quality profile first (FK constraint)
+	_, err := db.ExecContext(ctx, `INSERT INTO quality_profiles (name, cutoff, items) VALUES ('Test QP', 'epub', '[]')`)
+	require.NoError(t, err)
+	var qpID int64
+	require.NoError(t, db.QueryRowContext(ctx, "SELECT id FROM quality_profiles LIMIT 1").Scan(&qpID))
+
+	dir := t.TempDir()
+	created, err := s.Create(ctx, CreateRootFolderInput{Path: dir, Name: "QP"})
+	require.NoError(t, err)
+
+	updated, err := s.Update(ctx, created.ID, UpdateRootFolderInput{DefaultQualityProfileID: &qpID})
+	require.NoError(t, err)
+	require.NotNil(t, updated.DefaultQualityProfileID)
+	assert.Equal(t, qpID, *updated.DefaultQualityProfileID)
+}
+
+func TestUpdate_EmptyNoChanges(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	s := New(db)
+	ctx := context.Background()
+
+	dir := t.TempDir()
+	created, err := s.Create(ctx, CreateRootFolderInput{Path: dir, Name: "NoOp"})
+	require.NoError(t, err)
+
+	updated, err := s.Update(ctx, created.ID, UpdateRootFolderInput{})
+	require.NoError(t, err)
+	assert.Equal(t, created.Name, updated.Name)
+}
+
+func TestUpdate_DuplicatePath(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	s := New(db)
+	ctx := context.Background()
+
+	dir1 := t.TempDir()
+	dir2 := t.TempDir()
+
+	_, err := s.Create(ctx, CreateRootFolderInput{Path: dir1, Name: "First"})
+	require.NoError(t, err)
+	second, err := s.Create(ctx, CreateRootFolderInput{Path: dir2, Name: "Second"})
+	require.NoError(t, err)
+
+	_, err = s.Update(ctx, second.ID, UpdateRootFolderInput{Path: &dir1})
+	require.ErrorIs(t, err, ErrDuplicate)
+}
+
+func TestEnrichWithDiskInfo_Inaccessible(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	s := New(db)
+
+	rf := &RootFolder{Path: "/nonexistent/path/that/does/not/exist"}
+	s.enrichWithDiskInfo(rf)
+	assert.False(t, rf.Accessible)
+}
+
+func TestEnrichWithDiskInfo_Accessible(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	s := New(db)
+
+	rf := &RootFolder{Path: t.TempDir()}
+	s.enrichWithDiskInfo(rf)
+	assert.True(t, rf.Accessible)
+	assert.Greater(t, rf.TotalSpace, int64(0))
+}

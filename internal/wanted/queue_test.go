@@ -21,7 +21,9 @@ func newTestService(t *testing.T) (*wanted.Service, context.Context) {
 	return svc, context.Background()
 }
 
-func seedTestBook(t *testing.T, db interface{ Exec(string, ...any) (interface{ LastInsertId() (int64, error) }, error) }) (int64, int64) {
+func seedTestBook(t *testing.T, db interface {
+	Exec(string, ...any) (interface{ LastInsertId() (int64, error) }, error)
+}) (int64, int64) {
 	t.Helper()
 	// We need raw DB access for seeding, so this helper won't work with the service alone.
 	// Use testutil.SeedAuthor and testutil.SeedBook instead.

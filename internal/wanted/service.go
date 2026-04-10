@@ -107,10 +107,10 @@ func (s *Service) SearchAndGrab(ctx context.Context, bookID int64) (*GrabResult,
 // GetWantedBooks returns all monitored books without files.
 func (s *Service) GetWantedBooks(ctx context.Context) ([]book.Book, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT b.id, b.author_id, b.title, b.sort_title, b.foreign_id, b.isbn, b.isbn13,
-		       b.release_date, b.overview, b.image_url, b.page_count, b.monitored,
+		SELECT b.id, b.author_id, b.title, COALESCE(b.sort_title,''), COALESCE(b.foreign_id,''), COALESCE(b.isbn,''), COALESCE(b.isbn13,''),
+		       COALESCE(b.release_date,''), COALESCE(b.overview,''), COALESCE(b.image_url,''), b.page_count, b.monitored,
 		       b.added_at, b.updated_at,
-		       a.name as author_name,
+		       COALESCE(a.name,'') as author_name,
 		       EXISTS(SELECT 1 FROM book_files bf WHERE bf.book_id = b.id) as has_file
 		FROM books b
 		LEFT JOIN authors a ON a.id = b.author_id
@@ -126,13 +126,16 @@ func (s *Service) GetWantedBooks(ctx context.Context) ([]book.Book, error) {
 	var books []book.Book
 	for rows.Next() {
 		var b book.Book
+		var monitored, hasFile int
 		if err := rows.Scan(
 			&b.ID, &b.AuthorID, &b.Title, &b.SortTitle, &b.ForeignID, &b.ISBN, &b.ISBN13,
-			&b.ReleaseDate, &b.Overview, &b.ImageURL, &b.PageCount, &b.Monitored,
-			&b.AddedAt, &b.UpdatedAt, &b.AuthorName, &b.HasFile,
+			&b.ReleaseDate, &b.Overview, &b.ImageURL, &b.PageCount, &monitored,
+			&b.AddedAt, &b.UpdatedAt, &b.AuthorName, &hasFile,
 		); err != nil {
 			return nil, err
 		}
+		b.Monitored = monitored == 1
+		b.HasFile = hasFile == 1
 		books = append(books, b)
 	}
 

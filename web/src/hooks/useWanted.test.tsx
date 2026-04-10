@@ -16,6 +16,8 @@ import {
   useBlocklist,
   useDownloadQueue,
   useHistory,
+  useManualGrab,
+  useRecentCommands,
   useRemoveFromBlocklist,
   useRemoveFromQueue,
   useSearchAllMissing,
@@ -160,6 +162,58 @@ describe("useActiveCommands", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(result.current.data).toEqual(commands)
+  })
+})
+
+describe("useManualGrab", () => {
+  it("triggers a manual grab", async () => {
+    const response: SearchCommandResponse = { commandId: "cmd-3", message: "Grab started" }
+    vi.mocked(wantedApi.manualGrab).mockResolvedValue(response)
+
+    const { result } = renderHook(() => useManualGrab(), { wrapper: createWrapper() })
+
+    result.current.mutate({
+      bookId: 1,
+      downloadUrl: "http://example.com/book.epub",
+      releaseTitle: "Book.epub",
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(wantedApi.manualGrab).toHaveBeenCalledWith(
+      { bookId: 1, downloadUrl: "http://example.com/book.epub", releaseTitle: "Book.epub" },
+      expect.anything(),
+    )
+  })
+})
+
+describe("useRecentCommands", () => {
+  it("fetches recent commands with default limit", async () => {
+    const commands: ActiveCommand[] = [
+      {
+        id: "cmd-1",
+        name: "BookSearch",
+        status: "completed",
+        priority: 1,
+        trigger: "manual",
+        queuedAt: "2025-01-01T00:00:00Z",
+      },
+    ]
+    vi.mocked(wantedApi.getRecentCommands).mockResolvedValue(commands)
+
+    const { result } = renderHook(() => useRecentCommands(), { wrapper: createWrapper() })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(result.current.data).toEqual(commands)
+    expect(wantedApi.getRecentCommands).toHaveBeenCalledWith(10)
+  })
+
+  it("fetches recent commands with custom limit", async () => {
+    vi.mocked(wantedApi.getRecentCommands).mockResolvedValue([])
+
+    const { result } = renderHook(() => useRecentCommands(5), { wrapper: createWrapper() })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(wantedApi.getRecentCommands).toHaveBeenCalledWith(5)
   })
 })
 

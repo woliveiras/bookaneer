@@ -100,16 +100,21 @@ func (s *Service) ListGrabs(ctx context.Context) ([]GrabItem, error) {
 		var clientID, downloadID sql.NullInt64
 		var downloadIDStr sql.NullString
 		var errorMsg sql.NullString
-		var completedAt sql.NullTime
+		var grabbedAtStr string
+		var completedAtStr sql.NullString
 
 		err := rows.Scan(
 			&g.ID, &g.BookID, &g.IndexerID, &g.ReleaseTitle, &g.DownloadURL, &g.Size,
-			&g.Quality, &clientID, &downloadIDStr, &g.Status, &errorMsg, &g.GrabbedAt, &completedAt,
+			&g.Quality, &clientID, &downloadIDStr, &g.Status, &errorMsg, &grabbedAtStr, &completedAtStr,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("scan grab: %w", err)
 		}
 
+		g.GrabbedAt, _ = time.Parse(time.RFC3339, grabbedAtStr)
+		if g.GrabbedAt.IsZero() {
+			g.GrabbedAt, _ = time.Parse("2006-01-02 15:04:05", grabbedAtStr)
+		}
 		if clientID.Valid {
 			g.ClientID = clientID.Int64
 		}
@@ -119,8 +124,14 @@ func (s *Service) ListGrabs(ctx context.Context) ([]GrabItem, error) {
 			g.DownloadID = fmt.Sprintf("%d", downloadID.Int64)
 		}
 		g.ErrorMessage = errorMsg.String
-		if completedAt.Valid {
-			g.CompletedAt = &completedAt.Time
+		if completedAtStr.Valid {
+			t, _ := time.Parse(time.RFC3339, completedAtStr.String)
+			if t.IsZero() {
+				t, _ = time.Parse("2006-01-02 15:04:05", completedAtStr.String)
+			}
+			if !t.IsZero() {
+				g.CompletedAt = &t
+			}
 		}
 
 		grabs = append(grabs, g)
@@ -137,13 +148,13 @@ func (s *Service) CreateGrab(ctx context.Context, grab *GrabItem) error {
 
 	query := `
 		INSERT INTO grabs (book_id, indexer_id, release_title, download_url, size, quality,
-		                   status, grabbed_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		                   client_id, status, grabbed_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := s.db.ExecContext(ctx, query,
 		grab.BookID, grab.IndexerID, grab.ReleaseTitle, grab.DownloadURL,
-		grab.Size, grab.Quality, grab.Status, now,
+		grab.Size, grab.Quality, grab.ClientID, grab.Status, now,
 	)
 	if err != nil {
 		return fmt.Errorf("insert grab: %w", err)
@@ -163,8 +174,10 @@ func (s *Service) SendGrab(ctx context.Context, grabID int64, clientID int64) er
 	// Get the grab
 	var grab GrabItem
 	var errorMsg sql.NullString
-	var completedAt sql.NullTime
-	var clientIDNull, downloadIDNull sql.NullInt64
+	var completedAtStr sql.NullString
+	var grabbedAtStr string
+	var clientIDNull sql.NullInt64
+	var downloadIDStr sql.NullString
 
 	query := `
 		SELECT id, book_id, indexer_id, release_title, download_url, size, quality,
@@ -173,9 +186,27 @@ func (s *Service) SendGrab(ctx context.Context, grabID int64, clientID int64) er
 	`
 	err := s.db.QueryRowContext(ctx, query, grabID).Scan(
 		&grab.ID, &grab.BookID, &grab.IndexerID, &grab.ReleaseTitle, &grab.DownloadURL,
-		&grab.Size, &grab.Quality, &clientIDNull, &downloadIDNull, &grab.Status, &errorMsg,
-		&grab.GrabbedAt, &completedAt,
+		&grab.Size, &grab.Quality, &clientIDNull, &downloadIDStr, &grab.Status, &errorMsg,
+		&grabbedAtStr, &completedAtStr,
 	)
+	if err == sql.ErrNoRows {
+		return ErrNotFound
+	}
+	if err != nil {
+		return fmt.Errorf("query grab: %w", err)
+	}
+
+	grab.GrabbedAt, _ = time.Parse(time.RFC3339, grabbedAtStr)
+	if grab.GrabbedAt.IsZero() {
+		grab.GrabbedAt, _ = time.Parse("2006-01-02 15:04:05", grabbedAtStr)
+	}
+	if clientIDNull.Valid {
+		grab.ClientID = clientIDNull.Int64
+	}
+	if downloadIDStr.Valid {
+		grab.DownloadID = downloadIDStr.String
+	}
+	grab.ErrorMessage = errorMsg.String
 	if err == sql.ErrNoRows {
 		return ErrNotFound
 	}

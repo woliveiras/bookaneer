@@ -22,8 +22,8 @@ func (s *Service) FindByID(ctx context.Context, id int64) (*Book, error) {
 	var b Book
 	var monitored int
 	err := s.db.QueryRowContext(ctx, `
-		SELECT b.id, b.author_id, b.title, b.sort_title, b.foreign_id, b.isbn, b.isbn13,
-		       b.release_date, b.overview, b.image_url, b.page_count, b.monitored, b.added_at, b.updated_at,
+		SELECT b.id, b.author_id, b.title, COALESCE(b.sort_title,''), COALESCE(b.foreign_id,''), COALESCE(b.isbn,''), COALESCE(b.isbn13,''),
+		       COALESCE(b.release_date,''), COALESCE(b.overview,''), COALESCE(b.image_url,''), b.page_count, b.monitored, b.added_at, b.updated_at,
 		       a.name
 		FROM books b
 		JOIN authors a ON b.author_id = a.id
@@ -54,8 +54,8 @@ func (s *Service) FindByForeignID(ctx context.Context, foreignID string) (*Book,
 	var b Book
 	var monitored int
 	err := s.db.QueryRowContext(ctx, `
-		SELECT b.id, b.author_id, b.title, b.sort_title, b.foreign_id, b.isbn, b.isbn13,
-		       b.release_date, b.overview, b.image_url, b.page_count, b.monitored, b.added_at, b.updated_at,
+		SELECT b.id, b.author_id, b.title, COALESCE(b.sort_title,''), COALESCE(b.foreign_id,''), COALESCE(b.isbn,''), COALESCE(b.isbn13,''),
+		       COALESCE(b.release_date,''), COALESCE(b.overview,''), COALESCE(b.image_url,''), b.page_count, b.monitored, b.added_at, b.updated_at,
 		       a.name
 		FROM books b
 		JOIN authors a ON b.author_id = a.id
@@ -142,8 +142,8 @@ func (s *Service) List(ctx context.Context, filter ListBooksFilter) ([]Book, int
 	}
 
 	query := fmt.Sprintf(`
-		SELECT b.id, b.author_id, b.title, b.sort_title, b.foreign_id, b.isbn, b.isbn13,
-		       b.release_date, b.overview, b.image_url, b.page_count, b.monitored, b.added_at, b.updated_at,
+		SELECT b.id, b.author_id, b.title, COALESCE(b.sort_title,''), COALESCE(b.foreign_id,''), COALESCE(b.isbn,''), COALESCE(b.isbn13,''),
+		       COALESCE(b.release_date,''), COALESCE(b.overview,''), COALESCE(b.image_url,''), b.page_count, b.monitored, b.added_at, b.updated_at,
 		       a.name,
 		       EXISTS (SELECT 1 FROM book_files bf WHERE bf.book_id = b.id) as has_file
 		FROM books b

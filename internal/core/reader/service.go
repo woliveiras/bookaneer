@@ -21,7 +21,7 @@ func (s *Service) GetBookFile(ctx context.Context, id int64) (*BookFile, error) 
 	row := s.db.QueryRow(`
 		SELECT bf.id, bf.book_id, bf.edition_id, bf.path, bf.relative_path,
 		       bf.size, bf.format, bf.quality, bf.hash, bf.added_at,
-		       b.title, a.name, b.cover_url
+		       b.title, a.name, COALESCE(b.image_url, '')
 		FROM book_files bf
 		JOIN books b ON b.id = bf.book_id
 		LEFT JOIN authors a ON a.id = b.author_id
