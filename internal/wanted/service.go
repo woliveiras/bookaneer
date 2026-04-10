@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/woliveiras/bookaneer/internal/core/book"
+	"github.com/woliveiras/bookaneer/internal/core/naming"
 	"github.com/woliveiras/bookaneer/internal/download"
 	"github.com/woliveiras/bookaneer/internal/library"
 	"github.com/woliveiras/bookaneer/internal/search"
@@ -22,6 +23,7 @@ type Service struct {
 	libraryService  *library.Aggregator
 	searchService   *search.Service
 	downloadService *download.Service
+	namingEngine    *naming.Engine
 }
 
 // New creates a new Wanted service.
@@ -31,6 +33,7 @@ func New(
 	libraryService *library.Aggregator,
 	searchService *search.Service,
 	downloadService *download.Service,
+	namingEngine *naming.Engine,
 ) *Service {
 	return &Service{
 		db:              db,
@@ -38,6 +41,7 @@ func New(
 		libraryService:  libraryService,
 		searchService:   searchService,
 		downloadService: downloadService,
+		namingEngine:    namingEngine,
 	}
 }
 

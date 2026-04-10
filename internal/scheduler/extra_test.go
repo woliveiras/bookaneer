@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/woliveiras/bookaneer/internal/core/book"
+	"github.com/woliveiras/bookaneer/internal/core/naming"
 	"github.com/woliveiras/bookaneer/internal/download"
 	"github.com/woliveiras/bookaneer/internal/library"
 	"github.com/woliveiras/bookaneer/internal/search"
@@ -37,6 +38,7 @@ func newTestWantedSvc(t *testing.T) (*wanted.Service, *sql.DB) {
 		library.NewAggregator(), // zero providers → searchDigitalLibraries returns (nil, nil)
 		search.NewService(db),
 		download.NewService(db),
+		naming.New(db),
 	), db
 }
 

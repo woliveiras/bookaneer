@@ -27,6 +27,7 @@ import (
 	"github.com/woliveiras/bookaneer/internal/core/author"
 	"github.com/woliveiras/bookaneer/internal/core/book"
 	"github.com/woliveiras/bookaneer/internal/core/library"
+	"github.com/woliveiras/bookaneer/internal/core/naming"
 	"github.com/woliveiras/bookaneer/internal/core/qualityprofile"
 	"github.com/woliveiras/bookaneer/internal/core/reader"
 	"github.com/woliveiras/bookaneer/internal/core/rootfolder"
@@ -294,7 +295,8 @@ func registerRoutes(api *echo.Group, db *sql.DB, cfg *config.Config, authSvc *au
 	handler.NewDownloadHandler(downloadSvc).Register(protected)
 
 	// Wanted service
-	wantedSvc := wanted.New(db, bookSvc, libAggregator, searchSvc, downloadSvc)
+	namingEngine := naming.New(db)
+	wantedSvc := wanted.New(db, bookSvc, libAggregator, searchSvc, downloadSvc, namingEngine)
 	jobScheduler.RegisterWantedHandlers(wantedSvc)
 	jobScheduler.Start(ctx)
 

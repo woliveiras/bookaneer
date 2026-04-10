@@ -9,6 +9,7 @@ import (
 	"github.com/woliveiras/bookaneer/internal/core/book"
 	"github.com/woliveiras/bookaneer/internal/download"
 	"github.com/woliveiras/bookaneer/internal/testutil"
+	"github.com/woliveiras/bookaneer/internal/core/naming"
 	"github.com/woliveiras/bookaneer/internal/wanted"
 )
 
@@ -17,7 +18,7 @@ func newTestService(t *testing.T) (*wanted.Service, context.Context) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db))
 	return svc, context.Background()
 }
 
@@ -34,7 +35,7 @@ func TestRemoveFromQueue_ItemExists(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db))
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "J.R.R. Tolkien")
@@ -70,7 +71,7 @@ func TestGetDownloadQueue_WithItems(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db))
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "J.R.R. Tolkien")
@@ -95,7 +96,7 @@ func TestGetDownloadQueue_NullJoins(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db))
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Author")
@@ -120,7 +121,7 @@ func TestUpdateQueueItemStatus(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db))
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Author")
@@ -144,7 +145,7 @@ func TestGetDownloadQueue_WithCompletedAndFailedItems(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db))
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Author")
@@ -179,7 +180,7 @@ func TestGrabRelease_RecordsDownloadAndHistory(t *testing.T) {
 
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db))
 	ctx := context.Background()
 
 	// Port 1 is always refused — the background download fails fast, but
@@ -228,7 +229,7 @@ func TestProcessDownloads_RestartsLostDownload(t *testing.T) {
 
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db))
 	ctx := context.Background()
 
 	result, err := svc.ProcessDownloads(ctx)
@@ -246,7 +247,7 @@ func TestUpdateQueueItemStatusWithPath(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db))
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Author")
@@ -269,7 +270,7 @@ func TestRemoveFromQueue_DBError(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db))
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Author")
