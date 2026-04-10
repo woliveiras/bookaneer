@@ -12,6 +12,14 @@ import (
 	"github.com/woliveiras/bookaneer/internal/search"
 )
 
+// Search result status values stored in the search_results table.
+const (
+	searchResultPending = "pending"
+	searchResultTried   = "tried"
+	searchResultFailed  = "failed"
+	searchResultSuccess = "success"
+)
+
 // searchDigitalLibraries searches digital libraries and saves all results for fallback.
 func (s *Service) searchDigitalLibraries(ctx context.Context, b *book.Book, query string) (*GrabResult, error) {
 	if s.libraryService == nil {
@@ -28,7 +36,9 @@ func (s *Service) searchDigitalLibraries(ctx context.Context, b *book.Book, quer
 	}
 
 	// Clear any previous search results for this book
-	_, _ = s.db.ExecContext(ctx, `DELETE FROM search_results WHERE book_id = ?`, b.ID)
+	if _, err := s.db.ExecContext(ctx, `DELETE FROM search_results WHERE book_id = ?`, b.ID); err != nil {
+		slog.Warn("failed to clear search results", "bookId", b.ID, "error", err)
+	}
 
 	// Filter and save all valid results for fallback
 	var validResults []library.SearchResult
@@ -50,8 +60,8 @@ func (s *Service) searchDigitalLibraries(ctx context.Context, b *book.Book, quer
 		// Save to search_results table for fallback
 		_, err := s.db.ExecContext(ctx, `
 			INSERT INTO search_results (book_id, provider, title, download_url, format, size, score, priority, status)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
-		`, b.ID, r.Provider, r.Title, r.DownloadURL, r.Format, r.Size, r.Score, priority)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		`, b.ID, r.Provider, r.Title, r.DownloadURL, r.Format, r.Size, r.Score, priority, searchResultPending)
 		if err != nil {
 			slog.Warn("Failed to save search result", "error", err)
 		}
@@ -78,10 +88,10 @@ func (s *Service) grabNextSearchResult(ctx context.Context, b *book.Book) (*Grab
 	err := s.db.QueryRowContext(ctx, `
 		SELECT id, provider, title, download_url, format, size 
 		FROM search_results 
-		WHERE book_id = ? AND status = 'pending'
+		WHERE book_id = ? AND status = ?
 		ORDER BY priority ASC
 		LIMIT 1
-	`, b.ID).Scan(&resultID, &provider, &title, &downloadURL, &format, &size)
+	`, b.ID, searchResultPending).Scan(&resultID, &provider, &title, &downloadURL, &format, &size)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -91,10 +101,12 @@ func (s *Service) grabNextSearchResult(ctx context.Context, b *book.Book) (*Grab
 	}
 
 	// Mark as tried
-	_, _ = s.db.ExecContext(ctx, `
-		UPDATE search_results SET status = 'tried', tried_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+	if _, err := s.db.ExecContext(ctx, `
+		UPDATE search_results SET status = ?, tried_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
 		WHERE id = ?
-	`, resultID)
+	`, searchResultTried, resultID); err != nil {
+		slog.Warn("failed to mark search result as tried", "resultId", resultID, "error", err)
+	}
 
 	// Build library result struct
 	r := &library.SearchResult{
@@ -109,14 +121,18 @@ func (s *Service) grabNextSearchResult(ctx context.Context, b *book.Book) (*Grab
 	grabResult, err := s.grabFromLibrary(ctx, b, r)
 	if err != nil {
 		// Mark as failed and record error
-		_, _ = s.db.ExecContext(ctx, `
-			UPDATE search_results SET status = 'failed', error_message = ? WHERE id = ?
-		`, err.Error(), resultID)
+		if _, ferr := s.db.ExecContext(ctx, `
+			UPDATE search_results SET status = ?, error_message = ? WHERE id = ?
+		`, searchResultFailed, err.Error(), resultID); ferr != nil {
+			slog.Warn("failed to mark search result as failed", "resultId", resultID, "error", ferr)
+		}
 		return nil, err
 	}
 
 	// Mark as success
-	_, _ = s.db.ExecContext(ctx, `UPDATE search_results SET status = 'success' WHERE id = ?`, resultID)
+	if _, err := s.db.ExecContext(ctx, `UPDATE search_results SET status = ? WHERE id = ?`, searchResultSuccess, resultID); err != nil {
+		slog.Warn("failed to mark search result as success", "resultId", resultID, "error", err)
+	}
 
 	return grabResult, nil
 }
@@ -182,15 +198,17 @@ func (s *Service) tryNextSource(ctx context.Context, queueID int64, errorMessage
 	// Check if there are more sources to try
 	var pendingCount int
 	err = s.db.QueryRowContext(ctx, `
-		SELECT COUNT(*) FROM search_results WHERE book_id = ? AND status = 'pending'
-	`, bookID).Scan(&pendingCount)
+		SELECT COUNT(*) FROM search_results WHERE book_id = ? AND status = ?
+	`, bookID, searchResultPending).Scan(&pendingCount)
 	if err != nil || pendingCount == 0 {
 		slog.Info("No more download sources available", "book", b.Title)
 		return false
 	}
 
 	// Remove the failed queue entry
-	_, _ = s.db.ExecContext(ctx, `DELETE FROM download_queue WHERE id = ?`, queueID)
+	if _, err := s.db.ExecContext(ctx, `DELETE FROM download_queue WHERE id = ?`, queueID); err != nil {
+		slog.Warn("failed to remove failed queue entry", "queueId", queueID, "error", err)
+	}
 
 	// Try next source
 	grabResult, err := s.grabNextSearchResult(ctx, b)
@@ -218,14 +236,16 @@ func (s *Service) cleanupSearchResults(ctx context.Context, queueID int64) {
 	}
 
 	// Delete all search results for this book
-	_, _ = s.db.ExecContext(ctx, `DELETE FROM search_results WHERE book_id = ?`, bookID)
+	if _, err := s.db.ExecContext(ctx, `DELETE FROM search_results WHERE book_id = ?`, bookID); err != nil {
+		slog.Warn("failed to cleanup search results", "bookId", bookID, "error", err)
+	}
 }
 
 // GetPendingSourcesCount returns the number of pending download sources for a book.
 func (s *Service) GetPendingSourcesCount(ctx context.Context, bookID int64) int {
 	var count int
 	_ = s.db.QueryRowContext(ctx, `
-		SELECT COUNT(*) FROM search_results WHERE book_id = ? AND status = 'pending'
-	`, bookID).Scan(&count)
+		SELECT COUNT(*) FROM search_results WHERE book_id = ? AND status = ?
+	`, bookID, searchResultPending).Scan(&count)
 	return count
 }

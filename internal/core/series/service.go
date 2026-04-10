@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+
+	"github.com/woliveiras/bookaneer/internal/database"
 )
 
 // Service provides series-related operations.
@@ -53,10 +55,7 @@ func (s *Service) List(ctx context.Context, filter ListSeriesFilter) ([]Series, 
 		args = append(args, "%"+filter.Search+"%")
 	}
 
-	where := ""
-	if len(conditions) > 0 {
-		where = "WHERE " + strings.Join(conditions, " AND ")
-	}
+	where := database.BuildWhereClause(conditions)
 
 	// Count total
 	var total int
@@ -70,20 +69,9 @@ func (s *Service) List(ctx context.Context, filter ListSeriesFilter) ([]Series, 
 	if filter.SortBy == "bookCount" {
 		sortBy = "book_count"
 	}
-	sortDir := "ASC"
-	if filter.SortDir == "desc" {
-		sortDir = "DESC"
-	}
-
-	// Apply limit/offset
-	limit := 50
-	if filter.Limit > 0 && filter.Limit <= 500 {
-		limit = filter.Limit
-	}
-	offset := 0
-	if filter.Offset > 0 {
-		offset = filter.Offset
-	}
+	sortDir := database.NormaliseSortDir(filter.SortDir)
+	limit := database.ClampLimit(filter.Limit, 50, 500)
+	offset := filter.Offset
 
 	query := fmt.Sprintf(`
 		SELECT s.id, s.foreign_id, s.title, s.description, s.monitored,

@@ -8,11 +8,24 @@ import (
 	"github.com/woliveiras/bookaneer/internal/wanted"
 )
 
+// payloadFloat64 extracts a float64 value from a command payload map.
+// JSON numbers are always decoded as float64.
+func payloadFloat64(payload map[string]any, key string) (float64, bool) {
+	v, ok := payload[key].(float64)
+	return v, ok
+}
+
+// payloadString extracts a string value from a command payload map.
+func payloadString(payload map[string]any, key string) (string, bool) {
+	v, ok := payload[key].(string)
+	return v, ok
+}
+
 // makeBookSearchHandler returns a CommandHandler that searches and grabs a specific book by ID.
 // Used by both CommandBookSearch and CommandAutomaticSearch.
 func makeBookSearchHandler(wantedSvc *wanted.Service) CommandHandler {
 	return func(ctx context.Context, cmd *Command) error {
-		bookID, ok := cmd.Payload["bookId"].(float64) // JSON numbers are float64
+		bookID, ok := payloadFloat64(cmd.Payload, "bookId")
 		if !ok {
 			return fmt.Errorf("missing or invalid bookId in payload")
 		}
@@ -64,18 +77,18 @@ func (s *Scheduler) RegisterWantedHandlers(wantedService *wanted.Service) {
 
 	// DownloadGrab: Manually grab a specific release by URL
 	s.RegisterHandler(CommandDownloadGrab, func(ctx context.Context, cmd *Command) error {
-		bookID, ok := cmd.Payload["bookId"].(float64)
+		bookID, ok := payloadFloat64(cmd.Payload, "bookId")
 		if !ok {
 			return fmt.Errorf("missing or invalid bookId in payload")
 		}
 
-		downloadURL, ok := cmd.Payload["downloadUrl"].(string)
+		downloadURL, ok := payloadString(cmd.Payload, "downloadUrl")
 		if !ok || downloadURL == "" {
 			return fmt.Errorf("missing or invalid downloadUrl in payload")
 		}
 
-		releaseTitle, _ := cmd.Payload["releaseTitle"].(string)
-		size, _ := cmd.Payload["size"].(float64)
+		releaseTitle, _ := payloadString(cmd.Payload, "releaseTitle")
+		size, _ := payloadFloat64(cmd.Payload, "size")
 
 		result, err := wantedService.GrabRelease(ctx, int64(bookID), downloadURL, releaseTitle, int64(size))
 		if err != nil {

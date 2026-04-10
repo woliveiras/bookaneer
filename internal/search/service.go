@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+
+	"github.com/woliveiras/bookaneer/internal/database"
 )
 
 // Service manages indexers and search operations.
@@ -23,10 +25,8 @@ func NewService(db *sql.DB) *Service {
 	}
 }
 
-// scanner is an interface for sql.Row and sql.Rows
-type scanner interface {
-	Scan(dest ...any) error
-}
+// scanner is an alias for database.Scanner (abstracts sql.Row and sql.Rows).
+type scanner = database.Scanner
 
 // scanIndexer scans a row into IndexerConfig
 func scanIndexer(s scanner) (IndexerConfig, error) {

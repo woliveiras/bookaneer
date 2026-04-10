@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/woliveiras/bookaneer/internal/database"
 )
 
 // QueueCommand adds a new command to the queue.
@@ -122,7 +123,11 @@ func (s *Scheduler) getNextQueuedCommand(ctx context.Context) (*Command, error) 
 
 // updateCommandStatus updates a command's status and timestamps.
 func (s *Scheduler) updateCommandStatus(ctx context.Context, id string, status CommandStatus, result map[string]any) error {
-	resultJSON, _ := json.Marshal(result)
+	resultJSON, err := json.Marshal(result)
+	if err != nil {
+		slog.Warn("failed to marshal command result", "id", id, "error", err)
+		resultJSON = []byte("null")
+	}
 
 	var query string
 	var args []any
@@ -139,7 +144,7 @@ func (s *Scheduler) updateCommandStatus(ctx context.Context, id string, status C
 		args = []any{status, id}
 	}
 
-	_, err := s.db.ExecContext(ctx, query, args...)
+	_, err = s.db.ExecContext(ctx, query, args...)
 	return err
 }
 
@@ -160,9 +165,7 @@ func (s *Scheduler) recoverOrphanedCommands(ctx context.Context) {
 }
 
 // scanner abstracts sql.Row and sql.Rows for shared scanning.
-type scanner interface {
-	Scan(dest ...any) error
-}
+type scanner = database.Scanner
 
 // scanCommandRow scans a single command row.
 func scanCommandRow(s scanner) (Command, error) {

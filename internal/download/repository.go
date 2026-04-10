@@ -5,12 +5,12 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
+
+	"github.com/woliveiras/bookaneer/internal/database"
 )
 
-// clientScanner abstracts sql.Row and sql.Rows for shared scanning.
-type clientScanner interface {
-	Scan(dest ...any) error
-}
+// clientScanner is an alias for database.Scanner (abstracts sql.Row and sql.Rows).
+type clientScanner = database.Scanner
 
 // scanClientConfig scans a full download_clients row (21 columns) into a ClientConfig.
 // Column order: id, name, type, host, port, use_tls, username, password, api_key,

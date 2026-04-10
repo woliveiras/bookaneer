@@ -136,6 +136,7 @@ func (s *Service) getClientByTypes(ctx context.Context, clientTypes ...string) (
 		args[i] = ct
 	}
 
+	// placeholders contains only "?" — not user input — so fmt.Sprintf is safe here.
 	query := fmt.Sprintf(`
 		SELECT id, name, type, host, port, use_tls, username, password, api_key, 
 		       category, enabled, priority, nzb_folder, torrent_folder, watch_folder, download_dir
