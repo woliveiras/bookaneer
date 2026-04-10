@@ -5,6 +5,7 @@ import { AuthLayout } from "../components/layout/AppLayout"
 import { PageError, PageLoading } from "../components/common"
 import { Button } from "../components/ui"
 import { bookApi } from "../lib/api"
+import { navigateToBookSearch } from "../lib/navigation"
 
 export function LibraryBookDetailPage() {
   const { bookId } = useParams({ from: "/book/$bookId" })
@@ -126,23 +127,7 @@ export function LibraryBookDetailPage() {
               )}
               <Button
                 variant="outline"
-                onClick={() =>
-                  navigate({
-                    to: "/search/book",
-                    search: {
-                      title: book.title,
-                      authors: book.authorName,
-                      foreignId: book.foreignId || undefined,
-                      isbn13: book.isbn13 || undefined,
-                      coverUrl: book.imageUrl || undefined,
-                      publishedYear: book.releaseDate
-                        ? String(new Date(book.releaseDate).getFullYear())
-                        : undefined,
-                      autoSearch: "true",
-                      bookId: String(book.id),
-                    },
-                  })
-                }
+                onClick={() => navigateToBookSearch(navigate, book)}
               >
                 🔍 Manual Search
               </Button>

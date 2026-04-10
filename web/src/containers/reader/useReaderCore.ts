@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
   type FoliateView,
-  loadSettings,
   type ReaderSettings,
   type RelocateDetail,
-  saveSettings,
-  THEMES,
   type TocItem,
 } from "../../components/reader/readerConfig"
-import { useReaderBookFile, useReadingProgress, useSaveProgress } from "../../hooks/useReader"
+import { useReaderBookFile } from "../../hooks/useReader"
 import { readerApi } from "../../lib/api"
+import { useReaderProgress } from "./useReaderProgress"
+import { useReaderSettings } from "./useReaderSettings"
 
 export interface ReaderCoreState {
   containerRef: React.RefObject<HTMLDivElement | null>
@@ -38,49 +37,11 @@ export function useReaderCore(bookFileId: number): ReaderCoreState {
   const [currentCfi, setCurrentCfi] = useState("")
   const [progress, setProgress] = useState(0)
   const [toc, setToc] = useState<TocItem[]>([])
-  const [settings, setSettings] = useState<ReaderSettings>(loadSettings)
+
+  const { settings, updateSettings, applyStyles } = useReaderSettings(viewRef)
+  const { savedProgress, saveProgress } = useReaderProgress(bookFileId)
 
   const { data: bookFile } = useReaderBookFile(bookFileId)
-  const { data: savedProgress } = useReadingProgress(bookFileId)
-  const saveProgressMutation = useSaveProgress(bookFileId)
-
-  const updateSettings = useCallback((updates: Partial<ReaderSettings>) => {
-    setSettings((prev) => {
-      const next = { ...prev, ...updates }
-      saveSettings(next)
-      return next
-    })
-  }, [])
-
-  const applyStyles = useCallback(() => {
-    const view = viewRef.current
-    if (!view?.renderer?.setStyles) return
-    const theme = THEMES[settings.theme]
-    const css = `
-      @import url('https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,700&display=swap');
-      html { background: ${theme.bg} !important; color: ${theme.fg} !important; }
-      body {
-        font-family: ${settings.fontFamily} !important;
-        font-size: ${settings.fontSize}% !important;
-        line-height: ${settings.lineHeight} !important;
-        background: ${theme.bg} !important;
-        color: ${theme.fg} !important;
-      }
-      a { color: ${settings.theme === "dark" ? "#6ea8fe" : "#0d6efd"}; }
-    `
-    view.renderer.setStyles(css)
-  }, [settings])
-
-  useEffect(() => {
-    applyStyles()
-  }, [applyStyles])
-
-  const saveProgressCallback = useCallback(
-    (cfi: string, percentage: number) => {
-      saveProgressMutation.mutate({ position: cfi, percentage })
-    },
-    [saveProgressMutation],
-  )
 
   useEffect(() => {
     const container = containerRef.current
@@ -103,7 +64,7 @@ export function useReaderCore(bookFileId: number): ReaderCoreState {
             setCurrentCfi(detail.cfi)
             const percentage = detail.fraction || 0
             setProgress(percentage)
-            saveProgressCallback(detail.cfi, percentage)
+            saveProgress(detail.cfi, percentage)
           }
         }) as EventListener)
 
@@ -146,7 +107,7 @@ export function useReaderCore(bookFileId: number): ReaderCoreState {
       if (viewRef.current) container.innerHTML = ""
       viewRef.current = null
     }
-  }, [bookFile, bookFileId, savedProgress?.position, saveProgressCallback, applyStyles])
+  }, [bookFile, bookFileId, savedProgress?.position, saveProgress, applyStyles])
 
   const handlePrev = useCallback(async () => {
     await viewRef.current?.prev()

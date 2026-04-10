@@ -1,6 +1,7 @@
 import { AuthLayout } from "../components/layout/AppLayout"
 import { AuthorList } from "../containers/authors/AuthorList"
 
+/** List page: wrap a feature container in AuthLayout. See BooksPage for the pattern. */
 export function AuthorsPage() {
   return (
     <AuthLayout>
