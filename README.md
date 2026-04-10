@@ -2,6 +2,10 @@
 
 A self-hosted ebook collection manager. Combines features from Readarr and LazyLibrarian into a single binary (~15 MB Docker image) targeting home users, NAS devices, and Raspberry Pi.
 
+<p align="center">
+  <img src="assets/bookaneer_200.png" alt="Bookaneer Mascot" width="200">
+</p>
+
 ## Features
 
 - **Library management** — Scan existing ebooks, organize by author/series, fetch metadata
