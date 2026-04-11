@@ -1,3 +1,4 @@
+import { BookOpen, Bookmark, ChevronLeft, ChevronRight, Settings, X } from "lucide-react"
 import { useState } from "react"
 import { FORMAT_LABELS, THEMES } from "../../components/reader/readerConfig"
 import { TocList } from "../../components/reader/TocList"
@@ -92,11 +93,16 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
             aria-label="Close reader"
             style={{ color: theme.fg }}
           >
-            ← Back
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Back
           </Button>
           <div className="flex items-center gap-2">
             {bookFile?.format && (
-              <Badge variant="outline" className="text-xs">
+              <Badge
+                variant="outline"
+                className="text-xs"
+                style={{ color: theme.fg, borderColor: theme.fg }}
+              >
                 {FORMAT_LABELS[bookFile.format] || bookFile.format.toUpperCase()}
               </Badge>
             )}
@@ -117,7 +123,8 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
             aria-pressed={showToc}
             style={{ color: theme.fg }}
           >
-            📖 TOC
+            <BookOpen className="h-4 w-4 mr-1" />
+            TOC
           </Button>
           <Button
             variant="ghost"
@@ -127,7 +134,8 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
             aria-pressed={showBookmarks}
             style={{ color: theme.fg }}
           >
-            🔖 Bookmarks
+            <Bookmark className="h-4 w-4 mr-1" />
+            Bookmarks
           </Button>
           <Button
             variant="ghost"
@@ -137,7 +145,8 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
             aria-pressed={showSettings}
             style={{ color: theme.fg }}
           >
-            ⚙️ Settings
+            <Settings className="h-4 w-4 mr-1" />
+            Settings
           </Button>
           <span className="text-sm" style={{ opacity: 0.7 }}>
             {currentLocation && <span className="mr-2">{currentLocation}</span>}
@@ -167,10 +176,19 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
             className="absolute inset-0 flex items-center justify-center"
             style={{ background: theme.bg }}
           >
-            <div className="text-center">
-              <p className="text-red-500 mb-4">{error}</p>
-              <Button variant="outline" onClick={onClose}>
-                Close
+            <div className="text-center max-w-md px-4">
+              <p className="mb-2 text-lg font-medium" style={{ color: theme.fg }}>
+                Unable to open book
+              </p>
+              <p className="mb-6 text-sm" style={{ color: theme.fg, opacity: 0.7 }}>
+                The book file could not be loaded. It may be corrupted or in an unsupported format.
+              </p>
+              <Button
+                variant="outline"
+                onClick={onClose}
+                style={{ color: theme.fg, borderColor: theme.fg }}
+              >
+                Back to Library
               </Button>
             </div>
           </div>
@@ -196,8 +214,9 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
                   size="sm"
                   onClick={() => setShowToc(false)}
                   aria-label="Close TOC"
+                  style={{ color: theme.fg }}
                 >
-                  ✕
+                  <X className="h-4 w-4" />
                 </Button>
               </div>
               {toc.length > 0 ? (
@@ -246,7 +265,8 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
           aria-label="Previous page"
           style={{ color: theme.fg }}
         >
-          ← Previous
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Previous
         </Button>
 
         {/* Progress bar */}
@@ -272,7 +292,8 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
           aria-label="Next page"
           style={{ color: theme.fg }}
         >
-          Next →
+          Next
+          <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
       </footer>
     </div>

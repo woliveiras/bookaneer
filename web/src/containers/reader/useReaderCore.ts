@@ -10,6 +10,13 @@ import { readerApi } from "../../lib/api"
 import { useReaderProgress } from "./useReaderProgress"
 import { useReaderSettings } from "./useReaderSettings"
 
+/** Keep a stable reference to the latest value of a callback or variable. */
+function useLatest<T>(value: T) {
+  const ref = useRef(value)
+  ref.current = value
+  return ref
+}
+
 export interface ReaderCoreState {
   containerRef: React.RefObject<HTMLDivElement | null>
   viewRef: React.RefObject<FoliateView | null>
@@ -43,9 +50,16 @@ export function useReaderCore(bookFileId: number): ReaderCoreState {
 
   const { data: bookFile } = useReaderBookFile(bookFileId)
 
+  // Stable refs to avoid re-triggering the init effect
+  const saveProgressRef = useLatest(saveProgress)
+  const applyStylesRef = useLatest(applyStyles)
+  const savedProgressRef = useLatest(savedProgress)
+
   useEffect(() => {
     const container = containerRef.current
     if (!container || !bookFile) return
+
+    let cancelled = false
 
     const initReader = async () => {
       try {
@@ -58,21 +72,23 @@ export function useReaderCore(bookFileId: number): ReaderCoreState {
         viewRef.current = view
 
         view.addEventListener("relocate", ((e: CustomEvent<RelocateDetail>) => {
+          if (cancelled) return
           const detail = e.detail
           if (detail.cfi) {
             setCurrentLocation(detail.tocItem?.label || "")
             setCurrentCfi(detail.cfi)
             const percentage = detail.fraction || 0
             setProgress(percentage)
-            saveProgress(detail.cfi, percentage)
+            saveProgressRef.current(detail.cfi, percentage)
           }
         }) as EventListener)
 
         view.addEventListener("load", (() => {
+          if (cancelled) return
           if (view.book?.toc) {
             setToc(view.book.toc)
           }
-          applyStyles()
+          applyStylesRef.current()
         }) as EventListener)
 
         container.innerHTML = ""
@@ -83,18 +99,25 @@ export function useReaderCore(bookFileId: number): ReaderCoreState {
         if (!response.ok) throw new Error("Failed to fetch book content")
         const blob = await response.blob()
 
-        await view.open(blob)
+        // Wrap blob as File with a name so foliate-js can detect the format
+        const ext = bookFile.format || "epub"
+        const file = new File([blob], `book.${ext}`, { type: blob.type })
 
-        if (savedProgress?.position) {
+        if (cancelled) return
+        await view.open(file)
+
+        const position = savedProgressRef.current?.position
+        if (position) {
           try {
-            await view.goTo(savedProgress.position)
+            await view.goTo(position)
           } catch {
-            console.warn("Could not restore position:", savedProgress.position)
+            console.warn("Could not restore position:", position)
           }
         }
 
-        setIsLoading(false)
+        if (!cancelled) setIsLoading(false)
       } catch (err) {
+        if (cancelled) return
         console.error("Failed to initialize reader:", err)
         setError(err instanceof Error ? err.message : "Failed to load book")
         setIsLoading(false)
@@ -104,10 +127,11 @@ export function useReaderCore(bookFileId: number): ReaderCoreState {
     initReader()
 
     return () => {
+      cancelled = true
       if (viewRef.current) container.innerHTML = ""
       viewRef.current = null
     }
-  }, [bookFile, bookFileId, savedProgress?.position, saveProgress, applyStyles])
+  }, [bookFile, bookFileId])
 
   const handlePrev = useCallback(async () => {
     await viewRef.current?.prev()
