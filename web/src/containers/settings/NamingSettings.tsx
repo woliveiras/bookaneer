@@ -229,8 +229,8 @@ export function NamingSettings() {
               </p>
               {previewRenameAll.data.files && previewRenameAll.data.files.length > 0 && (
                 <div className="max-h-48 overflow-y-auto space-y-1">
-                  {previewRenameAll.data.files.map((f, i) => (
-                    <div key={i} className="text-xs font-mono space-y-0.5">
+                  {previewRenameAll.data.files.map((f) => (
+                    <div key={`${f.oldPath}-${f.newPath}`} className="text-xs font-mono space-y-0.5">
                       <p className="text-red-400">- {f.oldPath}</p>
                       <p className="text-green-400">+ {f.newPath}</p>
                     </div>
@@ -249,8 +249,8 @@ export function NamingSettings() {
               </p>
               {renameAll.data.errors && renameAll.data.errors.length > 0 && (
                 <div className="text-xs text-destructive space-y-0.5">
-                  {renameAll.data.errors.map((e, i) => (
-                    <p key={i}>{e}</p>
+                  {renameAll.data.errors.map((e) => (
+                    <p key={e}>{e}</p>
                   ))}
                 </div>
               )}

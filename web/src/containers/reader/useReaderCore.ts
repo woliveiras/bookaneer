@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import {
-  type FoliateView,
-  type ReaderSettings,
-  type RelocateDetail,
-  type TocItem,
+import type {
+  FoliateView,
+  ReaderSettings,
+  RelocateDetail,
+  TocItem,
 } from "../../components/reader/readerConfig"
 import { useReaderBookFile } from "../../hooks/useReader"
 import { readerApi } from "../../lib/api"
@@ -133,7 +133,7 @@ export function useReaderCore(bookFileId: number): ReaderCoreState {
       if (viewRef.current) container.innerHTML = ""
       viewRef.current = null
     }
-  }, [bookFile, bookFileId, settings.theme])
+  }, [bookFile, bookFileId, currentCfiRef.current, savedProgressRef.current?.position, saveProgressRef.current, applyStylesRef.current])
 
   const handlePrev = useCallback(async () => {
     await viewRef.current?.prev()

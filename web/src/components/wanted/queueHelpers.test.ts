@@ -34,7 +34,8 @@ describe("getDismissedCommands", () => {
 describe("saveDismissedCommands", () => {
   it("persists command IDs to localStorage", () => {
     saveDismissedCommands(new Set(["cmd-1", "cmd-3"]))
-    const stored = JSON.parse(localStorage.getItem("bookaneer-dismissed-commands")!)
+    const raw = localStorage.getItem("bookaneer-dismissed-commands")
+    const stored = JSON.parse(raw ?? "[]")
     expect(stored).toEqual(expect.arrayContaining(["cmd-1", "cmd-3"]))
   })
 })

@@ -73,6 +73,7 @@ export function BookList({ authorId }: BookListProps) {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {[...Array(8)].map((_, i) => (
             <div
+              // biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton placeholders have no unique data
               key={i}
               className="h-36 animate-pulse rounded-lg border bg-muted"
               aria-hidden="true"
@@ -102,18 +103,18 @@ export function BookList({ authorId }: BookListProps) {
             </p>
             {showMissing && <Badge variant="outline">Missing only</Badge>}
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" role="list">
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 list-none p-0 m-0">
             {data.records.map((book) => (
-              <div key={book.id} role="listitem">
+              <li key={book.id}>
                 <BookCard
                   book={book}
                   onClick={() =>
                     navigate({ to: "/book/$bookId", params: { bookId: String(book.id) } })
                   }
                 />
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </>
       )}
     </div>

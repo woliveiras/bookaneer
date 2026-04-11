@@ -203,8 +203,7 @@ export function IndexerForm({
 
           {/* Torznab-specific fields */}
           {isTorznab && (
-            <>
-              <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="minimumSeeders" className="text-amber-500">
                     Minimum Seeders
@@ -265,7 +264,6 @@ export function IndexerForm({
                   </p>
                 </div>
               </div>
-            </>
           )}
 
           {/* Priority */}

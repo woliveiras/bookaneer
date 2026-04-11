@@ -2,6 +2,7 @@
 export function PirateShip({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 64 48" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <title>Pirate ship</title>
       <path
         d="M8 32 L12 40 L52 40 L56 32 L48 32 L48 28 L16 28 L16 32 Z"
         fill="currentColor"
@@ -22,6 +23,7 @@ export function WavesSVG() {
       className="absolute bottom-0 left-0 w-[200%] h-5"
       preserveAspectRatio="none"
     >
+      <title>Ocean waves</title>
       <path
         d="M0 10 Q25 0 50 10 T100 10 T150 10 T200 10 T250 10 T300 10 T350 10 T400 10 V20 H0 Z"
         fill="currentColor"

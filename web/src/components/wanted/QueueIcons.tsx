@@ -12,6 +12,7 @@ export function DownloadingIcon() {
         strokeLinejoin="round"
         className="h-5 w-5 text-blue-500"
       >
+        <title>Downloading</title>
         {/* Arrow pointing down with animation */}
         <path d="M12 3v12" className="animate-pulse" />
         <path d="m8 11 4 4 4-4" className="animate-bounce" />
@@ -39,6 +40,7 @@ export function QueuedIcon() {
         strokeLinejoin="round"
         className="h-3.5 w-3.5"
       >
+        <title>Queued</title>
         {/* Download arrow */}
         <path d="M12 5v8" />
         <path d="m8 10 4 4 4-4" />
@@ -67,6 +69,7 @@ export function SearchingIcon() {
         strokeLinejoin="round"
         className="h-5 w-5 text-blue-500 animate-pulse"
       >
+        <title>Searching</title>
         {/* Magnifying glass */}
         <circle cx="11" cy="11" r="8" />
         <path d="m21 21-4.3-4.3" />

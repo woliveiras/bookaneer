@@ -24,6 +24,7 @@ export function ActivityPage({ tab, onTabChange }: ActivityPageProps) {
         <nav className="-mb-px flex space-x-8" aria-label="Activity tabs">
           {tabs.map((t) => (
             <button
+              type="button"
               key={t.id}
               onClick={() => onTabChange(t.id)}
               className={`

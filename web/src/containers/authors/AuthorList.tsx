@@ -56,6 +56,7 @@ export function AuthorList() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[...Array(6)].map((_, i) => (
             <div
+              // biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton placeholders have no unique data
               key={i}
               className="h-28 animate-pulse rounded-lg border bg-muted"
               aria-hidden="true"
@@ -76,18 +77,18 @@ export function AuthorList() {
           <p className="text-sm text-muted-foreground">
             {data.totalRecords} author{data.totalRecords !== 1 ? "s" : ""}
           </p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 list-none p-0 m-0">
             {data.records.map((author) => (
-              <div key={author.id} role="listitem">
+              <li key={author.id}>
                 <AuthorCard
                   author={author}
                   onClick={() =>
                     navigate({ to: "/author/$authorId", params: { authorId: String(author.id) } })
                   }
                 />
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </>
       )}
     </div>

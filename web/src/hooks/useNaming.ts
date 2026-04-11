@@ -22,7 +22,7 @@ export function useUpdateNamingSettings() {
 export function useNamingPreview(data: NamingPreviewInput | null) {
   return useQuery({
     queryKey: ["naming", "preview", data],
-    queryFn: () => namingApi.preview(data!),
+    queryFn: () => namingApi.preview(data ?? ({} as NamingPreviewInput)),
     enabled: !!data,
   })
 }

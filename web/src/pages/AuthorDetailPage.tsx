@@ -75,12 +75,11 @@ export function AuthorDetailPage() {
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
+          <button
+            type="button"
             className="absolute inset-0 bg-black/50"
             onClick={() => setShowDeleteModal(false)}
             onKeyDown={(e) => e.key === "Escape" && setShowDeleteModal(false)}
-            role="button"
-            tabIndex={0}
             aria-label="Close modal"
           />
           <div className="relative bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">

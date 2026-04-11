@@ -41,7 +41,8 @@ describe("saveSettings", () => {
   it("persists settings to localStorage", () => {
     const custom = { ...DEFAULT_SETTINGS, theme: "sepia" as const, fontSize: 110 }
     saveSettings(custom)
-    const stored = JSON.parse(localStorage.getItem("bookaneer_reader_settings")!)
+    const raw = localStorage.getItem("bookaneer_reader_settings")
+    const stored = JSON.parse(raw ?? "{}")
     expect(stored.theme).toBe("sepia")
     expect(stored.fontSize).toBe(110)
   })

@@ -31,7 +31,7 @@ export function ReaderSettingsPanel({
 
         {/* Theme */}
         <div className="mb-6">
-          <label className="block text-sm font-medium mb-2">Theme</label>
+          <span className="block text-sm font-medium mb-2">Theme</span>
           <div className="flex gap-2">
             {(Object.keys(THEMES) as ThemeKey[]).map((key) => (
               <button
@@ -57,16 +57,16 @@ export function ReaderSettingsPanel({
         <div className="mb-6">
           <label className="block text-sm font-medium mb-2">
             Font Size: {settings.fontSize}%
+            <input
+              type="range"
+              min="75"
+              max="200"
+              step="5"
+              value={settings.fontSize}
+              onChange={(e) => onUpdateSettings({ fontSize: Number(e.target.value) })}
+              className="w-full"
+            />
           </label>
-          <input
-            type="range"
-            min="75"
-            max="200"
-            step="5"
-            value={settings.fontSize}
-            onChange={(e) => onUpdateSettings({ fontSize: Number(e.target.value) })}
-            className="w-full"
-          />
           <div className="flex justify-between text-xs" style={{ opacity: 0.7 }}>
             <span>75%</span>
             <span>200%</span>
@@ -75,39 +75,41 @@ export function ReaderSettingsPanel({
 
         {/* Font Family */}
         <div className="mb-6">
-          <label className="block text-sm font-medium mb-2">Font</label>
-          <select
-            value={settings.fontFamily}
-            onChange={(e) => onUpdateSettings({ fontFamily: e.target.value })}
-            className="w-full p-2 rounded border"
-            style={{
-              background: theme.bg,
-              color: theme.fg,
-              borderColor: settings.theme === "dark" ? "#555" : "#ccc",
-            }}
-          >
-            {FONTS.map((font) => (
-              <option key={font.value} value={font.value}>
-                {font.label}
-              </option>
-            ))}
-          </select>
+          <label className="block text-sm font-medium mb-2">
+            Font
+            <select
+              value={settings.fontFamily}
+              onChange={(e) => onUpdateSettings({ fontFamily: e.target.value })}
+              className="w-full p-2 rounded border"
+              style={{
+                background: theme.bg,
+                color: theme.fg,
+                borderColor: settings.theme === "dark" ? "#555" : "#ccc",
+              }}
+            >
+              {FONTS.map((font) => (
+                <option key={font.value} value={font.value}>
+                  {font.label}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
         {/* Line Height */}
         <div className="mb-6">
           <label className="block text-sm font-medium mb-2">
             Line Height: {settings.lineHeight.toFixed(1)}
+            <input
+              type="range"
+              min="1"
+              max="2.5"
+              step="0.1"
+              value={settings.lineHeight}
+              onChange={(e) => onUpdateSettings({ lineHeight: Number(e.target.value) })}
+              className="w-full"
+            />
           </label>
-          <input
-            type="range"
-            min="1"
-            max="2.5"
-            step="0.1"
-            value={settings.lineHeight}
-            onChange={(e) => onUpdateSettings({ lineHeight: Number(e.target.value) })}
-            className="w-full"
-          />
           <div className="flex justify-between text-xs" style={{ opacity: 0.7 }}>
             <span>1.0</span>
             <span>2.5</span>

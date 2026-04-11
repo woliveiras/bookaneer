@@ -10,8 +10,8 @@ interface TocListProps {
 export function TocList({ items, onSelect, theme, depth = 0 }: TocListProps) {
   return (
     <ul className={depth > 0 ? "ml-4 mt-1" : ""}>
-      {items.map((item, index) => (
-        <li key={`${item.href}-${index}`}>
+      {items.map((item) => (
+        <li key={item.href}>
           <button
             type="button"
             onClick={() => onSelect(item.href)}
