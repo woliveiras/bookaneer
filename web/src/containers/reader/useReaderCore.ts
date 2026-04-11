@@ -56,6 +56,7 @@ export function useReaderCore(bookFileId: number): ReaderCoreState {
   const savedProgressRef = useLatest(savedProgress)
   const currentCfiRef = useLatest(currentCfi)
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: useLatest refs are stable containers — their .current is read inside callbacks, not reactive deps. settings.theme triggers intentional reinit.
   useEffect(() => {
     const container = containerRef.current
     if (!container || !bookFile) return
@@ -133,7 +134,7 @@ export function useReaderCore(bookFileId: number): ReaderCoreState {
       if (viewRef.current) container.innerHTML = ""
       viewRef.current = null
     }
-  }, [bookFile, bookFileId, currentCfiRef.current, savedProgressRef.current?.position, saveProgressRef.current, applyStylesRef.current])
+  }, [bookFile, bookFileId, settings.theme])
 
   const handlePrev = useCallback(async () => {
     await viewRef.current?.prev()

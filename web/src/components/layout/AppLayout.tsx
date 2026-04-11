@@ -85,28 +85,36 @@ function Navigation() {
   ] as const
 
   return (
-    <nav className="container mx-auto overflow-x-auto px-4 sm:overflow-x-visible" aria-label="Main navigation">
-      <ul className="-mb-px flex min-w-max gap-1 sm:min-w-0 sm:flex-wrap" role="tablist">
+    <nav
+      className="container mx-auto overflow-x-auto px-4 sm:overflow-x-visible"
+      aria-label="Main navigation"
+    >
+      <div
+        className="-mb-px flex min-w-max gap-1 sm:min-w-0 sm:flex-wrap"
+        role="tablist"
+      >
         {navItems.map((item) => (
-          <li key={item.to} role="presentation">
+          <div key={item.to} role="presentation">
             <Link
               to={item.to}
-              className="inline-flex items-center justify-center px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-none border-b-2 transition-colors whitespace-nowrap"
+              className="inline-flex items-center justify-center px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-none border-b-2 transition-colors whitespace-nowrap border-none
+"
               activeProps={{
                 className: "border-primary text-primary",
               }}
               inactiveProps={{
-                className: "border-transparent text-muted-foreground hover:text-foreground",
+                className:
+                  "border-transparent text-muted-foreground hover:text-foreground",
               }}
               activeOptions={{ exact: item.to === "/" }}
             >
               {item.label}
             </Link>
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
     </nav>
-  )
+  );
 }
 
 // Root layout with auth provider
