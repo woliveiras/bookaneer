@@ -32,6 +32,7 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
 
   const {
     containerRef,
+    viewRef,
     isLoading,
     error,
     currentLocation,
@@ -62,6 +63,7 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
   }
 
   useReaderKeyboard({
+    viewRef,
     showSettings,
     showToc,
     showBookmarks,

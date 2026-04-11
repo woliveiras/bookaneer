@@ -69,8 +69,13 @@ export interface FoliateView extends HTMLElement {
   prev: () => Promise<void>
   next: () => Promise<void>
   renderer?: {
-    setStyles?: (css: string) => void
+    setStyles?: (css: string | [string, string]) => void
     setAttribute?: (name: string, value: string) => void
+    focusView?: () => void
+    getContents?: () => Array<{
+      index: number
+      doc: Document
+    }>
   }
   book?: {
     toc?: TocItem[]
