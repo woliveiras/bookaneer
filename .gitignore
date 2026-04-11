@@ -22,7 +22,6 @@ data/
 *.db
 *.db-wal
 *.db-shm
-bookaneer
 
 # IDE
 .idea/

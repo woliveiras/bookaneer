@@ -38,21 +38,21 @@ export function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-foreground">📚 Bookaneer</h1>
-          <div className="flex items-center gap-4">
+        <div className="container mx-auto px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground whitespace-nowrap">📚 Bookaneer</h1>
+          <div className="flex items-center gap-2 sm:gap-4">
             {health.isLoading ? (
-              <span className="text-muted-foreground">Checking...</span>
+              <span className="text-muted-foreground text-xs sm:text-sm">Checking...</span>
             ) : health.data?.status === "ok" ? (
-              <span className="inline-flex items-center gap-1 text-green-600">
+              <span className="inline-flex items-center gap-1 text-green-600 text-xs sm:text-sm">
                 <span className="h-2 w-2 rounded-full bg-green-500" />
-                Connected
+                <span className="hidden sm:inline">Connected</span>
               </span>
             ) : (
-              <span className="text-destructive">Disconnected</span>
+              <span className="text-destructive text-xs sm:text-sm">Disconnected</span>
             )}
             {user && (
-              <span className="text-sm text-muted-foreground">{user.username || "API Key"}</span>
+              <span className="hidden sm:inline text-sm text-muted-foreground">{user.username || "API Key"}</span>
             )}
             <Button variant="outline" size="sm" onClick={logout}>
               Sign Out
@@ -62,7 +62,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
         <Navigation />
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-4 sm:py-8">
         <RootFolderWarning />
         {children}
       </main>
@@ -84,13 +84,13 @@ function Navigation() {
   ] as const
 
   return (
-    <nav className="container mx-auto px-4" aria-label="Main navigation">
-      <ul className="flex gap-1 -mb-px" role="tablist">
+    <nav className="container mx-auto px-4 overflow-x-auto" aria-label="Main navigation">
+      <ul className="flex gap-1 -mb-px min-w-max" role="tablist">
         {navItems.map((item) => (
           <li key={item.to} role="presentation">
             <Link
               to={item.to}
-              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-none border-b-2 transition-colors"
+              className="inline-flex items-center justify-center px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-none border-b-2 transition-colors whitespace-nowrap"
               activeProps={{
                 className: "border-primary text-primary",
               }}

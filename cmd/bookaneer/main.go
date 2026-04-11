@@ -51,6 +51,11 @@ import (
 	_ "github.com/woliveiras/bookaneer/internal/search/newznab"
 	_ "github.com/woliveiras/bookaneer/internal/search/torznab"
 	"github.com/woliveiras/bookaneer/internal/wanted"
+
+	"github.com/woliveiras/bookaneer/api/v1/ws"
+	"github.com/woliveiras/bookaneer/internal/notification"
+	"github.com/woliveiras/bookaneer/internal/notification/webhook"
+	"github.com/woliveiras/bookaneer/internal/opds"
 )
 
 var (
@@ -103,7 +108,7 @@ func run() error {
 	e := setupEcho(authSvc)
 	api := e.Group("/api/v1")
 
-	if err := registerRoutes(api, db, cfg, authSvc); err != nil {
+	if err := registerRoutes(e, api, db, cfg, authSvc); err != nil {
 		return err
 	}
 
@@ -218,11 +223,11 @@ func setupEcho(authSvc *auth.Service) *echo.Echo {
 }
 
 // registerRoutes wires all API handlers to the given router group.
-func registerRoutes(api *echo.Group, db *sql.DB, cfg *config.Config, authSvc *auth.Service) error {
+func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Config, authSvc *auth.Service) error {
 	ctx := context.Background()
 
 	// Public endpoints
-	systemHandler := handler.NewSystemHandler(version, buildTime, cfg)
+	systemHandler := handler.NewSystemHandler(version, buildTime, cfg, db)
 	api.GET("/system/status", systemHandler.Status)
 	api.GET("/system/health", systemHandler.Health)
 	api.GET("/tag", func(c echo.Context) error {
@@ -301,6 +306,28 @@ func registerRoutes(api *echo.Group, db *sql.DB, cfg *config.Config, authSvc *au
 	jobScheduler.Start(ctx)
 
 	handler.NewWantedHandler(wantedSvc, jobScheduler).Register(protected)
+
+	// Notification service
+	notifSvc := notification.New(db)
+	notifSvc.RegisterFactory("webhook", func(cfg notification.Config) (notification.Channel, error) {
+		return webhook.New(cfg)
+	})
+	handler.NewNotificationHandler(notifSvc).Register(protected)
+
+	// WebSocket hub
+	wsHub := ws.NewHub()
+	api.GET("/ws", wsHub.HandleWS)
+
+	// Backup / Restore
+	protected.GET("/system/backup", systemHandler.Backup)
+	protected.POST("/system/restore", systemHandler.Restore)
+
+	// OPDS catalog (public, uses API key auth via query param)
+	opdsServer := opds.New(db)
+	opdsServer.Register(e)
+
+	// API documentation
+	handler.NewDocsHandler().Register(api)
 
 	return nil
 }

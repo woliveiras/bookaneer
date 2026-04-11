@@ -389,7 +389,7 @@ Query params: `?authorId=1&monitored=true&status=wanted&hasFile=false&sortKey=re
 | `POST` | `/notification` | Add notification |
 | `PUT` | `/notification/:id` | Update |
 | `DELETE` | `/notification/:id` | Remove |
-| `POST` | `/notification/test` | Test delivery |
+| `POST` | `/notification/:id/test` | Test delivery |
 
 ### POST /notification
 ```json
@@ -609,11 +609,13 @@ Returns image directly (Content-Type: image/jpeg). Cached on disk.
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/system/status` | System status (version, uptime, etc) |
-| `GET` | `/system/health` | Health checks |
+| `GET` | `/system/health` | Health checks with component status |
 | `GET` | `/system/task` | Scheduled tasks and status |
-| `GET` | `/system/backup` | List backups |
-| `POST` | `/system/backup` | Create backup |
+| `GET` | `/system/backup` | Download database backup (ZIP) |
+| `POST` | `/system/restore` | Restore from uploaded backup (ZIP) |
 | `GET` | `/system/log` | Recent logs |
+| `GET` | `/docs` | Swagger UI |
+| `GET` | `/docs/openapi.json` | OpenAPI 3.0 spec |
 
 ### GET /system/status
 ```json
@@ -633,11 +635,23 @@ Returns image directly (Content-Type: image/jpeg). Cached on disk.
 ### GET /system/health
 ```json
 // Response 200
-[
-  { "type": "ok", "message": "All indexers are available" },
-  { "type": "warning", "message": "No download client configured" },
-  { "type": "error", "message": "Root folder /library is not accessible" }
-]
+{
+  "status": "ok",
+  "checks": [
+    { "name": "database", "status": "ok", "message": "size: 1048576 bytes" },
+    { "name": "dataDir", "status": "ok" },
+    { "name": "libraryDir", "status": "ok" },
+    { "name": "runtime", "status": "ok", "message": "goroutines: 12, heap: 8 MB" }
+  ]
+}
+
+// Response 503 (degraded)
+{
+  "status": "error",
+  "checks": [
+    { "name": "database", "status": "error", "message": "connection refused" }
+  ]
+}
 ```
 
 ---
