@@ -8,7 +8,7 @@ COPY web/ .
 RUN pnpm build
 
 # Build backend (copy frontend dist for go:embed)
-FROM golang:1.26-alpine AS backend
+FROM golang:1.26.2-alpine AS backend
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
