@@ -43,8 +43,11 @@ func Auth(svc *auth.Service) echo.MiddlewareFunc {
 			// Check X-Api-Key header
 			apiKey := c.Request().Header.Get("X-Api-Key")
 			if apiKey == "" {
-				// Check query parameter
+				// Check query parameter (support both "apikey" and "key")
 				apiKey = c.QueryParam("apikey")
+			}
+			if apiKey == "" {
+				apiKey = c.QueryParam("key")
 			}
 
 			if apiKey != "" {
