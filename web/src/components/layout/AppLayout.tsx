@@ -86,7 +86,7 @@ function Navigation() {
 
   return (
     <nav className="container mx-auto overflow-x-auto px-4 sm:overflow-x-visible" aria-label="Main navigation">
-      <div className="-mb-px flex min-w-max gap-1 sm:min-w-0 sm:flex-wrap" role="tablist">
+      <ul className="-mb-px flex min-w-max gap-1 sm:min-w-0 sm:flex-wrap" role="tablist">
         {navItems.map((item) => (
           <li key={item.to} role="presentation">
             <Link
@@ -104,7 +104,7 @@ function Navigation() {
             </Link>
           </li>
         ))}
-      </div>
+      </ul>
     </nav>
   )
 }
