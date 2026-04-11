@@ -1,8 +1,8 @@
-// Pirate ship SVG component for search loading animation
-export function PirateShip({ className }: { className?: string }) {
+// Ship SVG component for search loading animation
+export function Ship({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 64 48" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
-      <title>Pirate ship</title>
+      <title>Ship</title>
       <path
         d="M8 32 L12 40 L52 40 L56 32 L48 32 L48 28 L16 28 L16 32 Z"
         fill="currentColor"
@@ -72,7 +72,7 @@ export function SearchLoadingAnimation({ sources }: SearchLoadingAnimationProps)
         </div>
         <div className="absolute bottom-3 w-16 h-12 animate-sail">
           <div className="animate-bob">
-            <PirateShip className="w-full h-full drop-shadow-md" />
+            <Ship className="w-full h-full drop-shadow-md" />
           </div>
         </div>
         <div className="absolute bottom-0 left-0 w-full overflow-hidden animate-waves">
