@@ -16,14 +16,6 @@ func TestNew(t *testing.T) {
 	assert.NotNil(t, svc)
 }
 
-func seedBookFile(t *testing.T, db interface {
-	Exec(query string, args ...any) (interface{ LastInsertId() (int64, error) }, error)
-}, bookID int64) int64 {
-	t.Helper()
-	// Use raw SQL to insert a book_file directly
-	return 0
-}
-
 func TestGetBookFile(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	svc := reader.New(db)

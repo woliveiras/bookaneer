@@ -49,7 +49,7 @@ func (s *Service) GetHistory(ctx context.Context, limit int, eventType string) (
 		if authorID.Valid {
 			item.AuthorID = &authorID.Int64
 		}
-		json.Unmarshal([]byte(dataJSON), &item.Data)
+		_ = json.Unmarshal([]byte(dataJSON), &item.Data)
 		items = append(items, item)
 	}
 

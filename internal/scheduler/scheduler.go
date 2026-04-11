@@ -223,7 +223,9 @@ func (s *Scheduler) executeCommand(ctx context.Context, cmd *Command) {
 
 	if !ok {
 		err := fmt.Errorf("no handler registered for command: %s", cmd.Name)
-		s.updateCommandStatus(ctx, cmd.ID, StatusFailed, map[string]any{"error": err.Error()})
+		if uerr := s.updateCommandStatus(ctx, cmd.ID, StatusFailed, map[string]any{"error": err.Error()}); uerr != nil {
+			slog.Error("Failed to update command status", "id", cmd.ID, "error", uerr)
+		}
 		slog.Error("No handler for command", "name", cmd.Name)
 		return
 	}
@@ -234,9 +236,13 @@ func (s *Scheduler) executeCommand(ctx context.Context, cmd *Command) {
 	// Update status based on result
 	if err != nil {
 		slog.Error("Command failed", "id", cmd.ID, "name", cmd.Name, "error", err)
-		s.updateCommandStatus(ctx, cmd.ID, StatusFailed, map[string]any{"error": err.Error()})
+		if uerr := s.updateCommandStatus(ctx, cmd.ID, StatusFailed, map[string]any{"error": err.Error()}); uerr != nil {
+			slog.Error("Failed to update command status", "id", cmd.ID, "error", uerr)
+		}
 	} else {
 		slog.Info("Command completed", "id", cmd.ID, "name", cmd.Name)
-		s.updateCommandStatus(ctx, cmd.ID, StatusCompleted, cmd.Result)
+		if uerr := s.updateCommandStatus(ctx, cmd.ID, StatusCompleted, cmd.Result); uerr != nil {
+			slog.Error("Failed to update command status", "id", cmd.ID, "error", uerr)
+		}
 	}
 }

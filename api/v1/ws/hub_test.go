@@ -27,7 +27,7 @@ func TestHub_BroadcastAndClientCount(t *testing.T) {
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/ws"
 	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
 	require.NoError(t, err)
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	// Give the hub time to register the client
 	time.Sleep(50 * time.Millisecond)

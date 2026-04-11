@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -277,9 +276,4 @@ func (h *ReaderHandler) Register(g *echo.Group) {
 	g.GET("/reader/:id/bookmarks", h.ListBookmarks)
 	g.POST("/reader/:id/bookmarks", h.CreateBookmark)
 	g.DELETE("/reader/:id/bookmarks/:bookmarkId", h.DeleteBookmark)
-}
-
-// Discard implements io.Writer to discard bytes (used when ServeContent is called).
-type discardResponseWriter struct {
-	io.Writer
 }

@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/woliveiras/bookaneer/internal/core/book"
+	"github.com/woliveiras/bookaneer/internal/core/naming"
 	"github.com/woliveiras/bookaneer/internal/download"
 	"github.com/woliveiras/bookaneer/internal/testutil"
-	"github.com/woliveiras/bookaneer/internal/core/naming"
 	"github.com/woliveiras/bookaneer/internal/wanted"
 )
 
@@ -20,15 +20,6 @@ func newTestService(t *testing.T) (*wanted.Service, context.Context) {
 	downloadSvc := download.NewService(db)
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
 	return svc, context.Background()
-}
-
-func seedTestBook(t *testing.T, db interface {
-	Exec(string, ...any) (interface{ LastInsertId() (int64, error) }, error)
-}) (int64, int64) {
-	t.Helper()
-	// We need raw DB access for seeding, so this helper won't work with the service alone.
-	// Use testutil.SeedAuthor and testutil.SeedBook instead.
-	return 0, 0
 }
 
 func TestRemoveFromQueue_ItemExists(t *testing.T) {

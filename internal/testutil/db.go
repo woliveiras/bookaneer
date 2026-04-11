@@ -19,7 +19,7 @@ func OpenTestDB(t *testing.T) *sql.DB {
 	if err != nil {
 		t.Fatalf("open test db: %v", err)
 	}
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() { _ = db.Close() })
 
 	// Use legacy alter table behavior during migrations so ALTER TABLE RENAME
 	// doesn't rewrite FK references in other tables' schemas (SQLite 3.25+).
