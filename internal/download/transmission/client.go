@@ -246,11 +246,11 @@ func (c *Client) rpc(ctx context.Context, method string, args map[string]interfa
 		}
 
 		if resp.StatusCode == http.StatusUnauthorized {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			return nil, download.ErrAuthFailed
 		}
 
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		if resp.StatusCode != http.StatusOK {
 			return nil, fmt.Errorf("RPC failed: status %d", resp.StatusCode)

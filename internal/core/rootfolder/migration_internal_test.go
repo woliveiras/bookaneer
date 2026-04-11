@@ -337,7 +337,7 @@ func TestList_DBError(t *testing.T) {
 func TestFindByID_DBError(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	s := New(db)
-	db.Close()
+	_ = db.Close()
 	_, err := s.FindByID(context.Background(), 1)
 	require.Error(t, err)
 }
@@ -346,7 +346,7 @@ func TestCreate_DBError(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	s := New(db)
 	dir := t.TempDir() // path exists, so os.Stat succeeds
-	db.Close()
+	_ = db.Close()
 	_, err := s.Create(context.Background(), CreateRootFolderInput{Path: dir, Name: "Test"})
 	require.Error(t, err)
 }
@@ -354,7 +354,7 @@ func TestCreate_DBError(t *testing.T) {
 func TestDelete_DBError(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	s := New(db)
-	db.Close()
+	_ = db.Close()
 	err := s.Delete(context.Background(), 1)
 	require.Error(t, err)
 }

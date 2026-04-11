@@ -150,7 +150,7 @@ func (s *Service) getClientByTypes(ctx context.Context, clientTypes ...string) (
 	if err != nil {
 		return nil, nil, fmt.Errorf("query clients: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	if !rows.Next() {
 		return nil, nil, nil // No client configured

@@ -84,7 +84,7 @@ func (s *Service) List(ctx context.Context, filter ListSeriesFilter) ([]Series, 
 	if err != nil {
 		return nil, 0, fmt.Errorf("list series: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var seriesList []Series
 	for rows.Next() {

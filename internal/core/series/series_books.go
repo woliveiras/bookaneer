@@ -29,7 +29,7 @@ func (s *Service) GetWithBooks(ctx context.Context, id int64) (*SeriesWithBooks,
 	if err != nil {
 		return nil, fmt.Errorf("get series books: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var sb SeriesBook

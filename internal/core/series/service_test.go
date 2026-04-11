@@ -201,7 +201,7 @@ func TestList_SortByBookCount(t *testing.T) {
 func TestFindByID_DBClosed(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	s := New(db)
-	db.Close()
+	_ = db.Close()
 
 	_, err := s.FindByID(context.Background(), 1)
 	require.Error(t, err)
@@ -211,7 +211,7 @@ func TestFindByID_DBClosed(t *testing.T) {
 func TestList_DBClosed(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	s := New(db)
-	db.Close()
+	_ = db.Close()
 
 	_, _, err := s.List(context.Background(), ListSeriesFilter{})
 	require.Error(t, err)
@@ -220,7 +220,7 @@ func TestList_DBClosed(t *testing.T) {
 func TestCreate_DBClosed(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	s := New(db)
-	db.Close()
+	_ = db.Close()
 
 	_, err := s.Create(context.Background(), CreateSeriesInput{Title: "Test"})
 	require.Error(t, err)
@@ -230,7 +230,7 @@ func TestCreate_DBClosed(t *testing.T) {
 func TestDelete_DBClosed(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	s := New(db)
-	db.Close()
+	_ = db.Close()
 
 	err := s.Delete(context.Background(), 1)
 	require.Error(t, err)

@@ -335,7 +335,7 @@ func TestRegisterWantedHandlers_RssSync_Error(t *testing.T) {
 	handler := s.handlers[CommandRssSync]
 	s.mu.RUnlock()
 
-	db.Close() // close DB so SearchAllWanted fails
+	_ = db.Close() // close DB so SearchAllWanted fails
 	cmd := &Command{ID: "test-rss-err", Payload: map[string]any{}}
 	err := handler(context.Background(), cmd)
 	require.Error(t, err)
@@ -352,7 +352,7 @@ func TestRegisterWantedHandlers_DownloadMonitor_Error(t *testing.T) {
 	handler := s.handlers[CommandDownloadMonitor]
 	s.mu.RUnlock()
 
-	db.Close() // close DB so ProcessDownloads fails
+	_ = db.Close() // close DB so ProcessDownloads fails
 	cmd := &Command{ID: "test-monitor-err", Payload: map[string]any{}}
 	err := handler(context.Background(), cmd)
 	require.Error(t, err)

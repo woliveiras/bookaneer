@@ -272,7 +272,7 @@ func TestRemoveBook_DBClosed(t *testing.T) {
 	err = svc.AddBook(ctx, s.ID, series.AddBookInput{BookID: bookID, Position: "1"})
 	require.NoError(t, err)
 
-	db.Close()
+	_ = db.Close()
 	err = svc.RemoveBook(ctx, s.ID, bookID)
 	require.Error(t, err)
 	require.NotErrorIs(t, err, series.ErrBookNotFound)
@@ -290,7 +290,7 @@ func TestUpdateBookPosition_DBClosed(t *testing.T) {
 	err = svc.AddBook(ctx, s.ID, series.AddBookInput{BookID: bookID, Position: "1"})
 	require.NoError(t, err)
 
-	db.Close()
+	_ = db.Close()
 	err = svc.UpdateBookPosition(ctx, s.ID, bookID, "2")
 	require.Error(t, err)
 	require.NotErrorIs(t, err, series.ErrBookNotFound)

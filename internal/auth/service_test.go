@@ -254,7 +254,7 @@ func TestEnsureAPIKey_Idempotent(t *testing.T) {
 func TestGetAPIKey_DBError(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	svc := auth.New(db)
-	db.Close() // force error on next query
+	_ = db.Close() // force error on next query
 	_, err := svc.GetAPIKey(context.Background())
 	require.Error(t, err)
 }
@@ -262,7 +262,7 @@ func TestGetAPIKey_DBError(t *testing.T) {
 func TestEnsureAPIKey_DBError(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	svc := auth.New(db)
-	db.Close()
+	_ = db.Close()
 	err := svc.EnsureAPIKey(context.Background())
 	require.Error(t, err)
 }
@@ -270,7 +270,7 @@ func TestEnsureAPIKey_DBError(t *testing.T) {
 func TestEnsureDefaultAdmin_DBError(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	svc := auth.New(db)
-	db.Close()
+	_ = db.Close()
 	_, err := svc.EnsureDefaultAdmin(context.Background(), "")
 	require.Error(t, err)
 }
@@ -278,7 +278,7 @@ func TestEnsureDefaultAdmin_DBError(t *testing.T) {
 func TestGetUserByAPIKey_DBError(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	svc := auth.New(db)
-	db.Close()
+	_ = db.Close()
 	_, err := svc.GetUserByAPIKey(context.Background(), "somekey")
 	require.Error(t, err)
 }
@@ -286,7 +286,7 @@ func TestGetUserByAPIKey_DBError(t *testing.T) {
 func TestValidateAPIKey_DBError(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	svc := auth.New(db)
-	db.Close()
+	_ = db.Close()
 	// GetAPIKey will fail → ValidateAPIKey returns false (not an error)
 	assert.False(t, svc.ValidateAPIKey(context.Background(), "somekey"))
 }
@@ -294,7 +294,7 @@ func TestValidateAPIKey_DBError(t *testing.T) {
 func TestAuthenticate_DBError(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	svc := auth.New(db)
-	db.Close()
+	_ = db.Close()
 	_, err := svc.Authenticate(context.Background(), "admin", "pass")
 	require.Error(t, err)
 	require.NotErrorIs(t, err, auth.ErrInvalidCredentials)

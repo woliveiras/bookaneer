@@ -61,7 +61,7 @@ func (p *Provider) Search(ctx context.Context, query string) ([]library.SearchRe
 	if err != nil {
 		return []library.SearchResult{}, nil
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return []library.SearchResult{}, nil

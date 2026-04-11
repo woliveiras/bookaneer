@@ -129,7 +129,7 @@ func (s *Service) GetWantedBooks(ctx context.Context) ([]book.Book, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var books []book.Book
 	for rows.Next() {

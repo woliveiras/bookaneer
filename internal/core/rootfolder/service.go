@@ -49,7 +49,7 @@ func (s *Service) List(ctx context.Context) ([]RootFolder, error) {
 	if err != nil {
 		return nil, fmt.Errorf("list root folders: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var folders []RootFolder
 	for rows.Next() {

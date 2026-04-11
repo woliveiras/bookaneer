@@ -109,7 +109,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	authSvc, err := setupAuth(db, cfg)
 	if err != nil {
@@ -159,7 +159,7 @@ func setupDatabase(cfg *config.Config) (*sql.DB, error) {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
 	if err := database.Migrate(db, bookaneer.MigrationsFS, "migrations"); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("run migrations: %w", err)
 	}
 	return db, nil
@@ -437,7 +437,7 @@ func runHealthcheck() error {
 	if err != nil {
 		return fmt.Errorf("health check failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 500 {
 		return fmt.Errorf("health check returned status %d", resp.StatusCode)

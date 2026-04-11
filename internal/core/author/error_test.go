@@ -53,7 +53,7 @@ func TestList_CountQueryError(t *testing.T) {
 	svc := author.New(db)
 	ctx := context.Background()
 
-	db.Close()
+	_ = db.Close()
 
 	_, _, err := svc.List(ctx, author.ListAuthorsFilter{})
 	require.Error(t, err)
@@ -64,7 +64,7 @@ func TestCreate_ForeignIDCheckError(t *testing.T) {
 	svc := author.New(db)
 	ctx := context.Background()
 
-	db.Close()
+	_ = db.Close()
 
 	// Non-empty ForeignID causes FindByForeignID to be called; with DB closed it
 	// returns a non-ErrNotFound error triggering "check existing author by foreign_id".
@@ -80,7 +80,7 @@ func TestCreate_NameCheckError(t *testing.T) {
 	svc := author.New(db)
 	ctx := context.Background()
 
-	db.Close()
+	_ = db.Close()
 
 	// Empty ForeignID skips the ForeignID block entirely; the name check then
 	// calls FindByName which fails with a non-ErrNotFound error, triggering the
@@ -96,7 +96,7 @@ func TestGetStats_DBError(t *testing.T) {
 	svc := author.New(db)
 	ctx := context.Background()
 
-	db.Close()
+	_ = db.Close()
 
 	_, err := svc.GetStats(ctx, 1)
 	require.Error(t, err)

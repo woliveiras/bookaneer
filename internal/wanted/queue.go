@@ -24,7 +24,7 @@ func (s *Service) GetDownloadQueue(ctx context.Context) ([]DownloadQueueItem, er
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var items []DownloadQueueItem
 	for rows.Next() {

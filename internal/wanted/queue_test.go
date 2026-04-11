@@ -268,7 +268,7 @@ func TestRemoveFromQueue_DBError(t *testing.T) {
 	bookID := testutil.SeedBook(t, db, authorID, "Book")
 	queueID := testutil.SeedQueueItem(t, db, bookID, "Release", "queued")
 
-	db.Close()
+	_ = db.Close()
 
 	err := svc.RemoveFromQueue(ctx, queueID)
 	require.Error(t, err)

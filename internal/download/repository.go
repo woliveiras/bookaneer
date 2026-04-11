@@ -59,7 +59,7 @@ func (s *Service) ListClients(ctx context.Context) ([]ClientConfig, error) {
 	if err != nil {
 		return nil, fmt.Errorf("query clients: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var clients []ClientConfig
 	for rows.Next() {

@@ -73,7 +73,7 @@ func (c *Client) Search(ctx context.Context, query search.SearchQuery) ([]search
 	if err != nil {
 		return nil, fmt.Errorf("do request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode == http.StatusUnauthorized {
 		return nil, search.ErrInvalidAPIKey
 	}
@@ -162,7 +162,7 @@ func (c *Client) Caps(ctx context.Context) (*search.Capabilities, error) {
 	if err != nil {
 		return nil, fmt.Errorf("do request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode == http.StatusUnauthorized {
 		return nil, search.ErrInvalidAPIKey
 	}

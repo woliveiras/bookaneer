@@ -17,7 +17,7 @@ func (s *Scheduler) GetScheduledTasks(ctx context.Context) ([]ScheduledTask, err
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	return scanTasks(rows)
 }
@@ -39,7 +39,7 @@ func (s *Scheduler) getDueScheduledTasks(ctx context.Context) ([]ScheduledTask, 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	return scanTasks(rows)
 }

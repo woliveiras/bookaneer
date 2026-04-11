@@ -102,7 +102,7 @@ func (s *Service) ListGrabs(ctx context.Context) ([]GrabItem, error) {
 	if err != nil {
 		return nil, fmt.Errorf("query grabs: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var grabs []GrabItem
 	for rows.Next() {

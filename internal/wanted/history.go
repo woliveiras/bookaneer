@@ -33,7 +33,7 @@ func (s *Service) GetHistory(ctx context.Context, limit int, eventType string) (
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var items []HistoryItem
 	for rows.Next() {
@@ -82,7 +82,7 @@ func (s *Service) GetBlocklist(ctx context.Context) ([]BlocklistItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var items []BlocklistItem
 	for rows.Next() {

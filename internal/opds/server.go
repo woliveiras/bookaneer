@@ -14,22 +14,22 @@ import (
 )
 
 const (
-	atomNS     = "http://www.w3.org/2005/Atom"
-	opdsNS     = "http://opds-spec.org/2010/catalog"
-	searchNS   = "http://a9.com/-/spec/opensearch/1.1/"
+	atomNS         = "http://www.w3.org/2005/Atom"
+	opdsNS         = "http://opds-spec.org/2010/catalog"
+	searchNS       = "http://a9.com/-/spec/opensearch/1.1/"
 	entriesPerPage = 50
 )
 
 // Feed is an OPDS Atom feed.
 type Feed struct {
-	XMLName xml.Name `xml:"feed"`
-	XMLNS   string   `xml:"xmlns,attr"`
-	Title   string   `xml:"title"`
-	ID      string   `xml:"id"`
-	Updated string   `xml:"updated"`
+	XMLName xml.Name    `xml:"feed"`
+	XMLNS   string      `xml:"xmlns,attr"`
+	Title   string      `xml:"title"`
+	ID      string      `xml:"id"`
+	Updated string      `xml:"updated"`
 	Author  *FeedAuthor `xml:"author,omitempty"`
-	Links   []Link   `xml:"link"`
-	Entries []Entry  `xml:"entry"`
+	Links   []Link      `xml:"link"`
+	Entries []Entry     `xml:"entry"`
 }
 
 // FeedAuthor is the author of the feed.
@@ -40,12 +40,12 @@ type FeedAuthor struct {
 
 // Entry is an OPDS Atom entry.
 type Entry struct {
-	Title   string  `xml:"title"`
-	ID      string  `xml:"id"`
-	Updated string  `xml:"updated"`
-	Content string  `xml:"content,omitempty"`
+	Title   string      `xml:"title"`
+	ID      string      `xml:"id"`
+	Updated string      `xml:"updated"`
+	Content string      `xml:"content,omitempty"`
 	Author  *FeedAuthor `xml:"author,omitempty"`
-	Links   []Link  `xml:"link"`
+	Links   []Link      `xml:"link"`
 }
 
 // Link is an Atom link element.
@@ -124,7 +124,7 @@ func (s *Server) Authors(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	entries := make([]Entry, 0)
 	for rows.Next() {
@@ -273,7 +273,7 @@ func (s *Server) bookEntriesForQuery(ctx context.Context, query string, args ...
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	entries := make([]Entry, 0)
 	for rows.Next() {

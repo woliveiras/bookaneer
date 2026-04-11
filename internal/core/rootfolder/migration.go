@@ -59,14 +59,14 @@ func (s *Service) MoveRootFolder(ctx context.Context, id int64, newPath string) 
 		var id int64
 		var path string
 		if err := rows.Scan(&id, &path); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return nil, fmt.Errorf("scan author: %w", err)
 		}
 		// Calculate new path by replacing the root folder prefix
 		newAuthorPath := strings.Replace(path, oldPath, newPath, 1)
 		authors = append(authors, authorPath{id: id, oldPath: path, newPath: newAuthorPath})
 	}
-	rows.Close()
+	_ = rows.Close()
 
 	slog.Info("Found authors to migrate", "count", len(authors))
 

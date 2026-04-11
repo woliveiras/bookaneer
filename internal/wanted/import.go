@@ -39,7 +39,7 @@ func (s *Service) ProcessDownloads(ctx context.Context) (*ProcessDownloadsResult
 	if err != nil {
 		return nil, fmt.Errorf("query active downloads: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	type activeDownload struct {
 		ID       int64
@@ -168,10 +168,10 @@ func (s *Service) importPendingCompletedDownloads(ctx context.Context) (int, err
 		pending = append(pending, p)
 	}
 	if err := rows.Err(); err != nil {
-		rows.Close()
+		_ = rows.Close()
 		return 0, fmt.Errorf("iterate pending imports: %w", err)
 	}
-	rows.Close() // Close before processing to avoid SQLite locks
+	_ = rows.Close() // Close before processing to avoid SQLite locks
 
 	var imported int
 	for _, p := range pending {
