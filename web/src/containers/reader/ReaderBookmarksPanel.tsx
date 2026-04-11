@@ -1,3 +1,4 @@
+import { X } from "lucide-react"
 import type { UseMutationResult } from "@tanstack/react-query"
 import type { CreateBookmarkInput } from "../../lib/api"
 import type { Bookmark } from "../../lib/types/reader"
@@ -29,7 +30,7 @@ export function ReaderBookmarksPanel({
   deleteBookmarkMutation,
 }: ReaderBookmarksPanelProps) {
   const theme = THEMES[settings.theme]
-  const borderColor = settings.theme === "dark" ? "#333" : "#e5e5e5"
+  const borderColor = settings.theme === "dark" ? "#333" : settings.theme === "sepia" ? "#d4c9b0" : "#e5e5e5"
 
   const handleAddBookmark = () => {
     const title =
@@ -46,8 +47,8 @@ export function ReaderBookmarksPanel({
       <div className="p-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-bold text-lg">Bookmarks</h2>
-          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close bookmarks">
-            ✕
+          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close bookmarks" style={{ color: theme.fg }}>
+            <X className="h-4 w-4" />
           </Button>
         </div>
 

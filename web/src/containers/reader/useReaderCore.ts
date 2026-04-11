@@ -54,6 +54,7 @@ export function useReaderCore(bookFileId: number): ReaderCoreState {
   const saveProgressRef = useLatest(saveProgress)
   const applyStylesRef = useLatest(applyStyles)
   const savedProgressRef = useLatest(savedProgress)
+  const currentCfiRef = useLatest(currentCfi)
 
   useEffect(() => {
     const container = containerRef.current
@@ -106,7 +107,8 @@ export function useReaderCore(bookFileId: number): ReaderCoreState {
         if (cancelled) return
         await view.open(file)
 
-        const position = savedProgressRef.current?.position
+        // Prefer current in-session location when reinitializing (e.g. theme switch)
+        const position = currentCfiRef.current || savedProgressRef.current?.position
         if (position) {
           try {
             await view.goTo(position)
@@ -131,7 +133,7 @@ export function useReaderCore(bookFileId: number): ReaderCoreState {
       if (viewRef.current) container.innerHTML = ""
       viewRef.current = null
     }
-  }, [bookFile, bookFileId])
+  }, [bookFile, bookFileId, settings.theme])
 
   const handlePrev = useCallback(async () => {
     await viewRef.current?.prev()

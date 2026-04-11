@@ -75,23 +75,59 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
 
   const theme = THEMES[settings.theme]
 
+  // Compute theme-aware hover colors
+  const hoverBg =
+    settings.theme === "dark"
+      ? "rgba(255,255,255,0.1)"
+      : settings.theme === "sepia"
+        ? "rgba(91,70,54,0.1)"
+        : "rgba(0,0,0,0.06)"
+  const borderColor = settings.theme === "dark" ? "#333" : settings.theme === "sepia" ? "#d4c9b0" : "#e5e5e5"
+  const progressTrack = settings.theme === "dark" ? "#333" : settings.theme === "sepia" ? "#d4c9b0" : "#e5e5e5"
+  const progressBar = settings.theme === "dark" ? "#6ea8fe" : settings.theme === "sepia" ? "#8b7355" : "#0d6efd"
+
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col"
+      className="reader-root fixed inset-0 z-50 flex flex-col"
       style={{ background: theme.bg, color: theme.fg }}
     >
+      {/* Scoped styles for reader buttons — override Tailwind hover with theme colors */}
+      <style>{`
+        .reader-btn {
+          color: ${theme.fg} !important;
+          transition: background 150ms ease;
+        }
+        .reader-btn:hover {
+          background: ${hoverBg} !important;
+          color: ${theme.fg} !important;
+        }
+        .reader-btn,
+        .reader-btn:hover {
+          cursor: pointer;
+        }
+        .reader-root foliate-view {
+          background: ${theme.bg} !important;
+        }
+        .reader-root foliate-view::part(container),
+        .reader-root foliate-view::part(head),
+        .reader-root foliate-view::part(foot),
+        .reader-root foliate-view::part(filter) {
+          background: ${theme.bg} !important;
+        }
+      `}</style>
+
       {/* Header */}
       <header
         className="flex items-center justify-between border-b px-4 py-2"
-        style={{ borderColor: settings.theme === "dark" ? "#333" : "#e5e5e5" }}
+        style={{ borderColor }}
       >
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             size="sm"
+            className="reader-btn"
             onClick={onClose}
             aria-label="Close reader"
-            style={{ color: theme.fg }}
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
             Back
@@ -121,7 +157,7 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
             onClick={() => setShowToc((prev) => !prev)}
             aria-label="Table of contents"
             aria-pressed={showToc}
-            style={{ color: theme.fg }}
+            className="reader-btn"
           >
             <BookOpen className="h-4 w-4 mr-1" />
             TOC
@@ -132,7 +168,7 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
             onClick={() => setShowBookmarks((prev) => !prev)}
             aria-label="Bookmarks"
             aria-pressed={showBookmarks}
-            style={{ color: theme.fg }}
+            className="reader-btn"
           >
             <Bookmark className="h-4 w-4 mr-1" />
             Bookmarks
@@ -143,7 +179,7 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
             onClick={() => setShowSettings((prev) => !prev)}
             aria-label="Reader settings"
             aria-pressed={showSettings}
-            style={{ color: theme.fg }}
+            className="reader-btn"
           >
             <Settings className="h-4 w-4 mr-1" />
             Settings
@@ -203,7 +239,7 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
             className="absolute left-0 top-0 bottom-0 w-80 overflow-y-auto border-r shadow-lg"
             style={{
               background: theme.bg,
-              borderColor: settings.theme === "dark" ? "#333" : "#e5e5e5",
+              borderColor,
             }}
           >
             <div className="p-4">
@@ -214,7 +250,7 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
                   size="sm"
                   onClick={() => setShowToc(false)}
                   aria-label="Close TOC"
-                  style={{ color: theme.fg }}
+                  className="reader-btn"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -256,14 +292,14 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
       {/* Footer navigation */}
       <footer
         className="flex items-center justify-between border-t px-4 py-2"
-        style={{ borderColor: settings.theme === "dark" ? "#333" : "#e5e5e5" }}
+        style={{ borderColor }}
       >
         <Button
           variant="ghost"
           size="sm"
+          className="reader-btn"
           onClick={handlePrev}
           aria-label="Previous page"
-          style={{ color: theme.fg }}
         >
           <ChevronLeft className="h-4 w-4 mr-1" />
           Previous
@@ -273,13 +309,13 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
         <div className="flex-1 mx-4">
           <div
             className="h-1 rounded-full overflow-hidden"
-            style={{ background: settings.theme === "dark" ? "#333" : "#e5e5e5" }}
+            style={{ background: progressTrack }}
           >
             <div
               className="h-full transition-all duration-300"
               style={{
                 width: `${progress * 100}%`,
-                background: settings.theme === "dark" ? "#6ea8fe" : "#0d6efd",
+                background: progressBar,
               }}
             />
           </div>
@@ -288,9 +324,9 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
         <Button
           variant="ghost"
           size="sm"
+          className="reader-btn"
           onClick={handleNext}
           aria-label="Next page"
-          style={{ color: theme.fg }}
         >
           Next
           <ChevronRight className="h-4 w-4 ml-1" />
