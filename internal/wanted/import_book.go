@@ -72,7 +72,8 @@ func (s *Service) importCompletedDownload(ctx context.Context, queueID int64, so
 	// This happens when the download was saved directly to the library location
 	srcAbs, _ := filepath.Abs(sourcePath)
 	dstAbs, _ := filepath.Abs(destPath)
-	if srcAbs != dstAbs {
+	sameFile := srcAbs == dstAbs
+	if !sameFile {
 		// Copy file to library (copy instead of move for safety)
 		if err := copyFile(sourcePath, destPath); err != nil {
 			return fmt.Errorf("copy file: %w", err)
@@ -114,12 +115,14 @@ func (s *Service) importCompletedDownload(ctx context.Context, queueID int64, so
 		"sourcePath": sourcePath,
 	})
 
-	// Try to remove source file (best effort)
-	_ = os.Remove(sourcePath)
+	// Try to remove source file (best effort) — only if source != destination
+	if !sameFile {
+		_ = os.Remove(sourcePath)
 
-	// Try to remove parent directory if empty (best effort)
-	sourceDir := filepath.Dir(sourcePath)
-	_ = os.Remove(sourceDir)
+		// Try to remove parent directory if empty (best effort)
+		sourceDir := filepath.Dir(sourcePath)
+		_ = os.Remove(sourceDir)
+	}
 
 	return nil
 }
