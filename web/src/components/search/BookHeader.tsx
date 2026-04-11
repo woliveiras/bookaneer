@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router"
+import { AlertTriangle, ClipboardList, Flag, Library, Lightbulb, Plus, Search } from "lucide-react"
 import type { MetadataBookResult } from "../../lib/api"
 import { Badge, Button } from "../ui"
 
@@ -38,8 +39,8 @@ export function BookHeader({
             className="w-32 h-48 object-cover rounded shadow-lg"
           />
         ) : (
-          <div className="w-32 h-48 bg-muted rounded flex items-center justify-center text-4xl">
-            📚
+          <div className="w-32 h-48 bg-muted rounded flex items-center justify-center">
+            <Library className="w-8 h-8 text-muted-foreground" />
           </div>
         )}
         <div className="flex-1">
@@ -63,7 +64,7 @@ export function BookHeader({
                 onClick={onAddToLibrary}
                 disabled={addingToLibrary}
               >
-                {addingToLibrary ? "Adding..." : "➕ Add to Library"}
+                {addingToLibrary ? "Adding..." : <><Plus className="w-4 h-4" /> Add to Library</>}
               </Button>
             ) : (
               <Button
@@ -77,7 +78,7 @@ export function BookHeader({
             )}
             {!searchStarted && (
               <Button size="sm" variant="secondary" onClick={onStartSearch}>
-                🔍 Manual Search
+                <Search className="w-4 h-4" /> Manual Search
               </Button>
             )}
           </div>
@@ -93,7 +94,7 @@ export function BookHeader({
             {/* Wanted Section */}
             <div className="text-center md:text-left space-y-3">
               <div className="flex items-center gap-2 justify-center md:justify-start">
-                <span className="text-2xl">📋</span>
+                <span className="text-2xl"><ClipboardList className="w-6 h-6" /></span>
                 <h3 className="text-lg font-semibold">Add to Wanted</h3>
               </div>
               <p className="text-sm text-muted-foreground">
@@ -101,7 +102,7 @@ export function BookHeader({
                 automatically search for it when new releases become available.
               </p>
               <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                <span>💡</span>
+                <span><Lightbulb className="w-4 h-4" /></span>
                 <span>
                   Wanted books appear in <strong>Activity → Wanted</strong> tab
                 </span>
@@ -111,7 +112,7 @@ export function BookHeader({
             {/* Manual Search Section */}
             <div className="text-center md:text-left space-y-3 md:border-l md:pl-8">
               <div className="flex items-center gap-2 justify-center md:justify-start">
-                <span className="text-2xl">🔍</span>
+                <span className="text-2xl"><Search className="w-6 h-6" /></span>
                 <h3 className="text-lg font-semibold">Manual Search</h3>
               </div>
               <p className="text-sm text-muted-foreground">
@@ -121,7 +122,7 @@ export function BookHeader({
               {!hasRootFolder && (
                 <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-md p-3">
                   <p className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">
-                    ⚠️ No Root Folder
+                    <AlertTriangle className="w-4 h-4" /> No Root Folder
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Configure a root folder in{" "}
@@ -133,7 +134,7 @@ export function BookHeader({
                 </div>
               )}
               <Button size="lg" onClick={onStartSearch} className="w-full md:w-auto">
-                🏴 Start Manual Search
+                <Flag className="w-4 h-4" /> Start Manual Search
               </Button>
             </div>
           </div>

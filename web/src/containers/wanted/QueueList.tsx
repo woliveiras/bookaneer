@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { Inbox } from "lucide-react"
 import { Button, Card, CardContent } from "../../components/ui"
 import { QueueItemCard, SearchCommandCard } from "../../components/wanted/QueueCards"
 import { getDismissedCommands, saveDismissedCommands } from "../../components/wanted/queueHelpers"
@@ -148,7 +149,7 @@ export function QueueList() {
       {isEmpty && (
         <Card>
           <CardContent className="p-12 text-center">
-            <div className="text-4xl mb-4">📭</div>
+            <div className="flex justify-center mb-4"><Inbox className="w-8 h-8 text-muted-foreground" /></div>
             <h3 className="text-lg font-semibold mb-2">No activity</h3>
             <p className="text-muted-foreground">
               Search for books to start downloading. Activity will appear here.

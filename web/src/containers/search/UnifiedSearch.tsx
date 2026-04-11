@@ -1,5 +1,6 @@
 import { useNavigate } from "@tanstack/react-router"
 import { useCallback, useEffect, useState } from "react"
+import { Library } from "lucide-react"
 import { Badge, Button, Card, CardContent, Input } from "../../components/ui"
 import { useMetadataSearchBooks } from "../../hooks/useMetadata"
 import type { MetadataBookResult } from "../../lib/api"
@@ -27,8 +28,8 @@ function BookCard({ book, onSelect, isSelected }: BookCardProps) {
             loading="lazy"
           />
         ) : (
-          <div className="w-16 h-24 bg-muted rounded flex items-center justify-center text-2xl">
-            📚
+          <div className="w-16 h-24 bg-muted rounded flex items-center justify-center">
+            <Library className="w-6 h-6 text-muted-foreground" />
           </div>
         )}
         <div className="flex-1 min-w-0">
@@ -191,7 +192,7 @@ export function UnifiedSearch() {
       {!submittedQuery && !bookSearch.isLoading && (
         <Card>
           <CardContent className="py-12 text-center">
-            <div className="text-4xl mb-4">📚</div>
+            <div className="flex justify-center mb-4"><Library className="w-8 h-8 text-muted-foreground" /></div>
             <p className="text-lg text-muted-foreground mb-2">Search for any book</p>
             <p className="text-sm text-muted-foreground">
               Enter a title, author name, or ISBN to find books and download them

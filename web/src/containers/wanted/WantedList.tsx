@@ -3,6 +3,7 @@ import { useState } from "react"
 import { Button, Card, CardContent } from "../../components/ui"
 import { useUpdateBook } from "../../hooks/useBooks"
 import { useSearchAllMissing, useSearchBook, useWantedMissing } from "../../hooks/useWanted"
+import { BookOpen, PartyPopper } from "lucide-react"
 import type { Book } from "../../lib/api"
 
 export function WantedList() {
@@ -121,7 +122,7 @@ export function WantedList() {
       {books.length === 0 && (
         <Card>
           <CardContent className="p-12 text-center">
-            <div className="text-4xl mb-4">🎉</div>
+            <div className="flex justify-center mb-4"><PartyPopper className="w-8 h-8 text-muted-foreground" /></div>
             <h3 className="text-lg font-semibold mb-2">All caught up!</h3>
             <p className="text-muted-foreground">
               No monitored books are missing from your library.
@@ -197,7 +198,7 @@ function WantedBookCard({
           {book.imageUrl ? (
             <img src={book.imageUrl} alt={book.title} className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-2xl">📖</div>
+            <div className="w-full h-full flex items-center justify-center"><BookOpen className="w-6 h-6 text-muted-foreground" /></div>
           )}
         </div>
 

@@ -1,4 +1,4 @@
-import { X } from "lucide-react"
+import { X, Bookmark as BookmarkIcon, Trash2 } from "lucide-react";
 import type { UseMutationResult } from "@tanstack/react-query"
 import type { CreateBookmarkInput } from "../../lib/api"
 import type { Bookmark } from "../../lib/types/reader"
@@ -47,7 +47,13 @@ export function ReaderBookmarksPanel({
       <div className="p-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-bold text-lg">Bookmarks</h2>
-          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close bookmarks" style={{ color: theme.fg }}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            aria-label="Close bookmarks"
+            style={{ color: theme.fg }}
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -59,9 +65,18 @@ export function ReaderBookmarksPanel({
           className="w-full mb-4"
           onClick={handleAddBookmark}
           disabled={!currentCfi || createBookmarkMutation.isPending}
-          style={{ borderColor: settings.theme === "dark" ? "#555" : "#ccc", color: theme.fg }}
+          style={{
+            borderColor: settings.theme === "dark" ? "#555" : "#ccc",
+            color: theme.fg,
+          }}
         >
-          {createBookmarkMutation.isPending ? "Adding..." : "🔖 Add Bookmark Here"}
+          {createBookmarkMutation.isPending ? (
+            "Adding..."
+          ) : (
+            <>
+              <BookmarkIcon className="w-4 h-4 inline" /> Add Bookmark Here
+            </>
+          )}
         </Button>
 
         {/* Bookmark list */}
@@ -91,7 +106,7 @@ export function ReaderBookmarksPanel({
                   aria-label="Delete bookmark"
                   disabled={deleteBookmarkMutation.isPending}
                 >
-                  🗑️
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </li>
             ))}
@@ -103,5 +118,5 @@ export function ReaderBookmarksPanel({
         )}
       </div>
     </div>
-  )
+  );
 }

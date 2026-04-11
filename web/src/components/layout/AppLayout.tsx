@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { Link, Outlet } from "@tanstack/react-router"
+import { Library } from "lucide-react"
 import type { ReactNode } from "react"
 import { AuthProvider, useAuth } from "../../contexts/AuthContext"
 import { LoginPage } from "../../pages/LoginPage"
@@ -39,7 +40,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">
         <div className="container mx-auto px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground whitespace-nowrap">📚 Bookaneer</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground whitespace-nowrap flex items-center gap-2"><Library className="w-5 h-5" /> Bookaneer</h1>
           <div className="flex items-center gap-2 sm:gap-4">
             {health.isLoading ? (
               <span className="text-muted-foreground text-xs sm:text-sm">Checking...</span>

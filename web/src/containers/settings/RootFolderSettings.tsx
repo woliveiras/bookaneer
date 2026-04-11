@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { AlertTriangle } from "lucide-react"
 import {
   Badge,
   Button,
@@ -129,7 +130,7 @@ function RootFolderForm({ folder, onSubmit, onCancel, isLoading }: RootFolderFor
               </div>
               {!moveFiles && (
                 <p className="text-xs text-amber-600">
-                  ⚠️ Without this option, existing files stay in place and you'll need to move them
+                  <AlertTriangle className="w-4 h-4" /> Without this option, existing files stay in place and you'll need to move them
                   manually.
                 </p>
               )}

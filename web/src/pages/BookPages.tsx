@@ -6,6 +6,7 @@ import { Button } from "../components/ui"
 import { Reader } from "../containers/reader/Reader"
 import { bookApi } from "../lib/api"
 import { navigateToBookSearch } from "../lib/navigation"
+import { BookOpen, Search, Trash2 } from "lucide-react"
 
 export function ReaderPage() {
   const { bookId } = useParams({ from: "/read/$bookId" })
@@ -117,7 +118,7 @@ export function LibraryBookDetailPage() {
             {book.imageUrl ? (
               <img src={book.imageUrl} alt={book.title} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-4xl">📖</div>
+              <div className="w-full h-full flex items-center justify-center"><BookOpen className="w-8 h-8 text-muted-foreground" /></div>
             )}
           </div>
 
@@ -172,21 +173,21 @@ export function LibraryBookDetailPage() {
                     })
                   }
                 >
-                  📖 Read
+                  <BookOpen className="w-4 h-4" /> Read
                 </Button>
               )}
               <Button
                 variant="outline"
                 onClick={() => navigateToBookSearch(navigate, book)}
               >
-                🔍 Manual Search
+                <Search className="w-4 h-4" /> Manual Search
               </Button>
               <Button
                 variant="outline"
                 className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
                 onClick={() => setShowDeleteConfirm(true)}
               >
-                🗑️ Delete
+                <Trash2 className="w-4 h-4" /> Delete
               </Button>
             </div>
 

@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react"
+import { User, Library } from "lucide-react"
 import { Badge, Button, Card, CardContent, Input } from "../../components/ui"
 import { useMetadataSearchAuthors, useMetadataSearchBooks } from "../../hooks/useMetadata"
 import type { MetadataAuthorResult, MetadataBookResult } from "../../lib/api"
@@ -109,8 +110,8 @@ function AuthorResults({ results, onSelect }: AuthorResultsProps) {
                 loading="lazy"
               />
             ) : (
-              <div className="w-16 h-20 bg-muted rounded flex items-center justify-center text-2xl">
-                👤
+              <div className="w-16 h-20 bg-muted rounded flex items-center justify-center">
+                <User className="w-6 h-6 text-muted-foreground" />
               </div>
             )}
             <div className="flex-1 min-w-0">
@@ -157,8 +158,8 @@ function BookResults({ results, onSelect }: BookResultsProps) {
                 loading="lazy"
               />
             ) : (
-              <div className="w-16 h-24 bg-muted rounded flex items-center justify-center text-2xl">
-                📚
+              <div className="w-16 h-24 bg-muted rounded flex items-center justify-center">
+                <Library className="w-6 h-6 text-muted-foreground" />
               </div>
             )}
             <div className="flex-1 min-w-0">

@@ -1,3 +1,5 @@
+import { Globe, Library } from "lucide-react"
+
 // Ship SVG component for search loading animation
 export function Ship({ className }: { className?: string }) {
   return (
@@ -64,11 +66,11 @@ export function SearchLoadingAnimation({ sources }: SearchLoadingAnimationProps)
   return (
     <div className="py-6">
       <div className="relative h-24 mx-auto max-w-sm overflow-hidden rounded-lg">
-        <div className="absolute bottom-4 left-2 text-2xl" title="Library">
-          📚
+        <div className="absolute bottom-4 left-2" title="Library">
+          <Library className="w-6 h-6" />
         </div>
-        <div className="absolute bottom-4 right-2 text-2xl" title="Your Collection">
-          🌍
+        <div className="absolute bottom-4 right-2" title="Your Collection">
+          <Globe className="w-6 h-6" />
         </div>
         <div className="absolute bottom-3 w-16 h-12 animate-sail">
           <div className="animate-bob">

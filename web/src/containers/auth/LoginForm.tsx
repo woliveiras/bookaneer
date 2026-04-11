@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from "react"
+import { Flag } from "lucide-react"
 import { Button } from "../../components/ui/Button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/Card"
 import { Input } from "../../components/ui/Input"
@@ -33,9 +34,7 @@ export function LoginForm() {
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
         <div className="flex items-center justify-center gap-2 mb-2">
-          <span className="text-3xl" role="img" aria-label="Flag">
-            🏴
-          </span>
+          <Flag className="w-8 h-8" />
           <CardTitle className="text-2xl">Bookaneer</CardTitle>
         </div>
         <CardDescription>Sign in to access your library</CardDescription>

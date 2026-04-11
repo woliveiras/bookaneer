@@ -1,39 +1,41 @@
 import { Link } from "@tanstack/react-router"
 import { useState } from "react"
+import { CheckCircle, ClipboardList, Download, FileEdit, Library, ScrollText, Trash2, XCircle } from "lucide-react"
+import type { ReactNode } from "react"
 import { Button, Card, CardContent } from "../../components/ui"
 import { useHistory } from "../../hooks/useWanted"
 import type { HistoryEventType } from "../../lib/api"
 
-const eventTypeLabels: Record<HistoryEventType, { label: string; color: string; icon: string }> = {
+const eventTypeLabels: Record<HistoryEventType, { label: string; color: string; icon: ReactNode }> = {
   grabbed: {
     label: "Grabbed",
     color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-    icon: "⬇️",
+    icon: <Download className="w-5 h-5" />,
   },
   downloadCompleted: {
     label: "Downloaded",
     color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-    icon: "✅",
+    icon: <CheckCircle className="w-5 h-5" />,
   },
   downloadFailed: {
     label: "Failed",
     color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-    icon: "❌",
+    icon: <XCircle className="w-5 h-5" />,
   },
   bookFileDeleted: {
     label: "Deleted",
     color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
-    icon: "🗑️",
+    icon: <Trash2 className="w-5 h-5" />,
   },
   bookFileRenamed: {
     label: "Renamed",
     color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-    icon: "📝",
+    icon: <FileEdit className="w-5 h-5" />,
   },
   bookImported: {
     label: "Imported",
     color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-    icon: "📚",
+    icon: <Library className="w-5 h-5" />,
   },
 }
 
@@ -130,7 +132,7 @@ export function HistoryList() {
       {items.length === 0 && (
         <Card>
           <CardContent className="p-12 text-center">
-            <div className="text-4xl mb-4">📜</div>
+            <div className="flex justify-center mb-4"><ScrollText className="w-8 h-8 text-muted-foreground" /></div>
             <h3 className="text-lg font-semibold mb-2">No history</h3>
             <p className="text-muted-foreground">
               {eventTypeFilter ? "No events match this filter." : "No activity recorded yet."}
@@ -146,14 +148,14 @@ export function HistoryList() {
             const eventInfo = eventTypeLabels[item.eventType] || {
               label: item.eventType,
               color: "bg-gray-100 text-gray-800",
-              icon: "📋",
+              icon: <ClipboardList className="w-5 h-5" />,
             }
 
             return (
               <Card key={item.id}>
                 <CardContent className="p-4">
                   <div className="flex items-start gap-4">
-                    <span className="text-2xl">{eventInfo.icon}</span>
+                    <span className="text-2xl flex items-center">{eventInfo.icon}</span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         {item.bookId ? (

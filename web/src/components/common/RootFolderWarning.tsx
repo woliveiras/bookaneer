@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router"
+import { AlertTriangle } from "lucide-react"
 import { useRootFolders } from "../../hooks/useRootFolders"
 import { Card, CardContent } from "../ui"
 
@@ -20,7 +21,7 @@ export function RootFolderWarning() {
     <Card className="border-yellow-500/50 bg-yellow-500/10 mb-6">
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
-          <span className="text-xl">⚠️</span>
+          <AlertTriangle className="w-5 h-5 text-yellow-600" />
           <div>
             <h4 className="font-medium text-yellow-600 dark:text-yellow-400">
               No Root Folder Configured

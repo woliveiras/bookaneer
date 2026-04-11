@@ -1,4 +1,5 @@
 import type { DigitalLibraryResult, SearchResult } from "../../lib/api"
+import { Library, Search } from "lucide-react"
 import { Badge, Button } from "../ui"
 import { DownloadResult, LibraryResult } from "./SearchResultCards"
 
@@ -31,7 +32,7 @@ export function SearchResults({
       {filteredLibraryResults.length > 0 && (
         <div>
           <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <span>📚</span> Digital Libraries
+            <span><Library className="w-5 h-5" /></span> Digital Libraries
             <Badge variant="secondary">{filteredLibraryResults.length}</Badge>
           </h3>
           <div className="grid gap-2">
@@ -51,7 +52,7 @@ export function SearchResults({
       {filteredIndexerResults.length > 0 && (
         <div>
           <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <span>🔍</span> Torrent/Usenet Indexers
+            <span><Search className="w-5 h-5" /></span> Torrent/Usenet Indexers
             <Badge variant="secondary">{filteredIndexerResults.length}</Badge>
           </h3>
           <div className="grid gap-2">

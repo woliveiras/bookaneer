@@ -1,4 +1,5 @@
 import type { Author } from "../../lib/api"
+import { User } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { Badge, Card, CardContent } from "../ui"
 
@@ -38,9 +39,7 @@ export function AuthorCard({ author, onClick, selected }: AuthorCardProps) {
             />
           ) : (
             <div className="flex h-16 w-16 items-center justify-center rounded-md bg-muted">
-              <span className="text-2xl" aria-hidden="true">
-                👤
-              </span>
+              <User className="w-6 h-6 text-muted-foreground" />
             </div>
           )}
           <div className="flex-1 min-w-0">
