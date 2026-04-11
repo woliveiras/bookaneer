@@ -3,6 +3,7 @@ import type { FoliateView } from "../../components/reader/readerConfig"
 
 interface UseReaderKeyboardProps {
   viewRef: React.RefObject<FoliateView | null>
+  readerReady: boolean
   showSettings: boolean
   showToc: boolean
   showBookmarks: boolean
@@ -16,6 +17,7 @@ interface UseReaderKeyboardProps {
 
 export function useReaderKeyboard({
   viewRef,
+  readerReady,
   showSettings,
   showToc,
   showBookmarks,
@@ -27,7 +29,18 @@ export function useReaderKeyboard({
   onClose,
 }: UseReaderKeyboardProps) {
   useEffect(() => {
+    if (!readerReady) {
+      return
+    }
+
+    const handledKey = "__bookaneerReaderHandled"
+
     const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e as KeyboardEvent & Record<string, boolean>)[handledKey]) {
+        return
+      }
+
+      const code = e.code
       const target = e.target as HTMLElement | null
       const tagName = target?.tagName?.toLowerCase()
       const isEditable =
@@ -42,6 +55,7 @@ export function useReaderKeyboard({
 
       // Global shortcuts should work even with panels open.
       if (e.key === "Escape") {
+        ;(e as KeyboardEvent & Record<string, boolean>)[handledKey] = true
         e.preventDefault()
         if (showSettings || showToc || showBookmarks) {
           setShowSettings(false)
@@ -53,19 +67,22 @@ export function useReaderKeyboard({
         return
       }
 
-      if (e.key === "t" || e.key === "T") {
+      if (code === "KeyT" || e.key === "t" || e.key === "T") {
+        ;(e as KeyboardEvent & Record<string, boolean>)[handledKey] = true
         e.preventDefault()
         setShowToc((prev) => !prev)
         return
       }
 
-      if (e.key === "s" || e.key === "S") {
+      if (code === "KeyS" || e.key === "s" || e.key === "S") {
+        ;(e as KeyboardEvent & Record<string, boolean>)[handledKey] = true
         e.preventDefault()
         setShowSettings((prev) => !prev)
         return
       }
 
-      if (e.key === "b" || e.key === "B") {
+      if (code === "KeyB" || e.key === "b" || e.key === "B") {
+        ;(e as KeyboardEvent & Record<string, boolean>)[handledKey] = true
         e.preventDefault()
         setShowBookmarks((prev) => !prev)
         return
@@ -77,6 +94,7 @@ export function useReaderKeyboard({
       }
 
       if (e.key === "ArrowLeft" || e.key === "PageUp") {
+        ;(e as KeyboardEvent & Record<string, boolean>)[handledKey] = true
         e.preventDefault()
         onPrev()
       } else if (
@@ -85,19 +103,17 @@ export function useReaderKeyboard({
         e.key === " " ||
         e.key === "Spacebar"
       ) {
+        ;(e as KeyboardEvent & Record<string, boolean>)[handledKey] = true
         e.preventDefault()
         onNext()
       }
     }
 
-    const targets = new Set<Window | Document>([window, document])
+    const targets = new Set<Document>([document])
 
     const contents = viewRef.current?.renderer?.getContents?.() ?? []
     for (const content of contents) {
       targets.add(content.doc)
-      if (content.doc.defaultView) {
-        targets.add(content.doc.defaultView)
-      }
     }
 
     for (const target of targets) {
@@ -108,9 +124,6 @@ export function useReaderKeyboard({
       const nextContents = viewRef.current?.renderer?.getContents?.() ?? []
       for (const content of nextContents) {
         content.doc.addEventListener("keydown", handleKeyDown as EventListener, { capture: true })
-        content.doc.defaultView?.addEventListener("keydown", handleKeyDown as EventListener, {
-          capture: true,
-        })
       }
       viewRef.current?.renderer?.focusView?.()
     }
@@ -129,17 +142,13 @@ export function useReaderKeyboard({
       const nextContents = viewRef.current?.renderer?.getContents?.() ?? []
       for (const content of nextContents) {
         content.doc.removeEventListener("keydown", handleKeyDown as EventListener, { capture: true })
-        content.doc.defaultView?.removeEventListener(
-          "keydown",
-          handleKeyDown as EventListener,
-          { capture: true },
-        )
       }
       viewRef.current?.removeEventListener("load", handleReaderLoad as EventListener)
       viewRef.current?.removeEventListener("pointerdown", handleReaderPointerDown)
     }
   }, [
     viewRef,
+    readerReady,
     showSettings,
     showToc,
     showBookmarks,

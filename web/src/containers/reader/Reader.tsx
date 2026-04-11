@@ -64,6 +64,7 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
 
   useReaderKeyboard({
     viewRef,
+    readerReady: !isLoading,
     showSettings,
     showToc,
     showBookmarks,
