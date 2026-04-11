@@ -20,6 +20,7 @@ type Book struct {
 	// Computed/joined fields
 	AuthorName string `json:"authorName,omitempty"`
 	HasFile    bool   `json:"hasFile,omitempty"`
+	FileFormat string `json:"fileFormat,omitempty"` // format of the primary file on disk
 }
 
 // Edition represents a specific edition of a book.

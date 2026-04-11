@@ -23,17 +23,20 @@ func New(db *sql.DB) *Service {
 func (s *Service) FindByID(ctx context.Context, id int64) (*Book, error) {
 	var b Book
 	var monitored int
+	var hasFile int
 	err := s.db.QueryRowContext(ctx, `
 		SELECT b.id, b.author_id, b.title, COALESCE(b.sort_title,''), COALESCE(b.foreign_id,''), COALESCE(b.isbn,''), COALESCE(b.isbn13,''),
 		       COALESCE(b.release_date,''), COALESCE(b.overview,''), COALESCE(b.image_url,''), b.page_count, b.monitored, b.added_at, b.updated_at,
-		       a.name
+		       a.name,
+		       (SELECT COUNT(*) > 0 FROM book_files bf WHERE bf.book_id = b.id) as has_file,
+		       COALESCE((SELECT bf.format FROM book_files bf WHERE bf.book_id = b.id ORDER BY bf.added_at DESC LIMIT 1), '') as file_format
 		FROM books b
 		JOIN authors a ON b.author_id = a.id
 		WHERE b.id = ?
 	`, id).Scan(
 		&b.ID, &b.AuthorID, &b.Title, &b.SortTitle, &b.ForeignID, &b.ISBN, &b.ISBN13,
 		&b.ReleaseDate, &b.Overview, &b.ImageURL, &b.PageCount, &monitored, &b.AddedAt, &b.UpdatedAt,
-		&b.AuthorName,
+		&b.AuthorName, &hasFile, &b.FileFormat,
 	)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
@@ -42,11 +45,7 @@ func (s *Service) FindByID(ctx context.Context, id int64) (*Book, error) {
 		return nil, fmt.Errorf("find book %d: %w", id, err)
 	}
 	b.Monitored = monitored == 1
-
-	// Check if has file
-	var fileCount int
-	_ = s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM book_files WHERE book_id = ?", id).Scan(&fileCount)
-	b.HasFile = fileCount > 0
+	b.HasFile = hasFile == 1
 
 	return &b, nil
 }
@@ -133,7 +132,8 @@ func (s *Service) List(ctx context.Context, filter ListBooksFilter) ([]Book, int
 		SELECT b.id, b.author_id, b.title, COALESCE(b.sort_title,''), COALESCE(b.foreign_id,''), COALESCE(b.isbn,''), COALESCE(b.isbn13,''),
 		       COALESCE(b.release_date,''), COALESCE(b.overview,''), COALESCE(b.image_url,''), b.page_count, b.monitored, b.added_at, b.updated_at,
 		       a.name,
-		       EXISTS (SELECT 1 FROM book_files bf WHERE bf.book_id = b.id) as has_file
+		       EXISTS (SELECT 1 FROM book_files bf WHERE bf.book_id = b.id) as has_file,
+		       COALESCE((SELECT bf.format FROM book_files bf WHERE bf.book_id = b.id ORDER BY bf.added_at DESC LIMIT 1), '') as file_format
 		FROM books b
 		JOIN authors a ON b.author_id = a.id
 		%s ORDER BY %s %s LIMIT ? OFFSET ?
@@ -153,7 +153,7 @@ func (s *Service) List(ctx context.Context, filter ListBooksFilter) ([]Book, int
 		if err := rows.Scan(
 			&b.ID, &b.AuthorID, &b.Title, &b.SortTitle, &b.ForeignID, &b.ISBN, &b.ISBN13,
 			&b.ReleaseDate, &b.Overview, &b.ImageURL, &b.PageCount, &monitored, &b.AddedAt, &b.UpdatedAt,
-			&b.AuthorName, &hasFile,
+			&b.AuthorName, &hasFile, &b.FileFormat,
 		); err != nil {
 			return nil, 0, fmt.Errorf("scan book: %w", err)
 		}

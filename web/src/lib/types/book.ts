@@ -15,6 +15,7 @@ export interface Book {
   updatedAt: string
   authorName?: string
   hasFile?: boolean
+  fileFormat?: string
 }
 
 export interface Edition {

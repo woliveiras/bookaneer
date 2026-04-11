@@ -59,6 +59,11 @@ export function BookCard({ book, onClick, selected }: BookCardProps) {
               ) : (
                 <Badge variant="outline">Missing</Badge>
               )}
+              {book.fileFormat && (
+                <Badge variant="secondary" className="uppercase">
+                  {book.fileFormat}
+                </Badge>
+              )}
             </div>
             {book.releaseDate && (
               <p className="mt-2 text-sm text-muted-foreground">

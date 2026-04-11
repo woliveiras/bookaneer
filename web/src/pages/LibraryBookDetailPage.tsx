@@ -98,6 +98,11 @@ export function LibraryBookDetailPage() {
               >
                 {hasFile ? "Downloaded" : "Missing"}
               </span>
+              {book.fileFormat && (
+                <span className="px-2 py-1 rounded text-xs bg-muted text-muted-foreground uppercase">
+                  {book.fileFormat}
+                </span>
+              )}
             </div>
 
             {book.releaseDate && (
