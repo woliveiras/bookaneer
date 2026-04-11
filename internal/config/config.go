@@ -11,24 +11,33 @@ import (
 
 // Config holds all application configuration.
 type Config struct {
-	Port        int    `yaml:"port"`
-	BindAddress string `yaml:"bindAddress"`
-	URLBase     string `yaml:"urlBase"`
-	LogLevel    string `yaml:"logLevel"`
-	DataDir     string `yaml:"-"`
-	LibraryDir  string `yaml:"libraryDir"`
-	AuthMethod  string `yaml:"authMethod"`
+	Port                  int                    `yaml:"port"`
+	BindAddress           string                 `yaml:"bindAddress"`
+	URLBase               string                 `yaml:"urlBase"`
+	LogLevel              string                 `yaml:"logLevel"`
+	DataDir               string                 `yaml:"-"`
+	LibraryDir            string                 `yaml:"libraryDir"`
+	AuthMethod            string                 `yaml:"authMethod"`
+	CustomProviders       []CustomProviderConfig `yaml:"customProviders"`
+	CustomProvidersEnable bool                   `yaml:"customProvidersEnabled"`
+}
+
+type CustomProviderConfig struct {
+	Name       string `yaml:"name" json:"name"`
+	Domain     string `yaml:"domain" json:"domain"`
+	FormatHint string `yaml:"formatHint" json:"formatHint"`
 }
 
 // DefaultConfig returns a Config with sensible defaults.
 func DefaultConfig() *Config {
 	return &Config{
-		Port:        9090,
-		BindAddress: "0.0.0.0",
-		URLBase:     "",
-		LogLevel:    "info",
-		AuthMethod:  "forms",
-		LibraryDir:  "/library",
+		Port:                  9090,
+		BindAddress:           "0.0.0.0",
+		URLBase:               "",
+		LogLevel:              "info",
+		AuthMethod:            "forms",
+		LibraryDir:            "/library",
+		CustomProvidersEnable: false,
 	}
 }
 

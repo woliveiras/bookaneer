@@ -298,7 +298,7 @@ func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Confi
 	handler.NewSearchHandler(searchSvc).Register(protected)
 
 	// Digital library providers
-	libAggregator := digitallibrary.NewAggregator(
+	providers := []digitallibrary.Provider{
 		gutendex.New(),
 		wikisource.New(),
 		aozora.New(),
@@ -320,7 +320,18 @@ func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Confi
 		sitesearch.New("hathitrust", "hathitrust.org", "pdf"),
 		annas.New(),
 		libgen.New(),
-	)
+	}
+
+	if cfg.CustomProvidersEnable {
+		for _, cp := range cfg.CustomProviders {
+			if cp.Name == "" || cp.Domain == "" {
+				continue
+			}
+			providers = append(providers, sitesearch.New(cp.Name, cp.Domain, cp.FormatHint))
+		}
+	}
+
+	libAggregator := digitallibrary.NewAggregator(providers...)
 	handler.NewDigitalLibraryHandler(libAggregator).Register(protected)
 
 	// Download service

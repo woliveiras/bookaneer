@@ -24,6 +24,14 @@ const mockSettings: GeneralSettings = {
   dataDir: "/data",
   libraryDir: "/library",
   logLevel: "info",
+  customProvidersEnabled: true,
+  customProvidersActive: [
+    {
+      name: "provider-test",
+      domain: "example.org",
+      formatHint: "pdf",
+    },
+  ],
 }
 
 function createWrapper() {

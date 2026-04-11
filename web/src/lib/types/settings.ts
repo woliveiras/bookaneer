@@ -1,3 +1,9 @@
+export interface CustomProviderSetting {
+  name: string
+  domain: string
+  formatHint: string
+}
+
 export interface GeneralSettings {
   apiKey: string
   bindAddress: string
@@ -5,6 +11,8 @@ export interface GeneralSettings {
   dataDir: string
   libraryDir: string
   logLevel: string
+  customProvidersEnabled: boolean
+  customProvidersActive: CustomProviderSetting[]
 }
 
 export interface RootFolder {

@@ -117,6 +117,46 @@ export function SettingsGeneral() {
           </dl>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Custom Providers</CardTitle>
+          <CardDescription>Configured custom providers currently active in this instance</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!settings?.customProvidersEnabled ? (
+            <p className="text-sm text-muted-foreground">
+              Custom providers are disabled (`customProvidersEnabled: false`).
+            </p>
+          ) : settings.customProvidersActive.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Custom providers are enabled, but no valid active providers were found.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {settings.customProvidersActive.map((provider) => (
+                <div
+                  key={`${provider.name}-${provider.domain}`}
+                  className="rounded-md border p-3 text-sm"
+                >
+                  <div>
+                    <span className="text-muted-foreground">Name: </span>
+                    <span className="font-medium">{provider.name || "(missing)"}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">File type: </span>
+                    <span className="font-mono">{provider.formatHint || "(auto)"}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Domain: </span>
+                    <span className="text-muted-foreground font-mono break-all">{provider.domain || "(missing)"}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

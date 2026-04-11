@@ -18,6 +18,8 @@ func TestDefaultConfig(t *testing.T) {
 	assert.Equal(t, "info", cfg.LogLevel)
 	assert.Equal(t, "forms", cfg.AuthMethod)
 	assert.Equal(t, "/library", cfg.LibraryDir)
+	assert.False(t, cfg.CustomProvidersEnable)
+	assert.Empty(t, cfg.CustomProviders)
 }
 
 func TestLoad_Defaults(t *testing.T) {
@@ -31,7 +33,7 @@ func TestLoad_Defaults(t *testing.T) {
 func TestLoad_FromYAML(t *testing.T) {
 	dir := t.TempDir()
 	cfgPath := filepath.Join(dir, "config.yaml")
-	yaml := "port: 8080\nbindAddress: \"127.0.0.1\"\nlogLevel: \"debug\"\nlibraryDir: \"/books\"\n"
+	yaml := "port: 8080\nbindAddress: \"127.0.0.1\"\nlogLevel: \"debug\"\nlibraryDir: \"/books\"\ncustomProvidersEnabled: true\ncustomProviders:\n  - name: \"dlivros-test\"\n    domain: \"dlivros.com\"\n    formatHint: \"pdf\"\n"
 	require.NoError(t, os.WriteFile(cfgPath, []byte(yaml), 0644))
 
 	cfg, err := config.Load(dir, cfgPath)
@@ -40,6 +42,12 @@ func TestLoad_FromYAML(t *testing.T) {
 	assert.Equal(t, "127.0.0.1", cfg.BindAddress)
 	assert.Equal(t, "debug", cfg.LogLevel)
 	assert.Equal(t, "/books", cfg.LibraryDir)
+	assert.True(t, cfg.CustomProvidersEnable)
+	if assert.Len(t, cfg.CustomProviders, 1) {
+		assert.Equal(t, "dlivros-test", cfg.CustomProviders[0].Name)
+		assert.Equal(t, "dlivros.com", cfg.CustomProviders[0].Domain)
+		assert.Equal(t, "pdf", cfg.CustomProviders[0].FormatHint)
+	}
 }
 
 func TestLoad_EnvOverrides(t *testing.T) {
