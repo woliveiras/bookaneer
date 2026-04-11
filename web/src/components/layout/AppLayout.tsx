@@ -84,8 +84,8 @@ function Navigation() {
   ] as const
 
   return (
-    <nav className="container mx-auto px-4 overflow-x-auto" aria-label="Main navigation">
-      <ul className="flex gap-1 -mb-px min-w-max" role="tablist">
+    <nav className="container mx-auto overflow-x-auto px-4 sm:overflow-x-visible" aria-label="Main navigation">
+      <ul className="-mb-px flex min-w-max gap-1 sm:min-w-0 sm:flex-wrap" role="tablist">
         {navItems.map((item) => (
           <li key={item.to} role="presentation">
             <Link
