@@ -128,7 +128,11 @@ func calculateScore(r *SearchResult) int {
 		score += 50 // Open Library public scans resolved via Internet Archive
 	case "internet-archive":
 		score += 50 // Most reliable, legal
-	case "gutenberg-au", "gutenberg-ca", "dominio-publico", "biblioteca-digital-hispanica", "gallica", "projekt-gutenberg-de", "baen-free-library", "ccel", "sefaria", "ctext", "sacred-texts", "digital-comic-museum", "hathitrust":
+	case "dominio-publico":
+		score += 45 // Native search integration for Brazilian public-domain catalog
+	case "dominio-publico-fallback":
+		score += 30 // Contingency fallback when native source is unavailable
+	case "gutenberg-au", "gutenberg-ca", "biblioteca-digital-hispanica", "gallica", "projekt-gutenberg-de", "baen-free-library", "ccel", "sefaria", "ctext", "sacred-texts", "digital-comic-museum", "hathitrust":
 		score += 35 // Public/free catalogs discovered via constrained site search
 	case "libgen":
 		score += 40

@@ -43,6 +43,7 @@ import (
 	"github.com/woliveiras/bookaneer/internal/library/annas"
 	"github.com/woliveiras/bookaneer/internal/library/aozora"
 	"github.com/woliveiras/bookaneer/internal/library/archive"
+	"github.com/woliveiras/bookaneer/internal/library/dominiopublico"
 	"github.com/woliveiras/bookaneer/internal/library/gutendex"
 	"github.com/woliveiras/bookaneer/internal/library/libgen"
 	"github.com/woliveiras/bookaneer/internal/library/openlibrarypublic"
@@ -303,9 +304,10 @@ func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Confi
 		aozora.New(),
 		openlibrarypublic.New(),
 		archive.New(),
+		dominiopublico.New(),
 		sitesearch.New("gutenberg-au", "gutenberg.net.au", "html"),
 		sitesearch.New("gutenberg-ca", "gutenberg.ca", "html"),
-		sitesearch.New("dominio-publico", "dominiopublico.gov.br", "pdf"),
+		sitesearch.New("dominio-publico-fallback", "dominiopublico.gov.br", "pdf"),
 		sitesearch.New("biblioteca-digital-hispanica", "bdh.bne.es", "pdf"),
 		sitesearch.New("gallica", "gallica.bnf.fr", "pdf"),
 		sitesearch.New("projekt-gutenberg-de", "projekt-gutenberg.org", "html"),
