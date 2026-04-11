@@ -1,7 +1,6 @@
 services:
   bookaneer:
-    build: .
-    image: bookaneer:latest
+    image: ghcr.io/woliveiras/bookaneer:latest
     container_name: bookaneer
     ports:
       - "9090:9090"

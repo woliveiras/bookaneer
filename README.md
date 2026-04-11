@@ -1,6 +1,6 @@
 # Bookaneer
 
-A self-hosted ebook collection manager. Combines features from Readarr and LazyLibrarian into a single binary (~15 MB Docker image) targeting home users, NAS devices, and Raspberry Pi.
+A self-hosted ebook collection manager. Combines features from Readarr and LazyLibrarian into a single binary (~20 MB Docker image) targeting home users, NAS devices, and Raspberry Pi.
 
 <p align="center">
   <img src="assets/bookaneer_200.png" alt="Bookaneer Mascot" width="200">
@@ -21,12 +21,21 @@ A self-hosted ebook collection manager. Combines features from Readarr and LazyL
 docker run -d \
   --name bookaneer \
   -p 9090:9090 \
-  -v ./data:/data \
+  -v bookaneer_data:/data \
   -v /path/to/books:/library \
-  bookaneer/bookaneer:latest
+  --restart unless-stopped \
+  ghcr.io/woliveiras/bookaneer:latest
 ```
 
-Open `http://localhost:9090` to access the web UI.
+Open `http://localhost:9090` to access the web UI. The admin password is printed in the container logs:
+
+```bash
+docker logs bookaneer 2>&1 | grep "Password:"
+```
+
+To access from another device on your network, use `http://<your-ip>:9090`.
+
+See the full [Docker Deployment Guide](docs/docker-deployment.md) for Docker Compose setup, environment variables, backups, and troubleshooting.
 
 ## API Documentation (Swagger)
 
@@ -60,6 +69,7 @@ Bookaneer exposes an [OPDS 1.2](https://opds-spec.org/) catalog so you can brows
 
 ## Documentation
 
+- [Docker Deployment Guide](docs/docker-deployment.md)
 - [Developer Setup](docs/dev-setup.md)
 - [Architecture Overview](docs/architecture-overview.md)
 - [API Specification](docs/api-spec.md)
