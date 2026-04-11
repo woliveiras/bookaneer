@@ -28,6 +28,36 @@ docker run -d \
 
 Open `http://localhost:9090` to access the web UI.
 
+## API Documentation (Swagger)
+
+Bookaneer ships with built-in API documentation via Swagger UI:
+
+- **Swagger UI**: `http://localhost:9090/api/v1/docs`
+- **OpenAPI spec (JSON)**: `http://localhost:9090/api/v1/docs/openapi.json`
+
+## OPDS Catalog
+
+Bookaneer exposes an [OPDS 1.2](https://opds-spec.org/) catalog so you can browse and download books from any OPDS-compatible reading app (KOReader, Moon+ Reader, Librera, Calibre, etc.).
+
+**Base URL:** `http://localhost:9090/opds`
+
+### Available feeds
+
+| Feed | URL | Description |
+|------|-----|-------------|
+| Root | `/opds` | Navigation catalog (entry point) |
+| By Author | `/opds/authors` | Browse authors who have files |
+| Author books | `/opds/authors/:id` | Books by a specific author |
+| Recent | `/opds/recent` | Recently added books |
+| Search | `/opds/search?q=term` | Search books by title or author |
+
+### Setup in reading apps
+
+1. Open your OPDS-compatible reading app
+2. Add a new OPDS catalog/library
+3. Enter the URL: `http://<your-server>:9090/opds`
+4. Books with files will appear for download in EPUB, PDF, and other formats
+
 ## Documentation
 
 - [Developer Setup](docs/dev-setup.md)
