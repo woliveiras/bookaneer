@@ -141,7 +141,7 @@ func (h *SystemHandler) Backup(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "backup database: "+err.Error())
 	}
-	defer os.Remove(dbBackupPath) // Clean up raw db file after zipping
+	defer func() { _ = os.Remove(dbBackupPath) }() // Clean up raw db file after zipping
 
 	// Create zip
 	zipFile, err := os.Create(zipPath)
@@ -152,37 +152,37 @@ func (h *SystemHandler) Backup(c echo.Context) error {
 	zw := zip.NewWriter(zipFile)
 	dbFile, err := os.Open(dbBackupPath)
 	if err != nil {
-		zipFile.Close()
+		_ = zipFile.Close()
 		return echo.NewHTTPError(http.StatusInternalServerError, "open backup: "+err.Error())
 	}
 
 	w, err := zw.Create("bookaneer.db")
 	if err != nil {
-		dbFile.Close()
-		zipFile.Close()
+		_ = dbFile.Close()
+		_ = zipFile.Close()
 		return echo.NewHTTPError(http.StatusInternalServerError, "create zip entry: "+err.Error())
 	}
 	if _, err := io.Copy(w, dbFile); err != nil {
-		dbFile.Close()
-		zipFile.Close()
+		_ = dbFile.Close()
+		_ = zipFile.Close()
 		return echo.NewHTTPError(http.StatusInternalServerError, "write zip: "+err.Error())
 	}
-	dbFile.Close()
+	_ = dbFile.Close()
 
 	// Include config.yaml if present
 	configPath := filepath.Join(h.cfg.DataDir, "config.yaml")
 	if f, err := os.Open(configPath); err == nil {
 		w, err := zw.Create("config.yaml")
 		if err == nil {
-			io.Copy(w, f)
+			_, _ = io.Copy(w, f)
 		}
-		f.Close()
+		_ = f.Close()
 	}
 
-	zw.Close()
-	zipFile.Close()
+	_ = zw.Close()
+	_ = zipFile.Close()
 
-	defer os.Remove(zipPath)
+	defer func() { _ = os.Remove(zipPath) }()
 
 	c.Response().Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="bookaneer-%s.zip"`, ts))
 	return c.File(zipPath)
@@ -204,27 +204,27 @@ func (h *SystemHandler) Restore(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "open upload: "+err.Error())
 	}
-	defer src.Close()
+	defer func() { _ = src.Close() }()
 
 	// Save to temp file for zip reading
 	tmpFile, err := os.CreateTemp("", "bookaneer-restore-*.zip")
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "create temp: "+err.Error())
 	}
-	defer os.Remove(tmpFile.Name())
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 	if _, err := io.Copy(tmpFile, src); err != nil {
-		tmpFile.Close()
+		_ = tmpFile.Close()
 		return echo.NewHTTPError(http.StatusInternalServerError, "save upload: "+err.Error())
 	}
-	tmpFile.Close()
+	_ = tmpFile.Close()
 
 	// Open as zip
 	zr, err := zip.OpenReader(tmpFile.Name())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid zip file")
 	}
-	defer zr.Close()
+	defer func() { _ = zr.Close() }()
 
 	// Extract database file
 	var dbFound bool
@@ -243,12 +243,12 @@ func (h *SystemHandler) Restore(c echo.Context) error {
 			destPath := filepath.Join(h.cfg.DataDir, "bookaneer-restore.db")
 			dest, err := os.Create(destPath)
 			if err != nil {
-				rc.Close()
+				_ = rc.Close()
 				return echo.NewHTTPError(http.StatusInternalServerError, "create restore db: "+err.Error())
 			}
 			_, err = io.Copy(dest, rc)
-			rc.Close()
-			dest.Close()
+			_ = rc.Close()
+			_ = dest.Close()
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "write restore db: "+err.Error())
 			}
@@ -263,12 +263,12 @@ func (h *SystemHandler) Restore(c echo.Context) error {
 			destPath := filepath.Join(h.cfg.DataDir, "config.yaml.restored")
 			dest, err := os.Create(destPath)
 			if err != nil {
-				rc.Close()
+				_ = rc.Close()
 				continue
 			}
-			io.Copy(dest, rc)
-			rc.Close()
-			dest.Close()
+			_, _ = io.Copy(dest, rc)
+			_ = rc.Close()
+			_ = dest.Close()
 		}
 	}
 

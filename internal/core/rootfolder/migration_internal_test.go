@@ -137,7 +137,7 @@ func TestCopyDir_DstMkdirFails(t *testing.T) {
 	base := t.TempDir()
 	readOnly := filepath.Join(base, "readonly")
 	require.NoError(t, os.Mkdir(readOnly, 0555))
-	t.Cleanup(func() { os.Chmod(readOnly, 0755) })
+	t.Cleanup(func() { _ = os.Chmod(readOnly, 0755) })
 
 	dst := filepath.Join(readOnly, "dst")
 	err := copyDir(src, dst)
@@ -293,7 +293,7 @@ func TestMoveRootFolder_NewDirCreateFails(t *testing.T) {
 	base := t.TempDir()
 	readOnly := filepath.Join(base, "readonly")
 	require.NoError(t, os.Mkdir(readOnly, 0555))
-	t.Cleanup(func() { os.Chmod(readOnly, 0755) })
+	t.Cleanup(func() { _ = os.Chmod(readOnly, 0755) })
 
 	newPath := filepath.Join(readOnly, "newlibrary")
 	_, err = svc.MoveRootFolder(ctx, rf.ID, newPath)
@@ -413,7 +413,7 @@ func TestCopyDir_ReadDirFails(t *testing.T) {
 	// mode 0100 (execute only, no read): os.Stat still succeeds (uses parent's
 	// execute bit), but os.ReadDir fails because it needs the read bit.
 	require.NoError(t, os.Chmod(src, 0100))
-	t.Cleanup(func() { os.Chmod(src, 0755) }) // restore so t.TempDir cleanup works
+	t.Cleanup(func() { _ = os.Chmod(src, 0755) }) // restore so t.TempDir cleanup works
 
 	dst := filepath.Join(t.TempDir(), "dst")
 	err := copyDir(src, dst)

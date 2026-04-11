@@ -105,7 +105,7 @@ func TestBackup(t *testing.T) {
 			rc, err := f.Open()
 			require.NoError(t, err)
 			data, _ := io.ReadAll(rc)
-			rc.Close()
+			_ = rc.Close()
 			assert.NotEmpty(t, data)
 		}
 	}
@@ -135,16 +135,16 @@ func TestRestore_ValidZip(t *testing.T) {
 	zw := zip.NewWriter(&buf)
 	w, err := zw.Create("bookaneer.db")
 	require.NoError(t, err)
-	w.Write([]byte("SQLite format 3\x00")) // Fake DB header
-	zw.Close()
+	_, _ = w.Write([]byte("SQLite format 3\x00")) // Fake DB header
+	_ = zw.Close()
 
 	// Create multipart form
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	part, err := writer.CreateFormFile("backup", "backup.zip")
 	require.NoError(t, err)
-	part.Write(buf.Bytes())
-	writer.Close()
+	_, _ = part.Write(buf.Bytes())
+	_ = writer.Close()
 
 	req := httptest.NewRequest(http.MethodPost, "/system/restore", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -156,7 +156,7 @@ func TestRestore_ValidZip(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rec.Code)
 
 	var resp map[string]string
-	json.Unmarshal(rec.Body.Bytes(), &resp)
+	_ = json.Unmarshal(rec.Body.Bytes(), &resp)
 	assert.Equal(t, "ok", resp["status"])
 
 	// Verify the restore file was created
@@ -172,8 +172,8 @@ func TestRestore_InvalidZip(t *testing.T) {
 	writer := multipart.NewWriter(body)
 	part, err := writer.CreateFormFile("backup", "notazip.txt")
 	require.NoError(t, err)
-	part.Write([]byte("this is not a zip file"))
-	writer.Close()
+	_, _ = part.Write([]byte("this is not a zip file"))
+	_ = writer.Close()
 
 	req := httptest.NewRequest(http.MethodPost, "/system/restore", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -194,15 +194,15 @@ func TestRestore_ZipWithoutDB(t *testing.T) {
 	zw := zip.NewWriter(&buf)
 	w, err := zw.Create("other.txt")
 	require.NoError(t, err)
-	w.Write([]byte("hello"))
-	zw.Close()
+	_, _ = w.Write([]byte("hello"))
+	_ = zw.Close()
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	part, err := writer.CreateFormFile("backup", "backup.zip")
 	require.NoError(t, err)
-	part.Write(buf.Bytes())
-	writer.Close()
+	_, _ = part.Write(buf.Bytes())
+	_ = writer.Close()
 
 	req := httptest.NewRequest(http.MethodPost, "/system/restore", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())

@@ -107,7 +107,7 @@ func TestLoad_EmptyDataDir_DefaultsToData(t *testing.T) {
 	oldWd, _ := os.Getwd()
 	dir := t.TempDir()
 	require.NoError(t, os.Chdir(dir))
-	t.Cleanup(func() { os.Chdir(oldWd) })
+	t.Cleanup(func() { _ = os.Chdir(oldWd) })
 
 	cfg, err := config.Load("", "")
 	require.NoError(t, err)

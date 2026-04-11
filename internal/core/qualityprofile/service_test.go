@@ -271,7 +271,7 @@ func TestList_Empty(t *testing.T) {
 func TestFindByID_DBClosed(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	svc := qualityprofile.New(db)
-	db.Close()
+	_ = db.Close()
 
 	_, err := svc.FindByID(context.Background(), 1)
 	require.Error(t, err)
@@ -281,7 +281,7 @@ func TestFindByID_DBClosed(t *testing.T) {
 func TestList_DBClosed(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	svc := qualityprofile.New(db)
-	db.Close()
+	_ = db.Close()
 
 	_, err := svc.List(context.Background())
 	require.Error(t, err)
@@ -290,7 +290,7 @@ func TestList_DBClosed(t *testing.T) {
 func TestCreate_DBClosed(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	svc := qualityprofile.New(db)
-	db.Close()
+	_ = db.Close()
 
 	_, err := svc.Create(context.Background(), qualityprofile.CreateQualityProfileInput{Name: "Test"})
 	require.Error(t, err)

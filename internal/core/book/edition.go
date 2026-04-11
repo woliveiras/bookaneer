@@ -50,7 +50,7 @@ func (s *Service) GetWithEditions(ctx context.Context, id int64) (*BookWithEditi
 	if err != nil {
 		return nil, fmt.Errorf("get book files: %w", err)
 	}
-	defer fileRows.Close()
+	defer func() { _ = fileRows.Close() }()
 
 	for fileRows.Next() {
 		var f BookFile

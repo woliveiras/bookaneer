@@ -22,7 +22,7 @@ import (
 // enabling tests of error-handling paths without modifying testutil.OpenTestDB.
 func closedDB() *sql.DB {
 	db, _ := sql.Open("sqlite", ":memory:")
-	db.Close()
+	_ = db.Close()
 	return db
 }
 
@@ -318,7 +318,7 @@ func TestRegisterWantedHandlers_MissingBookSearch_Error(t *testing.T) {
 	handler := s.handlers[CommandMissingBookSearch]
 	s.mu.RUnlock()
 
-	db.Close() // close DB so SearchAllWanted → GetWantedBooks fails
+	_ = db.Close() // close DB so SearchAllWanted → GetWantedBooks fails
 	cmd := &Command{ID: "test-missing-err", Payload: map[string]any{}}
 	err := handler(context.Background(), cmd)
 	require.Error(t, err)

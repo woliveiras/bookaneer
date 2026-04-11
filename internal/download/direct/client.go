@@ -98,7 +98,7 @@ func (c *Client) Test(ctx context.Context) error {
 	if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
 		return fmt.Errorf("cannot write to download directory: %w", err)
 	}
-	os.Remove(testFile)
+	_ = os.Remove(testFile)
 
 	return nil
 }

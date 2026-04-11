@@ -66,7 +66,7 @@ func (h *ReaderHandler) ServeContent(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to open file")
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// Get file info for size
 	stat, err := file.Stat()

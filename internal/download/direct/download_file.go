@@ -65,7 +65,7 @@ func (c *Client) downloadFile(ctx context.Context, dl *downloadItem, headers map
 		c.updateStatus(dl.id, download.StatusFailed, fmt.Sprintf("cannot create file: %v", err))
 		return
 	}
-	defer outFile.Close()
+	defer func() { _ = outFile.Close() }()
 
 	// Download with progress tracking
 	c.mu.Lock()

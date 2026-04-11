@@ -66,7 +66,7 @@ func (e *Engine) LoadSettings(ctx context.Context) (*Settings, error) {
 	if err != nil {
 		return nil, fmt.Errorf("query naming settings: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	s := defaultSettings
 	for rows.Next() {
@@ -420,10 +420,10 @@ func (e *Engine) renameAll(ctx context.Context, dryRun bool) (*RenameResult, err
 		files = append(files, fi)
 	}
 	if err := rows.Err(); err != nil {
-		rows.Close()
+		_ = rows.Close()
 		return nil, fmt.Errorf("iterate book files: %w", err)
 	}
-	rows.Close()
+	_ = rows.Close()
 
 	result := &RenameResult{Total: len(files)}
 

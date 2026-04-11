@@ -82,7 +82,7 @@ func (p *Provider) Search(ctx context.Context, query string) ([]library.SearchRe
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected status: %d", resp.StatusCode)
@@ -103,7 +103,7 @@ func (p *Provider) Search(ctx context.Context, query string) ([]library.SearchRe
 
 		year := 0
 		if len(doc.Date) >= 4 {
-			fmt.Sscanf(doc.Date[:4], "%d", &year)
+			_, _ = fmt.Sscanf(doc.Date[:4], "%d", &year)
 		}
 
 		languages := parseStringOrSlice(doc.Language)
@@ -174,7 +174,7 @@ func (p *Provider) getDownloadURL(identifier, format string) string {
 	if err != nil {
 		return fmt.Sprintf("%s/download/%s/%s.%s", p.baseURL, identifier, identifier, format)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Sprintf("%s/download/%s/%s.%s", p.baseURL, identifier, identifier, format)

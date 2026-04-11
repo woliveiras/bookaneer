@@ -75,7 +75,7 @@ func (c *Client) Test(ctx context.Context) error {
 		if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
 			return fmt.Errorf("cannot write to folder %s: %w", folder, err)
 		}
-		os.Remove(testFile)
+		_ = os.Remove(testFile)
 	}
 	return nil
 }
@@ -148,10 +148,10 @@ func (c *Client) Add(ctx context.Context, item download.AddItem) (string, error)
 	if err != nil {
 		return "", fmt.Errorf("create file: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	if _, err := io.Copy(f, resp.Body); err != nil {
-		os.Remove(targetPath)
+		_ = os.Remove(targetPath)
 		return "", fmt.Errorf("write file: %w", err)
 	}
 

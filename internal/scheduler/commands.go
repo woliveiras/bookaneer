@@ -63,7 +63,7 @@ func (s *Scheduler) ListCommands(ctx context.Context, limit int) ([]Command, err
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	return scanCommands(rows)
 }
@@ -79,7 +79,7 @@ func (s *Scheduler) GetActiveCommands(ctx context.Context) ([]Command, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	return scanCommands(rows)
 }

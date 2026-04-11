@@ -93,7 +93,7 @@ func TestDeleteAuthorFiles_DBError(t *testing.T) {
 
 	// Close the DB so the root_folder query returns a non-ErrNoRows error,
 	// which surfaces the "get root folder" error branch.
-	db.Close()
+	_ = db.Close()
 
 	a := &Author{ID: 1, Name: "Ghost"}
 	err := svc.deleteAuthorFiles(ctx, a)

@@ -25,14 +25,14 @@ func Open(path string) (*sql.DB, error) {
 	db.SetConnMaxLifetime(0)
 
 	if err := db.Ping(); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("ping database: %w", err)
 	}
 
 	// Enable foreign key constraints (must be done per-connection)
 	// modernc.org/sqlite doesn't support this via DSN
 	if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("enable foreign keys: %w", err)
 	}
 

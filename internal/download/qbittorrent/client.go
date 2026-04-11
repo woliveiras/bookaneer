@@ -106,7 +106,7 @@ func (c *Client) Add(ctx context.Context, item download.AddItem) (string, error)
 	if err != nil {
 		return "", fmt.Errorf("%w: %v", download.ErrConnectionFailed, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("add torrent failed: status %d", resp.StatusCode)
@@ -137,7 +137,7 @@ func (c *Client) Remove(ctx context.Context, id string, deleteData bool) error {
 	if err != nil {
 		return fmt.Errorf("%w: %v", download.ErrConnectionFailed, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	return nil
 }

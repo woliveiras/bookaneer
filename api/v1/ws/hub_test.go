@@ -37,7 +37,7 @@ func TestHub_BroadcastAndClientCount(t *testing.T) {
 	hub.Broadcast("test_event", map[string]string{"key": "value"})
 
 	// Read the message from the client
-	conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	_ = conn.SetReadDeadline(time.Now().Add(2 * time.Second))
 	_, msg, err := conn.ReadMessage()
 	require.NoError(t, err)
 	assert.Contains(t, string(msg), `"event":"test_event"`)
@@ -57,11 +57,11 @@ func TestHub_MultipleClients(t *testing.T) {
 	// Connect two clients
 	conn1, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
 	require.NoError(t, err)
-	defer conn1.Close()
+	defer func() { _ = conn1.Close() }()
 
 	conn2, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
 	require.NoError(t, err)
-	defer conn2.Close()
+	defer func() { _ = conn2.Close() }()
 
 	time.Sleep(50 * time.Millisecond)
 	assert.Equal(t, 2, hub.ClientCount())
@@ -70,7 +70,7 @@ func TestHub_MultipleClients(t *testing.T) {
 
 	// Both clients should receive the message
 	for _, conn := range []*websocket.Conn{conn1, conn2} {
-		conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+		_ = conn.SetReadDeadline(time.Now().Add(2 * time.Second))
 		_, msg, err := conn.ReadMessage()
 		require.NoError(t, err)
 		assert.Contains(t, string(msg), `"event":"hello"`)
@@ -92,7 +92,7 @@ func TestHub_ClientDisconnect(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 	assert.Equal(t, 1, hub.ClientCount())
 
-	conn.Close()
+	_ = conn.Close()
 	time.Sleep(100 * time.Millisecond)
 	assert.Equal(t, 0, hub.ClientCount())
 }

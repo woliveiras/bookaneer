@@ -62,7 +62,7 @@ func (s *Service) ListBookFiles(ctx context.Context, bookID int64) ([]BookFile, 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var files []BookFile
 	for rows.Next() {
@@ -129,7 +129,7 @@ func (s *Service) ListBookmarks(ctx context.Context, bookFileID, userID int64) (
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var bookmarks []Bookmark
 	for rows.Next() {

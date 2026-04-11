@@ -76,7 +76,7 @@ func (s *Service) FetchAndCache(ctx context.Context, coverType CoverType, id str
 	if err != nil {
 		return "", fmt.Errorf("fetch cover: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("fetch cover: status %d", resp.StatusCode)
@@ -98,12 +98,12 @@ func (s *Service) FetchAndCache(ctx context.Context, coverType CoverType, id str
 		err = closeErr
 	}
 	if err != nil {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		return "", fmt.Errorf("write cover: %w", err)
 	}
 
 	if err := os.Rename(tmpPath, cachePath); err != nil {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		return "", fmt.Errorf("rename temp file: %w", err)
 	}
 

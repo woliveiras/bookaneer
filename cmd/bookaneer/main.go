@@ -409,7 +409,7 @@ func serveFrontend(e *echo.Echo) error {
 		}
 
 		if f, err := distFS.Open(path[1:]); err == nil {
-			f.Close()
+			_ = f.Close()
 			fileServer.ServeHTTP(w, r)
 			return
 		}

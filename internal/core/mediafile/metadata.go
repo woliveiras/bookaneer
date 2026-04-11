@@ -76,7 +76,7 @@ func extractEPUBMetadata(path string) (*Metadata, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open epub: %w", err)
 	}
-	defer r.Close()
+	defer func() { _ = r.Close() }()
 
 	// Find OPF path from container.xml
 	opfPath, err := findOPFPath(&r.Reader)
@@ -94,7 +94,7 @@ func extractEPUBMetadata(path string) (*Metadata, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read opf: %w", err)
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 
 	data, err := io.ReadAll(io.LimitReader(rc, 1<<20)) // 1MB limit
 	if err != nil {
@@ -159,7 +159,7 @@ func findOPFPath(r *zip.Reader) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 
 	data, err := io.ReadAll(io.LimitReader(rc, 1<<20))
 	if err != nil {

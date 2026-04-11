@@ -43,7 +43,7 @@ func (s *Service) List(ctx context.Context) ([]QualityProfile, error) {
 	if err != nil {
 		return nil, fmt.Errorf("list quality profiles: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var profiles []QualityProfile
 	for rows.Next() {

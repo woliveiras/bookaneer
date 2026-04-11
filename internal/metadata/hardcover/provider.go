@@ -315,7 +315,7 @@ func (p *Provider) doGraphQL(ctx context.Context, query string, variables map[st
 	if err != nil {
 		return fmt.Errorf("do request: %w", metadata.ErrProviderUnavailable)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	switch resp.StatusCode {
 	case http.StatusOK:

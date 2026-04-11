@@ -307,7 +307,7 @@ func TestCreate_MkdirAllFails(t *testing.T) {
 	base := t.TempDir()
 	readOnly := filepath.Join(base, "readonly")
 	require.NoError(t, os.Mkdir(readOnly, 0555))
-	t.Cleanup(func() { os.Chmod(readOnly, 0755) }) // restore for cleanup
+	t.Cleanup(func() { _ = os.Chmod(readOnly, 0755) }) // restore for cleanup
 
 	path := filepath.Join(readOnly, "newlib")
 	_, err := s.Create(ctx, CreateRootFolderInput{Path: path, Name: "Test"})
@@ -332,7 +332,7 @@ func TestUpdate_MkdirAllFails(t *testing.T) {
 	base := t.TempDir()
 	readOnly := filepath.Join(base, "readonly")
 	require.NoError(t, os.Mkdir(readOnly, 0555))
-	t.Cleanup(func() { os.Chmod(readOnly, 0755) })
+	t.Cleanup(func() { _ = os.Chmod(readOnly, 0755) })
 
 	newPath := filepath.Join(readOnly, "newlib")
 	_, err = s.Update(ctx, created.ID, UpdateRootFolderInput{Path: &newPath})

@@ -179,16 +179,16 @@ func (c *Client) GetQueue(ctx context.Context) ([]download.ItemStatus, error) {
 				}
 
 				if pct, ok := slot["percentage"].(string); ok {
-					fmt.Sscanf(pct, "%f", &item.Progress)
+					_, _ = fmt.Sscanf(pct, "%f", &item.Progress)
 				}
 				if mb, ok := slot["mb"].(string); ok {
 					var mbFloat float64
-					fmt.Sscanf(mb, "%f", &mbFloat)
+					_, _ = fmt.Sscanf(mb, "%f", &mbFloat)
 					item.Size = int64(mbFloat * 1024 * 1024)
 				}
 				if mbleft, ok := slot["mbleft"].(string); ok {
 					var mbleftFloat float64
-					fmt.Sscanf(mbleft, "%f", &mbleftFloat)
+					_, _ = fmt.Sscanf(mbleft, "%f", &mbleftFloat)
 					item.DownloadedSize = item.Size - int64(mbleftFloat*1024*1024)
 				}
 				item.Category = getString(slot, "cat")

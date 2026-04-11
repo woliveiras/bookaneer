@@ -139,7 +139,7 @@ func (s *Service) List(ctx context.Context, filter ListAuthorsFilter) ([]Author,
 	if err != nil {
 		return nil, 0, fmt.Errorf("list authors: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var authors []Author
 	for rows.Next() {
