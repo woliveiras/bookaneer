@@ -20,6 +20,19 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Build frontend (required for go:embed)
+        run: pnpm --prefix web install --frozen-lockfile && pnpm --prefix web build
+
       - name: Run tests
         run: go test -race -count=1 ./...
 
