@@ -82,3 +82,12 @@ func buildAuthorSavePath(downloadDir, authorName, filename string) (authorDir, s
 	savePath = filepath.Join(authorDir, filename)
 	return
 }
+
+// truncate shortens a string to maxLen runes, adding "…" if truncated.
+func truncate(s string, maxLen int) string {
+	runes := []rune(s)
+	if len(runes) <= maxLen {
+		return s
+	}
+	return string(runes[:maxLen]) + "…"
+}

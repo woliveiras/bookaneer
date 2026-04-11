@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/woliveiras/bookaneer/internal/core/book"
+	"github.com/woliveiras/bookaneer/internal/core/mediafile"
 	"github.com/woliveiras/bookaneer/internal/core/naming"
 )
 
@@ -94,6 +95,31 @@ func (s *Service) importCompletedDownload(ctx context.Context, queueID int64, so
 		hash = hashFile(destPath)
 	}
 
+	// Extract metadata from the file (best effort)
+	if meta, err := mediafile.ExtractMetadata(destPath); err == nil && meta != nil {
+		slog.Debug("Extracted metadata from file",
+			"bookId", bookID,
+			"title", meta.Title,
+			"authors", meta.Authors,
+			"isbn", meta.ISBN,
+		)
+
+		// Enrich book record with metadata if fields are empty
+		if meta.ISBN != "" && b.ISBN13 == "" {
+			_, _ = s.db.ExecContext(ctx, `UPDATE books SET isbn13 = ? WHERE id = ? AND (isbn13 IS NULL OR isbn13 = '')`, meta.ISBN, bookID)
+		}
+		if meta.Language != "" {
+			s.recordHistory(ctx, bookID, b.AuthorID, "metadataExtracted", b.Title, format, map[string]any{
+				"language":    meta.Language,
+				"publisher":   meta.Publisher,
+				"isbn":        meta.ISBN,
+				"description": truncate(meta.Description, 500),
+			})
+		}
+	} else if err != nil {
+		slog.Debug("Could not extract metadata from file", "path", destPath, "error", err)
+	}
+
 	// Add to book_files
 	_, err = s.db.ExecContext(ctx, `
 		INSERT INTO book_files (book_id, path, relative_path, size, format, quality, hash)
@@ -122,6 +148,18 @@ func (s *Service) importCompletedDownload(ctx context.Context, queueID int64, so
 		// Try to remove parent directory if empty (best effort)
 		sourceDir := filepath.Dir(sourcePath)
 		_ = os.Remove(sourceDir)
+	}
+
+	// Trigger library scan on the root folder to pick up any additional changes
+	if s.scanner != nil {
+		go func() {
+			scanCtx := context.Background()
+			if _, err := s.scanner.ScanPath(scanCtx, rootPath); err != nil {
+				slog.Warn("Post-import library scan failed", "rootPath", rootPath, "error", err)
+			} else {
+				slog.Debug("Post-import library scan completed", "rootPath", rootPath)
+			}
+		}()
 	}
 
 	return nil

@@ -42,7 +42,7 @@ func TestProcessDownloads_ImportsCompletedFile(t *testing.T) {
 
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db))
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
 	ctx := context.Background()
 
 	result, err := svc.ProcessDownloads(ctx)
@@ -88,7 +88,7 @@ func TestProcessDownloads_MarksFailedWhenFileGone(t *testing.T) {
 
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db))
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
 	ctx := context.Background()
 
 	result, err := svc.ProcessDownloads(ctx)

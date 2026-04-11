@@ -3,6 +3,7 @@ import { AuthLayout } from "../components/layout/AppLayout"
 import { DownloadClientList } from "../containers/download/DownloadClientList"
 import { IndexerList } from "../containers/indexers/IndexerList"
 import { IndexerOptions } from "../containers/indexers/IndexerOptions"
+import { NamingSettings } from "../containers/settings/NamingSettings"
 import { RootFolderList } from "../containers/settings/RootFolderSettings"
 import { SettingsGeneral } from "../containers/settings/SettingsGeneral"
 
@@ -13,6 +14,7 @@ export function SettingsPage() {
       <div className="space-y-4">
         <GeneralSettings />
         <RootFolderSettings />
+        <NamingSettingsSection />
         <IndexerSettings />
         <DownloadClientSettings />
       </div>
@@ -56,6 +58,27 @@ function RootFolderSettings() {
       {isOpen && (
         <div className="p-4 border-t">
           <RootFolderList />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function NamingSettingsSection() {
+  const [isOpen, setIsOpen] = useState(false)
+  return (
+    <div className="border rounded-lg">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-full p-4 text-left hover:bg-accent/50 transition-colors"
+      >
+        <span className="text-lg font-semibold">File Naming</span>
+        <span className="text-muted-foreground">{isOpen ? "▼" : "▶"}</span>
+      </button>
+      {isOpen && (
+        <div className="p-4 border-t">
+          <NamingSettings />
         </div>
       )}
     </div>

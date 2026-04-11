@@ -40,7 +40,7 @@ func TestGetHistory_WithEvents(t *testing.T) {
 
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db))
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
 	ctx := context.Background()
 
 	items, err := svc.GetHistory(ctx, 50, "")
@@ -65,7 +65,7 @@ func TestGetHistory_FilterByEventType(t *testing.T) {
 
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db))
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
 	ctx := context.Background()
 
 	items, err := svc.GetHistory(ctx, 50, "grabbed")
@@ -86,7 +86,7 @@ func TestGetHistory_Limit(t *testing.T) {
 
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db))
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
 	ctx := context.Background()
 
 	items, err := svc.GetHistory(ctx, 3, "")
@@ -109,7 +109,7 @@ func TestAddAndRemoveBlocklist(t *testing.T) {
 
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db))
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
 	ctx := context.Background()
 
 	err := svc.AddToBlocklist(ctx, bookID, "Bad Release", "epub", "low quality")
@@ -145,7 +145,7 @@ func TestGetHistory_ZeroLimitUsesDefault(t *testing.T) {
 
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db))
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
 	ctx := context.Background()
 
 	// limit=0 should silently default to 50.
@@ -170,7 +170,7 @@ func TestGetHistory_NullBookAndAuthor(t *testing.T) {
 
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db))
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
 	ctx := context.Background()
 
 	items, err := svc.GetHistory(ctx, 50, "")

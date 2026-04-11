@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -86,6 +88,35 @@ func (e *Engine) LoadSettings(ctx context.Context) (*Settings, error) {
 		}
 	}
 	return &s, rows.Err()
+}
+
+// SaveSettings persists naming settings to the config table.
+func (e *Engine) SaveSettings(ctx context.Context, s *Settings) error {
+	boolStr := func(b bool) string {
+		if b {
+			return "1"
+		}
+		return "0"
+	}
+
+	pairs := []struct{ key, value string }{
+		{"naming.enabled", boolStr(s.Enabled)},
+		{"naming.authorFolderFormat", s.AuthorFolderFormat},
+		{"naming.bookFileFormat", s.BookFileFormat},
+		{"naming.replaceSpaces", boolStr(s.ReplaceSpaces)},
+		{"naming.colonReplacement", s.ColonReplacement},
+	}
+
+	for _, p := range pairs {
+		_, err := e.db.ExecContext(ctx,
+			`INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)`,
+			p.key, p.value,
+		)
+		if err != nil {
+			return fmt.Errorf("save naming setting %s: %w", p.key, err)
+		}
+	}
+	return nil
 }
 
 // Format builds the full destination path for a book file.
@@ -296,4 +327,155 @@ func IsValidTemplate(tmpl string) bool {
 		}
 	}
 	return true
+}
+
+// RenameResult holds the results of a batch rename operation.
+type RenameResult struct {
+	Total   int           `json:"total"`
+	Renamed int           `json:"renamed"`
+	Skipped int           `json:"skipped"`
+	Errors  []string      `json:"errors,omitempty"`
+	Files   []RenamedFile `json:"files,omitempty"`
+}
+
+// RenamedFile represents a single file rename operation.
+type RenamedFile struct {
+	BookID  int64  `json:"bookId"`
+	OldPath string `json:"oldPath"`
+	NewPath string `json:"newPath"`
+}
+
+// PreviewRenameAll returns what all files would be renamed to without actually renaming.
+func (e *Engine) PreviewRenameAll(ctx context.Context) (*RenameResult, error) {
+	return e.renameAll(ctx, true)
+}
+
+// RenameAll renames all library files according to current naming settings.
+func (e *Engine) RenameAll(ctx context.Context) (*RenameResult, error) {
+	return e.renameAll(ctx, false)
+}
+
+func (e *Engine) renameAll(ctx context.Context, dryRun bool) (*RenameResult, error) {
+	settings, err := e.LoadSettings(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("load naming settings: %w", err)
+	}
+
+	rows, err := e.db.QueryContext(ctx, `
+		SELECT bf.id, bf.book_id, bf.path, bf.format,
+		       b.title, COALESCE(b.release_date, ''),
+		       a.name, COALESCE(a.sort_name, ''),
+		       COALESCE(s.title, ''), COALESCE(sb.position, ''),
+		       rf.path as root_path
+		FROM book_files bf
+		JOIN books b ON bf.book_id = b.id
+		JOIN authors a ON b.author_id = a.id
+		LEFT JOIN series_books sb ON sb.book_id = b.id
+		LEFT JOIN series s ON sb.series_id = s.id
+		JOIN root_folders rf ON bf.path LIKE rf.path || '%'
+		ORDER BY bf.id
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("query book files: %w", err)
+	}
+
+	type fileInfo struct {
+		id       int64
+		bookID   int64
+		path     string
+		rootPath string
+		nc       Context
+	}
+
+	var files []fileInfo
+	for rows.Next() {
+		var fi fileInfo
+		var format, title, releaseDate, authorName, sortAuthor, seriesTitle, seriesPos string
+		if err := rows.Scan(
+			&fi.id, &fi.bookID, &fi.path, &format,
+			&title, &releaseDate,
+			&authorName, &sortAuthor,
+			&seriesTitle, &seriesPos,
+			&fi.rootPath,
+		); err != nil {
+			slog.Warn("Failed to scan book file for rename", "error", err)
+			continue
+		}
+
+		year := ""
+		if len(releaseDate) >= 4 {
+			year = releaseDate[:4]
+		}
+
+		fi.nc = Context{
+			Author:         authorName,
+			SortAuthor:     sortAuthor,
+			Title:          title,
+			Series:         seriesTitle,
+			SeriesPosition: seriesPos,
+			Year:           year,
+			Format:         format,
+			OriginalName:   filepath.Base(fi.path),
+		}
+		files = append(files, fi)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, fmt.Errorf("iterate book files: %w", err)
+	}
+	rows.Close()
+
+	result := &RenameResult{Total: len(files)}
+
+	for _, fi := range files {
+		named := e.Format(fi.rootPath, fi.nc, settings)
+
+		if fi.path == named.FullPath {
+			result.Skipped++
+			continue
+		}
+
+		result.Files = append(result.Files, RenamedFile{
+			BookID:  fi.bookID,
+			OldPath: fi.path,
+			NewPath: named.FullPath,
+		})
+
+		if dryRun {
+			result.Renamed++
+			continue
+		}
+
+		// Create destination directory
+		destDir := filepath.Dir(named.FullPath)
+		if err := os.MkdirAll(destDir, 0755); err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("create dir for file %d: %v", fi.id, err))
+			continue
+		}
+
+		// Rename file on disk
+		if err := os.Rename(fi.path, named.FullPath); err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("rename file %d: %v", fi.id, err))
+			continue
+		}
+
+		// Update database
+		_, err := e.db.ExecContext(ctx, `
+			UPDATE book_files SET path = ?, relative_path = ? WHERE id = ?
+		`, named.FullPath, named.RelativePath, fi.id)
+		if err != nil {
+			// Try to rename back on DB error
+			_ = os.Rename(named.FullPath, fi.path)
+			result.Errors = append(result.Errors, fmt.Sprintf("update db for file %d: %v", fi.id, err))
+			continue
+		}
+
+		result.Renamed++
+
+		// Try to remove old empty directory
+		oldDir := filepath.Dir(fi.path)
+		_ = os.Remove(oldDir)
+	}
+
+	return result, nil
 }

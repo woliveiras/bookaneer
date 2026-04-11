@@ -340,7 +340,8 @@ func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Confi
 
 	// Wanted service
 	namingEngine := naming.New(db)
-	wantedSvc := wanted.New(db, bookSvc, libAggregator, searchSvc, downloadSvc, namingEngine)
+	handler.NewNamingHandler(namingEngine).Register(protected)
+	wantedSvc := wanted.New(db, bookSvc, libAggregator, searchSvc, downloadSvc, namingEngine, libraryScanner)
 	jobScheduler.RegisterWantedHandlers(wantedSvc)
 	jobScheduler.Start(ctx)
 

@@ -53,6 +53,14 @@ export type {
   MetadataSearchResponse,
 } from "./search"
 export type {
+  NamingPreview,
+  NamingPreviewInput,
+  NamingSettings,
+  NamingSettingsInput,
+  RenamedFile,
+  RenameResult,
+} from "./naming"
+export type {
   CreateRootFolderInput,
   GeneralSettings,
   RootFolder,
