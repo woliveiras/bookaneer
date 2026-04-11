@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useRef } from "react"
 import type { HistoryEventType } from "../lib/api"
 import { blocklistApi, historyApi, queueApi, wantedApi } from "../lib/api"
 
@@ -45,9 +46,25 @@ export function useManualGrab() {
 
 // Download queue hooks
 export function useDownloadQueue() {
+  const queryClient = useQueryClient()
+  const prevCompletedRef = useRef<Set<number>>(new Set())
+
   return useQuery({
     queryKey: ["queue"],
-    queryFn: queueApi.list,
+    queryFn: async () => {
+      const data = await queueApi.list()
+      const currentCompleted = new Set(
+        data.filter((item) => item.status === "completed").map((item) => item.id),
+      )
+      // If there are newly completed items, invalidate related caches
+      const hasNew = [...currentCompleted].some((id) => !prevCompletedRef.current.has(id))
+      if (hasNew) {
+        queryClient.invalidateQueries({ queryKey: ["wanted"] })
+        queryClient.invalidateQueries({ queryKey: ["books"] })
+      }
+      prevCompletedRef.current = currentCompleted
+      return data
+    },
     refetchInterval: 5000, // Refresh every 5 seconds
   })
 }
