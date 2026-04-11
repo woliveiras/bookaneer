@@ -102,8 +102,8 @@ func (s *Service) importCompletedDownload(ctx context.Context, queueID int64, so
 		return fmt.Errorf("insert book_file: %w", err)
 	}
 
-	// Update queue status to imported
-	if err := s.UpdateQueueItemStatus(ctx, queueID, "imported", 100); err != nil {
+	// Update queue status to completed
+	if err := s.UpdateQueueItemStatus(ctx, queueID, "completed", 100); err != nil {
 		return fmt.Errorf("update queue status: %w", err)
 	}
 

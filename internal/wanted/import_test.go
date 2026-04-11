@@ -9,10 +9,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/woliveiras/bookaneer/internal/core/book"
+	"github.com/woliveiras/bookaneer/internal/core/naming"
 	"github.com/woliveiras/bookaneer/internal/download"
 	_ "github.com/woliveiras/bookaneer/internal/download/direct" // register embedded downloader factory
 	"github.com/woliveiras/bookaneer/internal/testutil"
-	"github.com/woliveiras/bookaneer/internal/core/naming"
 	"github.com/woliveiras/bookaneer/internal/wanted"
 )
 
@@ -55,10 +55,10 @@ func TestProcessDownloads_ImportsCompletedFile(t *testing.T) {
 	require.NoError(t, db.QueryRow(`SELECT COUNT(*) FROM book_files WHERE book_id = ?`, bookID).Scan(&fileCount))
 	assert.Equal(t, 1, fileCount)
 
-	// Verify queue item was updated to 'imported'.
+	// Verify queue item was updated to 'completed'.
 	var status string
 	require.NoError(t, db.QueryRow(`SELECT status FROM download_queue WHERE id = ?`, queueID).Scan(&status))
-	assert.Equal(t, "imported", status)
+	assert.Equal(t, "completed", status)
 
 	// Verify recordHistory was called inside importCompletedDownload.
 	history, err := svc.GetHistory(ctx, 10, "bookImported")
