@@ -39,6 +39,7 @@ func newTestWantedSvc(t *testing.T) (*wanted.Service, *sql.DB) {
 		search.NewService(db),
 		download.NewService(db),
 		naming.New(db),
+		nil, // scanner not needed for these tests
 	), db
 }
 

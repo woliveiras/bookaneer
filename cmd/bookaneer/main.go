@@ -92,6 +92,11 @@ func run() error {
 		return nil
 	}
 
+	// Handle "healthcheck" subcommand for Docker HEALTHCHECK
+	if flag.NArg() > 0 && flag.Arg(0) == "healthcheck" {
+		return runHealthcheck()
+	}
+
 	cfg, err := config.Load(*dataDir, *configPath)
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
@@ -412,6 +417,31 @@ func serveFrontend(e *echo.Echo) error {
 		r.URL.Path = "/"
 		fileServer.ServeHTTP(w, r)
 	})))
+
+	return nil
+}
+
+// runHealthcheck performs a lightweight HTTP health check against the running
+// instance. Used by Docker HEALTHCHECK to determine container health without
+// shell or curl (scratch image).
+func runHealthcheck() error {
+	port := os.Getenv("BOOKANEER_PORT")
+	if port == "" {
+		port = "9090"
+	}
+
+	url := fmt.Sprintf("http://127.0.0.1:%s/api/v1/system/health", port)
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Get(url)
+	if err != nil {
+		return fmt.Errorf("health check failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 500 {
+		return fmt.Errorf("health check returned status %d", resp.StatusCode)
+	}
 
 	return nil
 }

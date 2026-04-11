@@ -1,0 +1,26 @@
+services:
+  bookaneer:
+    build: .
+    image: bookaneer:latest
+    container_name: bookaneer
+    ports:
+      - "9090:9090"
+    environment:
+      - BOOKANEER_PORT=9090
+      - BOOKANEER_BIND_ADDRESS=0.0.0.0
+      - BOOKANEER_DATA_DIR=/data
+      - BOOKANEER_LIBRARY_DIR=/library
+      - BOOKANEER_LOG_LEVEL=info
+      # - BOOKANEER_ADMIN_PASSWORD=changeme  # Uncomment to set admin password on first boot
+    volumes:
+      - bookaneer_data:/data
+      - ${LIBRARY_PATH:-./library}:/library
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  bookaneer_data:

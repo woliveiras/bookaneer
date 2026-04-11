@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   type CreateDownloadClientInput,
-  type CreateGrabInput,
   downloadClientApi,
   type GrabStatus,
   grabApi,

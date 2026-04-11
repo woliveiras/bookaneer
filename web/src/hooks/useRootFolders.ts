@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { type CreateRootFolderInput, rootFolderApi, type UpdateRootFolderInput } from "../lib/api"
+import { rootFolderApi, type UpdateRootFolderInput } from "../lib/api"
 
 export function useRootFolders() {
   return useQuery({
