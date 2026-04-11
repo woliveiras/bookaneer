@@ -118,8 +118,18 @@ func calculateScore(r *SearchResult) int {
 	// Provider reliability bonus
 	provider := strings.ToLower(r.Provider)
 	switch provider {
+	case "gutendex":
+		score += 55 // Project Gutenberg metadata and direct public-domain files
+	case "wikisource":
+		score += 52 // Wikimedia public-domain texts with export service
+	case "aozora":
+		score += 50 // Curated Japanese public-domain literature catalog
+	case "openlibrary-public":
+		score += 50 // Open Library public scans resolved via Internet Archive
 	case "internet-archive":
 		score += 50 // Most reliable, legal
+	case "gutenberg-au", "gutenberg-ca", "dominio-publico", "biblioteca-digital-hispanica", "gallica", "projekt-gutenberg-de", "baen-free-library", "ccel", "sefaria", "ctext", "sacred-texts", "digital-comic-museum", "hathitrust":
+		score += 35 // Public/free catalogs discovered via constrained site search
 	case "libgen":
 		score += 40
 	case "annas-archive":

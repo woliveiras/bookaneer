@@ -41,8 +41,13 @@ import (
 	_ "github.com/woliveiras/bookaneer/internal/download/transmission"
 	digitallibrary "github.com/woliveiras/bookaneer/internal/library"
 	"github.com/woliveiras/bookaneer/internal/library/annas"
+	"github.com/woliveiras/bookaneer/internal/library/aozora"
 	"github.com/woliveiras/bookaneer/internal/library/archive"
+	"github.com/woliveiras/bookaneer/internal/library/gutendex"
 	"github.com/woliveiras/bookaneer/internal/library/libgen"
+	"github.com/woliveiras/bookaneer/internal/library/openlibrarypublic"
+	"github.com/woliveiras/bookaneer/internal/library/sitesearch"
+	"github.com/woliveiras/bookaneer/internal/library/wikisource"
 	"github.com/woliveiras/bookaneer/internal/metadata"
 	"github.com/woliveiras/bookaneer/internal/metadata/googlebooks"
 	"github.com/woliveiras/bookaneer/internal/metadata/openlibrary"
@@ -292,7 +297,28 @@ func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Confi
 	handler.NewSearchHandler(searchSvc).Register(protected)
 
 	// Digital library providers
-	libAggregator := digitallibrary.NewAggregator(annas.New(), libgen.New(), archive.New())
+	libAggregator := digitallibrary.NewAggregator(
+		gutendex.New(),
+		wikisource.New(),
+		aozora.New(),
+		openlibrarypublic.New(),
+		archive.New(),
+		sitesearch.New("gutenberg-au", "gutenberg.net.au", "html"),
+		sitesearch.New("gutenberg-ca", "gutenberg.ca", "html"),
+		sitesearch.New("dominio-publico", "dominiopublico.gov.br", "pdf"),
+		sitesearch.New("biblioteca-digital-hispanica", "bdh.bne.es", "pdf"),
+		sitesearch.New("gallica", "gallica.bnf.fr", "pdf"),
+		sitesearch.New("projekt-gutenberg-de", "projekt-gutenberg.org", "html"),
+		sitesearch.New("baen-free-library", "baen.com", "html"),
+		sitesearch.New("ccel", "ccel.org", "html"),
+		sitesearch.New("sefaria", "sefaria.org", "html"),
+		sitesearch.New("ctext", "ctext.org", "html"),
+		sitesearch.New("sacred-texts", "sacred-texts.com", "html"),
+		sitesearch.New("digital-comic-museum", "digitalcomicmuseum.com", "pdf"),
+		sitesearch.New("hathitrust", "hathitrust.org", "pdf"),
+		annas.New(),
+		libgen.New(),
+	)
 	handler.NewDigitalLibraryHandler(libAggregator).Register(protected)
 
 	// Download service

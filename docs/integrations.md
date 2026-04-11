@@ -4,6 +4,8 @@
 
 Bookaneer integrates with external services for two functions: **searching** for books and **downloading** books. No external integration is required — the system works standalone as a library manager and web reader.
 
+For digital-library lookup, Bookaneer supports legal open-access/public-domain sources such as Internet Archive, Gutendex (Project Gutenberg metadata API), and Open Library public scans.
+
 ```
                          ┌─────────────┐
                          │  BOOKANEER  │

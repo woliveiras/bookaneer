@@ -1,3 +1,4 @@
+import { BookOpen } from "lucide-react"
 import { Link } from "@tanstack/react-router"
 import type { Book } from "../../lib/api"
 import { cn } from "../../lib/utils"
@@ -13,7 +14,7 @@ export function BookCard({ book, onClick, selected }: BookCardProps) {
   return (
     <Card
       className={cn(
-        "cursor-pointer transition-colors hover:bg-accent/50",
+        "h-full cursor-pointer transition-colors hover:bg-accent/50",
         selected && "ring-2 ring-primary",
       )}
       onClick={onClick}
@@ -26,8 +27,8 @@ export function BookCard({ book, onClick, selected }: BookCardProps) {
         }
       }}
     >
-      <CardContent className="p-4">
-        <div className="flex items-start gap-4">
+      <CardContent className="flex h-full flex-col p-4">
+        <div className="flex flex-1 items-start gap-4">
           {book.imageUrl ? (
             <img
               src={book.imageUrl}
@@ -39,13 +40,13 @@ export function BookCard({ book, onClick, selected }: BookCardProps) {
             />
           ) : (
             <div className="flex h-24 w-16 items-center justify-center rounded bg-muted">
-              <span className="text-2xl" aria-hidden="true">
-                📖
-              </span>
+              <BookOpen className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
             </div>
           )}
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold truncate">{book.title}</h3>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div>
+              <h3 className="line-clamp-2 min-h-[3.5rem] font-semibold leading-7">{book.title}</h3>
+            </div>
             {book.authorName && (
               <p className="text-sm text-muted-foreground truncate">by {book.authorName}</p>
             )}
@@ -67,23 +68,26 @@ export function BookCard({ book, onClick, selected }: BookCardProps) {
             {book.isbn13 && (
               <p className="text-xs text-muted-foreground font-mono">ISBN: {book.isbn13}</p>
             )}
-            {book.hasFile && (
-              <Link
-                to="/read/$bookId"
-                params={{ bookId: String(book.id) }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="mt-2"
-                  aria-label={`Read ${book.title}`}
-                >
-                  📖 Read
-                </Button>
-              </Link>
-            )}
           </div>
+        </div>
+        <div className="mt-4 min-h-9">
+          {book.hasFile ? (
+            <Link
+              to="/read/$bookId"
+              params={{ bookId: String(book.id) }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Button
+                variant="default"
+                size="sm"
+                className="inline-flex items-center gap-2"
+                aria-label={`Read ${book.title}`}
+              >
+                <BookOpen className="h-4 w-4" aria-hidden="true" />
+                Read
+              </Button>
+            </Link>
+          ) : null}
         </div>
       </CardContent>
     </Card>
