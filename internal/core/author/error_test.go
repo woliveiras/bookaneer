@@ -17,7 +17,7 @@ func TestFindByID_DBClosed(t *testing.T) {
 	svc := author.New(db)
 	ctx := context.Background()
 
-	db.Close()
+	_ = db.Close()
 
 	_, err := svc.FindByID(ctx, 1)
 	require.Error(t, err)
@@ -29,7 +29,7 @@ func TestFindByForeignID_DBClosed(t *testing.T) {
 	svc := author.New(db)
 	ctx := context.Background()
 
-	db.Close()
+	_ = db.Close()
 
 	_, err := svc.FindByForeignID(ctx, "some-fid")
 	require.Error(t, err)
@@ -41,7 +41,7 @@ func TestFindByName_DBClosed(t *testing.T) {
 	svc := author.New(db)
 	ctx := context.Background()
 
-	db.Close()
+	_ = db.Close()
 
 	_, err := svc.FindByName(ctx, "Some Author")
 	require.Error(t, err)

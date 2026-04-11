@@ -235,7 +235,7 @@ func (c *Client) rpc(ctx context.Context, method string, args map[string]interfa
 		if resp.StatusCode == http.StatusConflict {
 			// Get new session ID
 			newSessionID := resp.Header.Get("X-Transmission-Session-Id")
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			if newSessionID != "" {
 				c.mu.Lock()
 				c.sessionID = newSessionID

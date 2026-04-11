@@ -61,7 +61,7 @@ func (s *Service) LoadIndexers(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("query indexers: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	s.mu.Lock()
 	defer s.mu.Unlock()

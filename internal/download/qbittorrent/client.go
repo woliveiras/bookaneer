@@ -173,7 +173,7 @@ func (c *Client) GetQueue(ctx context.Context) ([]download.ItemStatus, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", download.ErrConnectionFailed, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("get queue failed: status %d", resp.StatusCode)
@@ -222,7 +222,7 @@ func (c *Client) login(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("%w: %v", download.ErrConnectionFailed, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK || !strings.Contains(string(body), "Ok") {

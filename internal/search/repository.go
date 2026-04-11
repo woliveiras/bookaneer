@@ -18,7 +18,7 @@ func (s *Service) ListIndexers(ctx context.Context) ([]IndexerConfig, error) {
 	if err != nil {
 		return nil, fmt.Errorf("query indexers: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var indexers []IndexerConfig
 	for rows.Next() {
@@ -43,7 +43,7 @@ func (s *Service) GetIndexer(ctx context.Context, id int64) (*IndexerConfig, err
 	if err != nil {
 		return nil, fmt.Errorf("query indexer: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	if !rows.Next() {
 		return nil, ErrIndexerNotFound
