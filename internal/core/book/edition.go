@@ -27,7 +27,7 @@ func (s *Service) GetWithEditions(ctx context.Context, id int64) (*BookWithEditi
 	if err != nil {
 		return nil, fmt.Errorf("get editions: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var e Edition

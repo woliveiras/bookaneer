@@ -329,7 +329,7 @@ func TestMoveRootFolder_DBWritesFail(t *testing.T) {
 func TestList_DBError(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	s := New(db)
-	db.Close()
+	_ = db.Close()
 	_, err := s.List(context.Background())
 	require.Error(t, err)
 }

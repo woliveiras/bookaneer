@@ -299,7 +299,7 @@ func TestCreate_DBClosed(t *testing.T) {
 func TestDelete_DBClosed(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	svc := qualityprofile.New(db)
-	db.Close()
+	_ = db.Close()
 
 	err := svc.Delete(context.Background(), 1)
 	require.Error(t, err)
@@ -310,7 +310,7 @@ func TestDelete_DBClosed(t *testing.T) {
 func TestEnsureDefault_DBClosed(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	svc := qualityprofile.New(db)
-	db.Close()
+	_ = db.Close()
 
 	err := svc.EnsureDefault(context.Background())
 	require.Error(t, err)

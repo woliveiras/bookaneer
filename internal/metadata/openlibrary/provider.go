@@ -293,7 +293,7 @@ func (p *Provider) doRequest(ctx context.Context, url string, v interface{}) err
 	if err != nil {
 		return fmt.Errorf("do request: %w", metadata.ErrProviderUnavailable)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	switch resp.StatusCode {
 	case http.StatusOK:

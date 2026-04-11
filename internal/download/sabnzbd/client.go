@@ -271,7 +271,7 @@ func (c *Client) api(ctx context.Context, mode string, params url.Values) (map[s
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", download.ErrConnectionFailed, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
 		return nil, download.ErrAuthFailed

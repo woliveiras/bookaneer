@@ -35,7 +35,7 @@ func (c *Client) downloadFile(ctx context.Context, dl *downloadItem, headers map
 		c.updateStatus(dl.id, download.StatusFailed, fmt.Sprintf("download failed: %v", err))
 		return
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		c.updateStatus(dl.id, download.StatusFailed, fmt.Sprintf("HTTP %d: %s", resp.StatusCode, resp.Status))

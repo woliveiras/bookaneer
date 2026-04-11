@@ -144,7 +144,7 @@ func (s *Service) List(ctx context.Context, filter ListBooksFilter) ([]Book, int
 	if err != nil {
 		return nil, 0, fmt.Errorf("list books: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var books []Book
 	for rows.Next() {

@@ -64,7 +64,7 @@ func (s *Scanner) ScanPath(ctx context.Context, rootPath string) (*ScanResult, e
 	if err != nil {
 		return nil, fmt.Errorf("get existing files: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	for rows.Next() {
 		var path string
 		if err := rows.Scan(&path); err != nil {
