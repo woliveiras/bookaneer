@@ -1,23 +1,27 @@
 package handler
 
 import (
+	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strconv"
 
 	"github.com/labstack/echo/v5"
 
+	"github.com/woliveiras/bookaneer/internal/core/library"
 	"github.com/woliveiras/bookaneer/internal/core/rootfolder"
 )
 
 // RootFolderHandler handles root folder-related HTTP requests.
 type RootFolderHandler struct {
-	svc *rootfolder.Service
+	svc     *rootfolder.Service
+	scanner *library.Scanner
 }
 
 // NewRootFolderHandler creates a new root folder handler.
-func NewRootFolderHandler(svc *rootfolder.Service) *RootFolderHandler {
-	return &RootFolderHandler{svc: svc}
+func NewRootFolderHandler(svc *rootfolder.Service, scanner *library.Scanner) *RootFolderHandler {
+	return &RootFolderHandler{svc: svc, scanner: scanner}
 }
 
 // Register registers the root folder routes.
@@ -77,6 +81,23 @@ func (h *RootFolderHandler) Create(c *echo.Context) error {
 			return echo.NewHTTPError(http.StatusConflict, "root folder already exists")
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create root folder")
+	}
+
+	// Scan the new root folder in the background to pick up pre-existing books.
+	if h.scanner != nil {
+		go func() {
+			scanCtx := context.Background()
+			result, scanErr := h.scanner.ScanPath(scanCtx, rf.Path)
+			if scanErr != nil {
+				slog.Warn("auto-scan of new root folder failed", "path", rf.Path, "error", scanErr)
+			} else {
+				slog.Info("auto-scan of new root folder completed",
+					"path", rf.Path,
+					"total", result.TotalFiles,
+					"new", result.NewFiles,
+				)
+			}
+		}()
 	}
 
 	return c.JSON(http.StatusCreated, rf)

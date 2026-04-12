@@ -270,7 +270,7 @@ func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Confi
 	handler.NewAuthorHandler(authorSvc).Register(protected)
 	handler.NewBookHandler(bookSvc, jobScheduler).Register(protected)
 	handler.NewSeriesHandler(seriesSvc).Register(protected)
-	handler.NewRootFolderHandler(rootFolderSvc).Register(protected)
+	handler.NewRootFolderHandler(rootFolderSvc, libraryScanner).Register(protected)
 	handler.NewQualityProfileHandler(qualityProfileSvc).Register(protected)
 	handler.NewLibraryHandler(libraryScanner).Register(protected)
 	handler.NewReaderHandler(reader.New(db)).Register(protected)

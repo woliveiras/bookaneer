@@ -12,6 +12,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/woliveiras/bookaneer/internal/core/mediafile"
 )
 
 // SupportedFormats lists the ebook formats recognized by the scanner.
@@ -169,6 +171,12 @@ func (s *Scanner) addNewFile(ctx context.Context, rootPath, filePath string) err
 	bookID, err := s.matchFileToBook(ctx, filePath)
 	if err != nil {
 		slog.Debug("could not match file to book", "path", filePath, "error", err)
+
+		discoveredID, discoverErr := s.discoverBookFromFile(ctx, rootPath, filePath)
+		if discoverErr != nil {
+			return fmt.Errorf("discover book from file: %w", discoverErr)
+		}
+		bookID = &discoveredID
 	}
 
 	_, err = s.db.ExecContext(ctx, `
@@ -253,6 +261,167 @@ func (s *Scanner) matchFileToBook(ctx context.Context, filePath string) (*int64,
 	}
 
 	return &bookID, nil
+}
+
+// discoverBookFromFile parses directory structure and EPUB metadata to
+// auto-create author and book records for files not yet known to the library.
+func (s *Scanner) discoverBookFromFile(ctx context.Context, rootPath, filePath string) (int64, error) {
+	authorName, bookTitle := parsePathForBookInfo(rootPath, filePath)
+
+	// Enrich with EPUB metadata when available.
+	if strings.ToLower(filepath.Ext(filePath)) == ".epub" {
+		meta, err := mediafile.ExtractMetadata(filePath)
+		if err == nil && meta != nil {
+			if meta.Title != "" {
+				bookTitle = meta.Title
+			}
+			if len(meta.Authors) > 0 && meta.Authors[0] != "" {
+				authorName = meta.Authors[0]
+			}
+		}
+	}
+
+	if authorName == "" {
+		authorName = "Unknown Author"
+	}
+	if bookTitle == "" {
+		bookTitle = strings.TrimSuffix(filepath.Base(filePath), filepath.Ext(filePath))
+	}
+
+	authorID, err := s.findOrCreateAuthor(ctx, authorName, rootPath)
+	if err != nil {
+		return 0, fmt.Errorf("find or create author %q: %w", authorName, err)
+	}
+
+	bookID, err := s.findOrCreateBook(ctx, authorID, bookTitle, filePath)
+	if err != nil {
+		return 0, fmt.Errorf("find or create book %q: %w", bookTitle, err)
+	}
+
+	return bookID, nil
+}
+
+// parsePathForBookInfo extracts author name and book title from a file's path
+// relative to the root folder. Supports these layouts:
+//
+//	Root/Author/Book.epub          → author from directory, title from filename
+//	Root/Author/BookTitle/Book.epub → author from first dir, title from second dir
+//	Root/Author - Title.epub       → parsed from "Author - Title" filename
+//	Root/Book.epub                 → no author, title from filename
+func parsePathForBookInfo(rootPath, filePath string) (authorName, bookTitle string) {
+	rel, err := filepath.Rel(rootPath, filePath)
+	if err != nil {
+		return "", ""
+	}
+
+	parts := strings.Split(filepath.ToSlash(rel), "/")
+	fileName := parts[len(parts)-1]
+	ext := filepath.Ext(fileName)
+	baseName := strings.TrimSuffix(fileName, ext)
+
+	switch len(parts) {
+	case 1:
+		// Root/BookFile.epub — try "Author - Title" pattern in filename.
+		if idx := strings.Index(baseName, " - "); idx > 0 {
+			return baseName[:idx], baseName[idx+3:]
+		}
+		return "", baseName
+	case 2:
+		// Root/AuthorName/BookFile.epub
+		return parts[0], baseName
+	default:
+		// Root/AuthorName/BookTitle/BookFile.epub (or deeper)
+		return parts[0], parts[1]
+	}
+}
+
+func (s *Scanner) findOrCreateAuthor(ctx context.Context, name, rootPath string) (int64, error) {
+	var authorID int64
+	err := s.db.QueryRowContext(ctx,
+		`SELECT id FROM authors WHERE LOWER(name) = LOWER(?) LIMIT 1`, name,
+	).Scan(&authorID)
+	if err == nil {
+		return authorID, nil
+	}
+	if err != sql.ErrNoRows {
+		return 0, fmt.Errorf("find author: %w", err)
+	}
+
+	authorPath := filepath.Join(rootPath, name)
+	result, err := s.db.ExecContext(ctx, `
+		INSERT INTO authors (name, sort_name, status, monitored, path)
+		VALUES (?, ?, 'active', 1, ?)
+	`, name, makeSortName(name), authorPath)
+	if err != nil {
+		// UNIQUE race: author may have been created concurrently.
+		if strings.Contains(err.Error(), "UNIQUE") {
+			if err2 := s.db.QueryRowContext(ctx,
+				`SELECT id FROM authors WHERE LOWER(name) = LOWER(?) LIMIT 1`, name,
+			).Scan(&authorID); err2 == nil {
+				return authorID, nil
+			}
+		}
+		return 0, fmt.Errorf("create author: %w", err)
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("get author id: %w", err)
+	}
+
+	slog.Info("discovered author from library scan", "name", name, "id", id)
+	return id, nil
+}
+
+func (s *Scanner) findOrCreateBook(ctx context.Context, authorID int64, title, filePath string) (int64, error) {
+	var bookID int64
+	err := s.db.QueryRowContext(ctx, `
+		SELECT id FROM books
+		WHERE author_id = ? AND (LOWER(title) = LOWER(?) OR LOWER(sort_title) = LOWER(?))
+		LIMIT 1
+	`, authorID, title, title).Scan(&bookID)
+	if err == nil {
+		return bookID, nil
+	}
+	if err != sql.ErrNoRows {
+		return 0, fmt.Errorf("find book: %w", err)
+	}
+
+	// Optionally grab ISBN from EPUB metadata for the new record.
+	var isbn string
+	if strings.ToLower(filepath.Ext(filePath)) == ".epub" {
+		meta, metaErr := mediafile.ExtractMetadata(filePath)
+		if metaErr == nil && meta != nil {
+			isbn = meta.ISBN
+		}
+	}
+
+	result, err := s.db.ExecContext(ctx, `
+		INSERT INTO books (author_id, title, sort_title, isbn, monitored)
+		VALUES (?, ?, ?, ?, 1)
+	`, authorID, title, title, isbn)
+	if err != nil {
+		return 0, fmt.Errorf("create book: %w", err)
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("get book id: %w", err)
+	}
+
+	slog.Info("discovered book from library scan", "title", title, "authorId", authorID, "id", id)
+	return id, nil
+}
+
+// makeSortName converts "J.R.R. Tolkien" → "Tolkien, J.R.R.".
+func makeSortName(name string) string {
+	parts := strings.Fields(name)
+	if len(parts) < 2 {
+		return name
+	}
+	last := parts[len(parts)-1]
+	rest := strings.Join(parts[:len(parts)-1], " ")
+	return last + ", " + rest
 }
 
 func hashFile(path string) (string, error) {
