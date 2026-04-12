@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { Inbox } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
 import { Button, Card, CardContent } from "../../components/ui"
 import { QueueItemCard, SearchCommandCard } from "../../components/wanted/QueueCards"
 import { getDismissedCommands, saveDismissedCommands } from "../../components/wanted/queueHelpers"
@@ -9,6 +10,7 @@ import {
   useRecentCommands,
   useRemoveFromQueue,
 } from "../../hooks/useWanted"
+import { queueApi } from "../../lib/api"
 import type { QueueItem } from "../../lib/api"
 
 export function QueueList() {
@@ -16,8 +18,10 @@ export function QueueList() {
   const { data: activeCommands } = useActiveCommands()
   const { data: recentCommands } = useRecentCommands(50)
   const removeMutation = useRemoveFromQueue()
+  const queryClient = useQueryClient()
   const [itemToRemove, setItemToRemove] = useState<QueueItem | null>(null)
   const [dismissedCommands, setDismissedCommands] = useState<Set<string>>(getDismissedCommands)
+  const [isClearing, setIsClearing] = useState(false)
 
   // Sync dismissed commands to localStorage
   useEffect(() => {
@@ -86,25 +90,25 @@ export function QueueList() {
   const completedDownloads = downloadItems.filter((item) => item.status === "completed")
 
   const handleClearAllFailed = async () => {
-    for (const item of failedDownloads) {
-      try {
-        await removeMutation.mutateAsync(item.id)
-      } catch (err) {
-        console.error("Failed to remove item:", err)
-      }
+    setIsClearing(true)
+    try {
+      await Promise.allSettled(failedDownloads.map((item) => queueApi.remove(item.id)))
+    } finally {
+      setIsClearing(false)
+      queryClient.invalidateQueries({ queryKey: ["queue"] })
     }
   }
 
   const clearAllFinishedCommands = async () => {
+    setIsClearing(true)
     finishedCommands.forEach((cmd) => {
       dismissCommand(cmd.id)
     })
-    for (const item of completedDownloads) {
-      try {
-        await removeMutation.mutateAsync(item.id)
-      } catch (err) {
-        console.error("Failed to remove completed download:", err)
-      }
+    try {
+      await Promise.allSettled(completedDownloads.map((item) => queueApi.remove(item.id)))
+    } finally {
+      setIsClearing(false)
+      queryClient.invalidateQueries({ queryKey: ["queue"] })
     }
   }
 
@@ -132,16 +136,16 @@ export function QueueList() {
         </div>
         <div className="flex items-center gap-2">
           {(finishedCommands.length + completedDownloads.length) > 1 && (
-            <Button variant="outline" size="sm" onClick={clearAllFinishedCommands} disabled={removeMutation.isPending}>
+            <Button variant="outline" size="sm" onClick={clearAllFinishedCommands} disabled={isClearing}>
               Clear All Results
             </Button>
           )}
-          {failedDownloads.length > 1 && (
+          {failedDownloads.length > 0 && (
             <Button
               variant="outline"
               size="sm"
               onClick={handleClearAllFailed}
-              disabled={removeMutation.isPending}
+              disabled={isClearing}
               className="text-destructive border-destructive hover:bg-destructive/10"
             >
               Clear Failed Downloads
