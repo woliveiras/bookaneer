@@ -28,6 +28,7 @@ import (
 	"github.com/woliveiras/bookaneer/internal/core/book"
 	"github.com/woliveiras/bookaneer/internal/core/library"
 	"github.com/woliveiras/bookaneer/internal/core/naming"
+	"github.com/woliveiras/bookaneer/internal/core/pathmapping"
 	"github.com/woliveiras/bookaneer/internal/core/qualityprofile"
 	"github.com/woliveiras/bookaneer/internal/core/reader"
 	"github.com/woliveiras/bookaneer/internal/core/rootfolder"
@@ -275,6 +276,10 @@ func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Confi
 	handler.NewLibraryHandler(libraryScanner).Register(protected)
 	handler.NewReaderHandler(reader.New(db)).Register(protected)
 
+	// Remote path mappings
+	pathMappingSvc := pathmapping.New(db)
+	handler.NewRemotePathMappingHandler(pathMappingSvc).Register(protected)
+
 	// Metadata providers
 	httpClient := &http.Client{Timeout: 30 * time.Second}
 	metaAggregator := metadata.NewAggregator(
@@ -341,7 +346,7 @@ func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Confi
 	// Wanted service
 	namingEngine := naming.New(db)
 	handler.NewNamingHandler(namingEngine).Register(protected)
-	wantedSvc := wanted.New(db, bookSvc, libAggregator, searchSvc, downloadSvc, namingEngine, libraryScanner)
+	wantedSvc := wanted.New(db, bookSvc, libAggregator, searchSvc, downloadSvc, namingEngine, libraryScanner, pathMappingSvc)
 	jobScheduler.RegisterWantedHandlers(wantedSvc)
 	jobScheduler.Start(ctx)
 

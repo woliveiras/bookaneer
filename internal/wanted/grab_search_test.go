@@ -61,7 +61,7 @@ func TestSearchAndGrab_LibrarySucceeds(t *testing.T) {
 
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, agg, nil, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, agg, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	result, err := svc.SearchAndGrab(ctx, bookID)
@@ -105,7 +105,7 @@ func TestSearchAndGrab_LibraryReturnsInvalidFormats(t *testing.T) {
 
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, agg, nil, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, agg, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	_, err := svc.SearchAndGrab(ctx, bookID)
@@ -129,7 +129,7 @@ func TestSearchAndGrab_LibraryReturnsNoDownloadURL(t *testing.T) {
 
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, agg, nil, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, agg, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	_, err := svc.SearchAndGrab(ctx, bookID)
@@ -159,7 +159,7 @@ func TestSearchAndGrab_LibraryReturnsMultipleFormats(t *testing.T) {
 
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, agg, nil, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, agg, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	result, err := svc.SearchAndGrab(ctx, bookID)
@@ -185,7 +185,7 @@ func TestSearchAndGrab_LibraryNoDirectClient(t *testing.T) {
 
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, agg, nil, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, agg, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	_, err := svc.SearchAndGrab(ctx, bookID)
@@ -202,7 +202,7 @@ func TestSearchAndGrab_WithNonNilSearchService(t *testing.T) {
 	bookSvc := book.New(db)
 	searchSvc := search.NewService(db) // no clients loaded → Search returns nil
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, searchSvc, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, nil, searchSvc, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	_, err := svc.SearchAndGrab(ctx, bookID)
@@ -222,7 +222,7 @@ func TestGrabRelease_EmptyTitle(t *testing.T) {
 
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	// Empty releaseTitle → filename built from "Tolkien - The Hobbit"
@@ -243,7 +243,7 @@ func TestGrabRelease_NoRootFolder(t *testing.T) {
 
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	_, err := svc.GrabRelease(ctx, bookID, "http://127.0.0.1:1/test.epub", "Test.epub", 1024)
@@ -285,7 +285,7 @@ func TestProcessDownloads_TryNextSourceOnFailed(t *testing.T) {
 
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	// GrabRelease registers the download in the embedded direct client.
@@ -316,7 +316,7 @@ func TestProcessDownloads_TryNextSourceNoPending(t *testing.T) {
 	// No pending search results → tryNextSource returns false.
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	_, err := svc.GrabRelease(ctx, bookID, "http://127.0.0.1:1/hobbit.epub", "The Hobbit.epub", 1024)
@@ -357,7 +357,7 @@ func TestProcessDownloads_CleanupSearchResultsOnSuccess(t *testing.T) {
 
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	// Start a download via GrabRelease so the embedded client tracks it.
@@ -400,7 +400,7 @@ func TestGetPendingSourcesCount_AfterSearch(t *testing.T) {
 
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, agg, nil, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, agg, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	_, err := svc.SearchAndGrab(ctx, bookID)
@@ -484,7 +484,7 @@ func TestSearchAndGrab_IndexerReturnsEbookResults(t *testing.T) {
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
 	// No download client configured → grabFromIndexer will return "no client" errors.
-	svc := wanted.New(db, bookSvc, nil, searchSvc, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, nil, searchSvc, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	_, err = svc.SearchAndGrab(ctx, bookID)
@@ -524,7 +524,7 @@ func TestSearchAndGrab_IndexerReturnsNonEbookResults(t *testing.T) {
 
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, searchSvc, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, nil, searchSvc, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	_, err = svc.SearchAndGrab(ctx, bookID)
@@ -604,7 +604,7 @@ require.NoError(t, searchSvc.LoadIndexers(context.Background()))
 bookSvc := book.New(db)
 downloadSvc := download.NewService(db)
 // libraryService is nil → falls through to searchIndexers.
-svc := wanted.New(db, bookSvc, nil, searchSvc, downloadSvc, naming.New(db), nil)
+svc := wanted.New(db, bookSvc, nil, searchSvc, downloadSvc, naming.New(db), nil, nil)
 ctx := context.Background()
 
 result, err := svc.SearchAndGrab(ctx, bookID)
@@ -647,7 +647,7 @@ require.NoError(t, err)
 
 bookSvc := book.New(db)
 downloadSvc := download.NewService(db)
-svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
+svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 ctx := context.Background()
 
 // Port 1 → the goroutine fails fast without writing to dlDir.
@@ -694,7 +694,7 @@ agg := library.NewAggregator(mock)
 
 bookSvc := book.New(db)
 downloadSvc := download.NewService(db)
-svc := wanted.New(db, bookSvc, agg, nil, downloadSvc, naming.New(db), nil)
+svc := wanted.New(db, bookSvc, agg, nil, downloadSvc, naming.New(db), nil, nil)
 ctx := context.Background()
 
 result, err := svc.SearchAndGrab(ctx, bookID)
@@ -730,7 +730,7 @@ func TestProcessDownloads_ImportFailsNoRootFolder(t *testing.T) {
 
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	// GrabRelease caches the embedded client with DownloadDir=libDir.

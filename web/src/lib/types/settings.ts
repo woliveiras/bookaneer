@@ -38,3 +38,23 @@ export interface UpdateRootFolderInput {
   defaultQualityProfileId?: number
   moveFiles?: boolean
 }
+
+export interface RemotePathMapping {
+  id: number
+  host: string
+  remotePath: string
+  localPath: string
+  createdAt: string
+}
+
+export interface CreateRemotePathMappingInput {
+  host?: string
+  remotePath: string
+  localPath: string
+}
+
+export interface UpdateRemotePathMappingInput {
+  host?: string
+  remotePath?: string
+  localPath?: string
+}

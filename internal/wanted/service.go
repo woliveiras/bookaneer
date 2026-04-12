@@ -12,6 +12,7 @@ import (
 	"github.com/woliveiras/bookaneer/internal/core/book"
 	corelibrary "github.com/woliveiras/bookaneer/internal/core/library"
 	"github.com/woliveiras/bookaneer/internal/core/naming"
+	"github.com/woliveiras/bookaneer/internal/core/pathmapping"
 	"github.com/woliveiras/bookaneer/internal/download"
 	"github.com/woliveiras/bookaneer/internal/library"
 	"github.com/woliveiras/bookaneer/internal/search"
@@ -26,6 +27,7 @@ type Service struct {
 	downloadService *download.Service
 	namingEngine    *naming.Engine
 	scanner         *corelibrary.Scanner
+	pathMapper      *pathmapping.Service
 }
 
 // New creates a new Wanted service.
@@ -37,6 +39,7 @@ func New(
 	downloadService *download.Service,
 	namingEngine *naming.Engine,
 	scanner *corelibrary.Scanner,
+	pathMapper *pathmapping.Service,
 ) *Service {
 	return &Service{
 		db:              db,
@@ -46,6 +49,7 @@ func New(
 		downloadService: downloadService,
 		namingEngine:    namingEngine,
 		scanner:         scanner,
+		pathMapper:      pathMapper,
 	}
 }
 

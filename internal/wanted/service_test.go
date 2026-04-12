@@ -25,7 +25,7 @@ func TestGetWantedBooks_WithMonitoredBooks(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Tolkien")
@@ -41,7 +41,7 @@ func TestGetWantedBooks_ExcludesBooksWithFiles(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Tolkien")
@@ -68,7 +68,7 @@ func TestSearchAndGrab_NotMonitored(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Tolkien")
@@ -85,7 +85,7 @@ func TestSearchAndGrab_ActiveDownloadExists(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Tolkien")
@@ -101,7 +101,7 @@ func TestSearchAndGrab_NoProviders(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Tolkien")
@@ -116,7 +116,7 @@ func TestGetBookInfo(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Tolkien")
@@ -146,7 +146,7 @@ func TestGetPendingSourcesCount_WithPending(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Tolkien")
@@ -188,7 +188,7 @@ func TestSearchAllWanted_WithBooksAndNoProviders(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
 	downloadSvc := download.NewService(db)
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Tolkien")

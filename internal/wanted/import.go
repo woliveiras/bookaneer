@@ -185,11 +185,17 @@ func (s *Service) importPendingCompletedDownloads(ctx context.Context) (int, err
 
 	var imported int
 	for _, p := range pending {
+		// Apply remote path mapping before checking file existence
+		localPath := p.savePath
+		if s.pathMapper != nil {
+			localPath = s.pathMapper.MapPath(ctx, localPath)
+		}
+
 		// Check if file still exists
-		if _, err := os.Stat(p.savePath); os.IsNotExist(err) {
+		if _, err := os.Stat(localPath); os.IsNotExist(err) {
 			slog.Warn("Download file no longer exists, marking as failed",
 				"queueId", p.queueID,
-				"path", p.savePath,
+				"path", localPath,
 			)
 			_ = s.UpdateQueueItemStatus(ctx, p.queueID, "failed", 0)
 			continue

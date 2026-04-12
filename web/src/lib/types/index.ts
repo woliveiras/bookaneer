@@ -62,8 +62,11 @@ export type {
 } from "./naming"
 export type {
   CreateRootFolderInput,
+  CreateRemotePathMappingInput,
   GeneralSettings,
+  RemotePathMapping,
   RootFolder,
+  UpdateRemotePathMappingInput,
   UpdateRootFolderInput,
 } from "./settings"
 export type {

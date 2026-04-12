@@ -40,6 +40,7 @@ func newTestWantedSvc(t *testing.T) (*wanted.Service, *sql.DB) {
 		download.NewService(db),
 		naming.New(db),
 		nil, // scanner not needed for these tests
+		nil, // pathMapper not needed for these tests
 	), db
 }
 

@@ -16,6 +16,11 @@ import (
 // importCompletedDownload imports a completed download to the library.
 // Returns contentMismatch=true if the file's metadata doesn't match the expected book.
 func (s *Service) importCompletedDownload(ctx context.Context, queueID int64, sourcePath string) (bool, error) {
+	// Apply remote path mapping: translate download client path → local path
+	if s.pathMapper != nil {
+		sourcePath = s.pathMapper.MapPath(ctx, sourcePath)
+	}
+
 	// Get queue item to find book_id
 	var bookID int64
 	var format string
