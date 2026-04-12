@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
 	"github.com/woliveiras/bookaneer/internal/core/rootfolder"
 )
@@ -31,7 +31,7 @@ func (h *RootFolderHandler) Register(g *echo.Group) {
 }
 
 // List returns all root folders.
-func (h *RootFolderHandler) List(c echo.Context) error {
+func (h *RootFolderHandler) List(c *echo.Context) error {
 	folders, err := h.svc.List(c.Request().Context())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list root folders")
@@ -41,7 +41,7 @@ func (h *RootFolderHandler) List(c echo.Context) error {
 }
 
 // GetByID returns a root folder by ID.
-func (h *RootFolderHandler) GetByID(c echo.Context) error {
+func (h *RootFolderHandler) GetByID(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid root folder id")
@@ -59,7 +59,7 @@ func (h *RootFolderHandler) GetByID(c echo.Context) error {
 }
 
 // Create creates a new root folder.
-func (h *RootFolderHandler) Create(c echo.Context) error {
+func (h *RootFolderHandler) Create(c *echo.Context) error {
 	var input rootfolder.CreateRootFolderInput
 	if err := c.Bind(&input); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
@@ -83,7 +83,7 @@ func (h *RootFolderHandler) Create(c echo.Context) error {
 }
 
 // Update updates an existing root folder.
-func (h *RootFolderHandler) Update(c echo.Context) error {
+func (h *RootFolderHandler) Update(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid root folder id")
@@ -112,7 +112,7 @@ func (h *RootFolderHandler) Update(c echo.Context) error {
 }
 
 // Delete deletes a root folder.
-func (h *RootFolderHandler) Delete(c echo.Context) error {
+func (h *RootFolderHandler) Delete(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid root folder id")
@@ -135,7 +135,7 @@ type MigrateInput struct {
 
 // Migrate moves all files from the current root folder path to a new path.
 // This is a blocking operation that moves all files and updates database paths.
-func (h *RootFolderHandler) Migrate(c echo.Context) error {
+func (h *RootFolderHandler) Migrate(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid root folder id")

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
 	"github.com/woliveiras/bookaneer/internal/search"
 )
@@ -56,7 +56,7 @@ type IndexerSchemaField struct {
 
 // IndexerSchema returns the schema that Prowlarr uses to sync indexers.
 // This enables Prowlarr to add Bookaneer as an application and sync indexers automatically.
-func (h *SearchHandler) IndexerSchema(c echo.Context) error {
+func (h *SearchHandler) IndexerSchema(c *echo.Context) error {
 	schemas := []map[string]interface{}{
 		{
 			"id":                      0,
@@ -111,7 +111,7 @@ func (h *SearchHandler) IndexerSchema(c echo.Context) error {
 }
 
 // ListIndexers returns all indexers.
-func (h *SearchHandler) ListIndexers(c echo.Context) error {
+func (h *SearchHandler) ListIndexers(c *echo.Context) error {
 	indexers, err := h.svc.ListIndexers(c.Request().Context())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list indexers")
@@ -120,7 +120,7 @@ func (h *SearchHandler) ListIndexers(c echo.Context) error {
 }
 
 // GetIndexer returns an indexer by ID.
-func (h *SearchHandler) GetIndexer(c echo.Context) error {
+func (h *SearchHandler) GetIndexer(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid indexer id")
@@ -171,7 +171,7 @@ func parseFieldValue(fields []map[string]interface{}, name string) interface{} {
 }
 
 // CreateIndexer creates a new indexer.
-func (h *SearchHandler) CreateIndexer(c echo.Context) error {
+func (h *SearchHandler) CreateIndexer(c *echo.Context) error {
 	var req CreateIndexerRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
@@ -259,7 +259,7 @@ func (h *SearchHandler) CreateIndexer(c echo.Context) error {
 }
 
 // UpdateIndexer updates an existing indexer.
-func (h *SearchHandler) UpdateIndexer(c echo.Context) error {
+func (h *SearchHandler) UpdateIndexer(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid indexer id")
@@ -307,7 +307,7 @@ func (h *SearchHandler) UpdateIndexer(c echo.Context) error {
 }
 
 // DeleteIndexer deletes an indexer.
-func (h *SearchHandler) DeleteIndexer(c echo.Context) error {
+func (h *SearchHandler) DeleteIndexer(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid indexer id")
@@ -322,7 +322,7 @@ func (h *SearchHandler) DeleteIndexer(c echo.Context) error {
 }
 
 // TestIndexer tests an indexer configuration.
-func (h *SearchHandler) TestIndexer(c echo.Context) error {
+func (h *SearchHandler) TestIndexer(c *echo.Context) error {
 	var req CreateIndexerRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
@@ -356,7 +356,7 @@ func (h *SearchHandler) TestIndexer(c echo.Context) error {
 }
 
 // Search searches all enabled indexers.
-func (h *SearchHandler) Search(c echo.Context) error {
+func (h *SearchHandler) Search(c *echo.Context) error {
 	query := search.SearchQuery{
 		Query:  c.QueryParam("q"),
 		Author: c.QueryParam("author"),
@@ -389,7 +389,7 @@ func (h *SearchHandler) Search(c echo.Context) error {
 }
 
 // GetOptions returns global indexer options.
-func (h *SearchHandler) GetOptions(c echo.Context) error {
+func (h *SearchHandler) GetOptions(c *echo.Context) error {
 	opts, err := h.svc.GetOptions(c.Request().Context())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get indexer options")
@@ -408,7 +408,7 @@ type UpdateOptionsRequest struct {
 }
 
 // UpdateOptions updates global indexer options.
-func (h *SearchHandler) UpdateOptions(c echo.Context) error {
+func (h *SearchHandler) UpdateOptions(c *echo.Context) error {
 	var req UpdateOptionsRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")

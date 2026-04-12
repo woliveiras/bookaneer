@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 const (
@@ -76,7 +76,7 @@ func (s *Server) Register(e *echo.Echo) {
 	opds.GET("/search", s.Search)
 }
 
-func (s *Server) Root(c echo.Context) error {
+func (s *Server) Root(c *echo.Context) error {
 	now := time.Now().UTC().Format(time.RFC3339)
 	feed := Feed{
 		XMLNS:   atomNS,
@@ -109,7 +109,7 @@ func (s *Server) Root(c echo.Context) error {
 	return c.XML(http.StatusOK, feed)
 }
 
-func (s *Server) Authors(c echo.Context) error {
+func (s *Server) Authors(c *echo.Context) error {
 	ctx := c.Request().Context()
 	now := time.Now().UTC().Format(time.RFC3339)
 
@@ -154,7 +154,7 @@ func (s *Server) Authors(c echo.Context) error {
 	return c.XML(http.StatusOK, feed)
 }
 
-func (s *Server) AuthorBooks(c echo.Context) error {
+func (s *Server) AuthorBooks(c *echo.Context) error {
 	ctx := c.Request().Context()
 	now := time.Now().UTC().Format(time.RFC3339)
 
@@ -191,7 +191,7 @@ func (s *Server) AuthorBooks(c echo.Context) error {
 	return c.XML(http.StatusOK, feed)
 }
 
-func (s *Server) Recent(c echo.Context) error {
+func (s *Server) Recent(c *echo.Context) error {
 	ctx := c.Request().Context()
 	now := time.Now().UTC().Format(time.RFC3339)
 
@@ -218,7 +218,7 @@ func (s *Server) Recent(c echo.Context) error {
 	return c.XML(http.StatusOK, feed)
 }
 
-func (s *Server) Search(c echo.Context) error {
+func (s *Server) Search(c *echo.Context) error {
 	ctx := c.Request().Context()
 	now := time.Now().UTC().Format(time.RFC3339)
 	query := c.QueryParam("q")

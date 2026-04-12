@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 // DocsHandler serves the API documentation page.
@@ -21,7 +21,7 @@ func (h *DocsHandler) Register(g *echo.Group) {
 }
 
 // SwaggerUI serves a minimal Swagger UI HTML page that loads the OpenAPI spec.
-func (h *DocsHandler) SwaggerUI(c echo.Context) error {
+func (h *DocsHandler) SwaggerUI(c *echo.Context) error {
 	html := `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -41,7 +41,7 @@ func (h *DocsHandler) SwaggerUI(c echo.Context) error {
 }
 
 // OpenAPISpec returns the OpenAPI 3.0 specification.
-func (h *DocsHandler) OpenAPISpec(c echo.Context) error {
+func (h *DocsHandler) OpenAPISpec(c *echo.Context) error {
 	spec := map[string]interface{}{
 		"openapi": "3.0.3",
 		"info": map[string]interface{}{

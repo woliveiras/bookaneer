@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/woliveiras/bookaneer/internal/metadata"
 )
 
@@ -24,7 +24,7 @@ type SearchAuthorsRequest struct {
 
 // SearchAuthors searches for authors across all metadata providers.
 // GET /api/v1/metadata/authors?q=query
-func (h *MetadataHandler) SearchAuthors(c echo.Context) error {
+func (h *MetadataHandler) SearchAuthors(c *echo.Context) error {
 	var req SearchAuthorsRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
@@ -52,7 +52,7 @@ type SearchBooksRequest struct {
 
 // SearchBooks searches for books across all metadata providers.
 // GET /api/v1/metadata/books?q=query
-func (h *MetadataHandler) SearchBooks(c echo.Context) error {
+func (h *MetadataHandler) SearchBooks(c *echo.Context) error {
 	var req SearchBooksRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
@@ -81,7 +81,7 @@ type GetAuthorRequest struct {
 
 // GetAuthor fetches author details from a metadata provider.
 // GET /api/v1/metadata/authors/:foreignId?provider=openlibrary
-func (h *MetadataHandler) GetAuthor(c echo.Context) error {
+func (h *MetadataHandler) GetAuthor(c *echo.Context) error {
 	foreignID := c.Param("foreignId")
 	if foreignID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "foreignId is required")
@@ -102,7 +102,7 @@ func (h *MetadataHandler) GetAuthor(c echo.Context) error {
 
 // GetBook fetches book details from a metadata provider.
 // GET /api/v1/metadata/books/:foreignId?provider=openlibrary
-func (h *MetadataHandler) GetBook(c echo.Context) error {
+func (h *MetadataHandler) GetBook(c *echo.Context) error {
 	foreignID := c.Param("foreignId")
 	if foreignID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "foreignId is required")
@@ -123,7 +123,7 @@ func (h *MetadataHandler) GetBook(c echo.Context) error {
 
 // LookupISBN fetches book details by ISBN.
 // GET /api/v1/metadata/isbn/:isbn
-func (h *MetadataHandler) LookupISBN(c echo.Context) error {
+func (h *MetadataHandler) LookupISBN(c *echo.Context) error {
 	isbn := c.Param("isbn")
 	if isbn == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "isbn is required")
@@ -145,7 +145,7 @@ func (h *MetadataHandler) LookupISBN(c echo.Context) error {
 
 // ListProviders returns the list of available metadata providers.
 // GET /api/v1/metadata/providers
-func (h *MetadataHandler) ListProviders(c echo.Context) error {
+func (h *MetadataHandler) ListProviders(c *echo.Context) error {
 	providers := h.aggregator.Providers()
 	names := make([]string, 0, len(providers))
 	for _, p := range providers {

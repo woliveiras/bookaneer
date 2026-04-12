@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/woliveiras/bookaneer/internal/config"
 )
 
@@ -49,7 +49,7 @@ type StatusResponse struct {
 }
 
 // Status returns system status information.
-func (h *SystemHandler) Status(c echo.Context) error {
+func (h *SystemHandler) Status(c *echo.Context) error {
 	hostname, _ := os.Hostname()
 	_ = hostname
 
@@ -79,7 +79,7 @@ type HealthResponse struct {
 }
 
 // Health returns a comprehensive health check response.
-func (h *SystemHandler) Health(c echo.Context) error {
+func (h *SystemHandler) Health(c *echo.Context) error {
 	var checks []HealthCheck
 	overallStatus := "ok"
 
@@ -126,7 +126,7 @@ func (h *SystemHandler) Health(c echo.Context) error {
 }
 
 // Backup creates a database backup via VACUUM INTO and returns it as a zip.
-func (h *SystemHandler) Backup(c echo.Context) error {
+func (h *SystemHandler) Backup(c *echo.Context) error {
 	backupDir := filepath.Join(h.cfg.DataDir, "backups")
 	if err := os.MkdirAll(backupDir, 0o755); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "create backup dir: "+err.Error())
@@ -185,11 +185,11 @@ func (h *SystemHandler) Backup(c echo.Context) error {
 	defer func() { _ = os.Remove(zipPath) }()
 
 	c.Response().Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="bookaneer-%s.zip"`, ts))
-	return c.File(zipPath)
+	return c.FileFS(zipPath, echo.NewDefaultFS("/"))
 }
 
 // Restore restores a database from an uploaded backup zip.
-func (h *SystemHandler) Restore(c echo.Context) error {
+func (h *SystemHandler) Restore(c *echo.Context) error {
 	file, err := c.FormFile("backup")
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "backup file is required")

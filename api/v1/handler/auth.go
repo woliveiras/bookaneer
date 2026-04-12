@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/woliveiras/bookaneer/internal/auth"
 )
 
@@ -31,7 +31,7 @@ type LoginResponse struct {
 }
 
 // Login authenticates a user and returns their API key.
-func (h *AuthHandler) Login(c echo.Context) error {
+func (h *AuthHandler) Login(c *echo.Context) error {
 	var req LoginRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
@@ -56,7 +56,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 }
 
 // Me returns the current authenticated user.
-func (h *AuthHandler) Me(c echo.Context) error {
+func (h *AuthHandler) Me(c *echo.Context) error {
 	// Check if there's a user (from user-specific API key)
 	if user, ok := c.Get("user").(*auth.User); ok {
 		return c.JSON(http.StatusOK, user)
@@ -78,6 +78,6 @@ func (h *AuthHandler) Me(c echo.Context) error {
 }
 
 // Logout is a no-op for API key auth (client just removes the key).
-func (h *AuthHandler) Logout(c echo.Context) error {
+func (h *AuthHandler) Logout(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }

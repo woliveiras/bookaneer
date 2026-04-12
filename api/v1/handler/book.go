@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
 	"github.com/woliveiras/bookaneer/internal/core/book"
 	"github.com/woliveiras/bookaneer/internal/scheduler"
@@ -36,7 +36,7 @@ func (h *BookHandler) Register(g *echo.Group) {
 }
 
 // List returns a list of books.
-func (h *BookHandler) List(c echo.Context) error {
+func (h *BookHandler) List(c *echo.Context) error {
 	filter := book.ListBooksFilter{
 		Search:  c.QueryParam("search"),
 		SortBy:  c.QueryParam("sortBy"),
@@ -76,7 +76,7 @@ func (h *BookHandler) List(c echo.Context) error {
 }
 
 // GetByID returns a book by ID with its editions.
-func (h *BookHandler) GetByID(c echo.Context) error {
+func (h *BookHandler) GetByID(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid book id")
@@ -94,7 +94,7 @@ func (h *BookHandler) GetByID(c echo.Context) error {
 }
 
 // Create creates a new book.
-func (h *BookHandler) Create(c echo.Context) error {
+func (h *BookHandler) Create(c *echo.Context) error {
 	var input book.CreateBookInput
 	if err := c.Bind(&input); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
@@ -127,7 +127,7 @@ func (h *BookHandler) Create(c echo.Context) error {
 }
 
 // Update updates an existing book.
-func (h *BookHandler) Update(c echo.Context) error {
+func (h *BookHandler) Update(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid book id")
@@ -156,7 +156,7 @@ func (h *BookHandler) Update(c echo.Context) error {
 }
 
 // Delete deletes a book.
-func (h *BookHandler) Delete(c echo.Context) error {
+func (h *BookHandler) Delete(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid book id")
@@ -173,7 +173,7 @@ func (h *BookHandler) Delete(c echo.Context) error {
 }
 
 // CreateEdition creates a new edition for a book.
-func (h *BookHandler) CreateEdition(c echo.Context) error {
+func (h *BookHandler) CreateEdition(c *echo.Context) error {
 	bookID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid book id")
@@ -203,7 +203,7 @@ func (h *BookHandler) CreateEdition(c echo.Context) error {
 }
 
 // DeleteEdition deletes an edition.
-func (h *BookHandler) DeleteEdition(c echo.Context) error {
+func (h *BookHandler) DeleteEdition(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid edition id")

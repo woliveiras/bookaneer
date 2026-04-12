@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 const (
@@ -98,7 +98,7 @@ func (h *Hub) removeClient(c *client) {
 }
 
 // HandleWS is the Echo handler for WebSocket upgrades.
-func (h *Hub) HandleWS(c echo.Context) error {
+func (h *Hub) HandleWS(c *echo.Context) error {
 	conn, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
 	if err != nil {
 		return err

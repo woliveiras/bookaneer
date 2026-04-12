@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/woliveiras/bookaneer/internal/auth"
 	"github.com/woliveiras/bookaneer/internal/core/reader"
 )
@@ -23,7 +23,7 @@ func NewReaderHandler(svc *reader.Service) *ReaderHandler {
 
 // GetBookFile returns book file metadata for the reader.
 // GET /api/v1/reader/:id
-func (h *ReaderHandler) GetBookFile(c echo.Context) error {
+func (h *ReaderHandler) GetBookFile(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid book file id")
@@ -42,7 +42,7 @@ func (h *ReaderHandler) GetBookFile(c echo.Context) error {
 
 // ServeContent streams the book file content.
 // GET /api/v1/reader/:id/content
-func (h *ReaderHandler) ServeContent(c echo.Context) error {
+func (h *ReaderHandler) ServeContent(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid book file id")
@@ -106,7 +106,7 @@ func (h *ReaderHandler) ServeContent(c echo.Context) error {
 
 // GetProgress returns reading progress for the current user.
 // GET /api/v1/reader/:id/progress
-func (h *ReaderHandler) GetProgress(c echo.Context) error {
+func (h *ReaderHandler) GetProgress(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid book file id")
@@ -150,7 +150,7 @@ type SaveProgressRequest struct {
 
 // SaveProgress saves reading progress for the current user.
 // PUT /api/v1/reader/:id/progress
-func (h *ReaderHandler) SaveProgress(c echo.Context) error {
+func (h *ReaderHandler) SaveProgress(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid book file id")
@@ -180,7 +180,7 @@ func (h *ReaderHandler) SaveProgress(c echo.Context) error {
 
 // ListBookmarks returns all bookmarks for a book file.
 // GET /api/v1/reader/:id/bookmarks
-func (h *ReaderHandler) ListBookmarks(c echo.Context) error {
+func (h *ReaderHandler) ListBookmarks(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid book file id")
@@ -213,7 +213,7 @@ type CreateBookmarkRequest struct {
 
 // CreateBookmark creates a new bookmark.
 // POST /api/v1/reader/:id/bookmarks
-func (h *ReaderHandler) CreateBookmark(c echo.Context) error {
+func (h *ReaderHandler) CreateBookmark(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid book file id")
@@ -244,7 +244,7 @@ func (h *ReaderHandler) CreateBookmark(c echo.Context) error {
 
 // DeleteBookmark deletes a bookmark.
 // DELETE /api/v1/reader/:id/bookmarks/:bookmarkId
-func (h *ReaderHandler) DeleteBookmark(c echo.Context) error {
+func (h *ReaderHandler) DeleteBookmark(c *echo.Context) error {
 	bookmarkID, err := strconv.ParseInt(c.Param("bookmarkId"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid bookmark id")

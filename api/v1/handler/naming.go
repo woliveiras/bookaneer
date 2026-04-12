@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/woliveiras/bookaneer/internal/core/naming"
 )
 
@@ -53,7 +53,7 @@ type NamingPreviewResponse struct {
 
 // GetSettings returns the current naming settings.
 // GET /api/v1/naming
-func (h *NamingHandler) GetSettings(c echo.Context) error {
+func (h *NamingHandler) GetSettings(c *echo.Context) error {
 	ctx := c.Request().Context()
 
 	s, err := h.engine.LoadSettings(ctx)
@@ -72,7 +72,7 @@ func (h *NamingHandler) GetSettings(c echo.Context) error {
 
 // UpdateSettings updates naming settings.
 // PUT /api/v1/naming
-func (h *NamingHandler) UpdateSettings(c echo.Context) error {
+func (h *NamingHandler) UpdateSettings(c *echo.Context) error {
 	ctx := c.Request().Context()
 
 	var req NamingSettingsRequest
@@ -128,7 +128,7 @@ func (h *NamingHandler) UpdateSettings(c echo.Context) error {
 
 // Preview returns a preview of how a book file would be named.
 // POST /api/v1/naming/preview
-func (h *NamingHandler) Preview(c echo.Context) error {
+func (h *NamingHandler) Preview(c *echo.Context) error {
 	var req NamingPreviewRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
@@ -174,7 +174,7 @@ func (h *NamingHandler) Register(g *echo.Group) {
 
 // PreviewRenameAll previews what a batch rename would do.
 // POST /api/v1/naming/rename/preview
-func (h *NamingHandler) PreviewRenameAll(c echo.Context) error {
+func (h *NamingHandler) PreviewRenameAll(c *echo.Context) error {
 	ctx := c.Request().Context()
 
 	result, err := h.engine.PreviewRenameAll(ctx)
@@ -187,7 +187,7 @@ func (h *NamingHandler) PreviewRenameAll(c echo.Context) error {
 
 // RenameAll renames all library files according to naming settings.
 // POST /api/v1/naming/rename
-func (h *NamingHandler) RenameAll(c echo.Context) error {
+func (h *NamingHandler) RenameAll(c *echo.Context) error {
 	ctx := c.Request().Context()
 
 	result, err := h.engine.RenameAll(ctx)

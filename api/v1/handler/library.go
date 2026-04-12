@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
 	"github.com/woliveiras/bookaneer/internal/core/library"
 )
@@ -27,7 +27,7 @@ func (h *LibraryHandler) Register(g *echo.Group) {
 }
 
 // ScanAll triggers a scan of all root folders.
-func (h *LibraryHandler) ScanAll(c echo.Context) error {
+func (h *LibraryHandler) ScanAll(c *echo.Context) error {
 	// This would typically be queued as a background command
 	// For now, return accepted status
 	return c.JSON(http.StatusAccepted, map[string]any{
@@ -36,7 +36,7 @@ func (h *LibraryHandler) ScanAll(c echo.Context) error {
 }
 
 // ScanRootFolder triggers a scan of a specific root folder.
-func (h *LibraryHandler) ScanRootFolder(c echo.Context) error {
+func (h *LibraryHandler) ScanRootFolder(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid root folder id")
@@ -51,7 +51,7 @@ func (h *LibraryHandler) ScanRootFolder(c echo.Context) error {
 }
 
 // ScanAuthor triggers a scan of a specific author's folder.
-func (h *LibraryHandler) ScanAuthor(c echo.Context) error {
+func (h *LibraryHandler) ScanAuthor(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid author id")

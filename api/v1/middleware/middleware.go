@@ -4,32 +4,34 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/woliveiras/bookaneer/internal/auth"
 )
 
 // Logger returns a middleware that logs HTTP requests.
 func Logger() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+		return func(c *echo.Context) error {
 			start := time.Now()
 			err := next(c)
-			if err != nil {
-				c.Error(err)
-			}
 
 			req := c.Request()
-			res := c.Response()
+			res, _ := echo.UnwrapResponse(c.Response())
+
+			status := 0
+			if res != nil {
+				status = res.Status
+			}
 
 			slog.Info("http",
 				"method", req.Method,
 				"path", req.URL.Path,
-				"status", res.Status,
+				"status", status,
 				"duration", time.Since(start).String(),
 				"request_id", c.Response().Header().Get(echo.HeaderXRequestID),
 			)
 
-			return nil
+			return err
 		}
 	}
 }
@@ -37,7 +39,7 @@ func Logger() echo.MiddlewareFunc {
 // Auth returns a middleware that validates API key or session.
 func Auth(svc *auth.Service) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+		return func(c *echo.Context) error {
 			ctx := c.Request().Context()
 
 			// Check X-Api-Key header

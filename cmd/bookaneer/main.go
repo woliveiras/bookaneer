@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 
 	bookaneer "github.com/woliveiras/bookaneer"
 	"github.com/woliveiras/bookaneer/api/v1/handler"
@@ -128,24 +128,20 @@ func run() error {
 	}
 
 	addr := fmt.Sprintf("%s:%d", cfg.BindAddress, cfg.Port)
-	go func() {
-		slog.Info("listening", "address", addr)
-		if err := e.Start(addr); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("server error", "error", err)
-		}
-	}()
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
-	slog.Info("shutting down...")
+	slog.Info("listening", "address", addr)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if err := e.Shutdown(ctx); err != nil {
-		return fmt.Errorf("shutdown: %w", err)
+	sc := echo.StartConfig{
+		Address:         addr,
+		HideBanner:      true,
+		HidePort:        true,
+		GracefulTimeout: 10 * time.Second,
+	}
+	if err := sc.Start(ctx, e); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return fmt.Errorf("server: %w", err)
 	}
 
 	slog.Info("goodbye")
@@ -218,8 +214,6 @@ func logAdminCredentials(cfg *config.Config, password, envPassword string) {
 // setupEcho creates and configures the Echo instance with global middleware.
 func setupEcho(authSvc *auth.Service) *echo.Echo {
 	e := echo.New()
-	e.HideBanner = true
-	e.HidePort = true
 
 	e.Use(middleware.Recover())
 	e.Use(middleware.RequestID())
@@ -242,7 +236,7 @@ func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Confi
 	systemHandler := handler.NewSystemHandler(version, buildTime, cfg, db)
 	e.GET("/api/v1/system/status", systemHandler.Status)
 	e.GET("/api/v1/system/health", systemHandler.Health)
-	api.GET("/tag", func(c echo.Context) error {
+	api.GET("/tag", func(c *echo.Context) error {
 		return c.JSON(http.StatusOK, []interface{}{})
 	})
 

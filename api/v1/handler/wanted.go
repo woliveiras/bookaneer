@@ -1,10 +1,11 @@
 package handler
 
 import (
+	"log/slog"
 	"net/http"
 	"strconv"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
 	"github.com/woliveiras/bookaneer/internal/scheduler"
 	"github.com/woliveiras/bookaneer/internal/wanted"
@@ -54,7 +55,7 @@ func (h *WantedHandler) Register(g *echo.Group) {
 }
 
 // GetMissingBooks returns all monitored books without files.
-func (h *WantedHandler) GetMissingBooks(c echo.Context) error {
+func (h *WantedHandler) GetMissingBooks(c *echo.Context) error {
 	books, err := h.wantedService.GetWantedBooks(c.Request().Context())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get missing books")
@@ -71,7 +72,7 @@ func (h *WantedHandler) GetMissingBooks(c echo.Context) error {
 }
 
 // SearchAllMissing triggers a search for all missing books.
-func (h *WantedHandler) SearchAllMissing(c echo.Context) error {
+func (h *WantedHandler) SearchAllMissing(c *echo.Context) error {
 	ctx := c.Request().Context()
 
 	// Queue a MissingBookSearch command
@@ -88,7 +89,7 @@ func (h *WantedHandler) SearchAllMissing(c echo.Context) error {
 
 // GetCutoffUnmet returns books that don't meet quality cutoff.
 // For now, returns empty as quality cutoff is not yet implemented.
-func (h *WantedHandler) GetCutoffUnmet(c echo.Context) error {
+func (h *WantedHandler) GetCutoffUnmet(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]any{
 		"page":          1,
 		"pageSize":      0,
@@ -100,14 +101,14 @@ func (h *WantedHandler) GetCutoffUnmet(c echo.Context) error {
 }
 
 // SearchCutoffUnmet triggers a search for cutoff unmet books.
-func (h *WantedHandler) SearchCutoffUnmet(c echo.Context) error {
+func (h *WantedHandler) SearchCutoffUnmet(c *echo.Context) error {
 	return c.JSON(http.StatusAccepted, map[string]any{
 		"message": "Cutoff search is not yet implemented",
 	})
 }
 
 // GetQueue returns the current download queue.
-func (h *WantedHandler) GetQueue(c echo.Context) error {
+func (h *WantedHandler) GetQueue(c *echo.Context) error {
 	queue, err := h.wantedService.GetDownloadQueue(c.Request().Context())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get download queue")
@@ -121,14 +122,14 @@ func (h *WantedHandler) GetQueue(c echo.Context) error {
 }
 
 // RemoveFromQueue removes an item from the download queue.
-func (h *WantedHandler) RemoveFromQueue(c echo.Context) error {
+func (h *WantedHandler) RemoveFromQueue(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid queue item id")
 	}
 
 	if err := h.wantedService.RemoveFromQueue(c.Request().Context(), id); err != nil {
-		c.Logger().Errorf("failed to remove queue item %d: %v", id, err)
+		slog.Error("failed to remove queue item", "id", id, "error", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to remove from queue")
 	}
 
@@ -136,7 +137,7 @@ func (h *WantedHandler) RemoveFromQueue(c echo.Context) error {
 }
 
 // GetActiveCommands returns commands that are queued or running.
-func (h *WantedHandler) GetActiveCommands(c echo.Context) error {
+func (h *WantedHandler) GetActiveCommands(c *echo.Context) error {
 	commands, err := h.schedulerService.GetActiveCommands(c.Request().Context())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get active commands")
@@ -150,7 +151,7 @@ func (h *WantedHandler) GetActiveCommands(c echo.Context) error {
 }
 
 // GetRecentCommands returns the most recent commands for the logs view.
-func (h *WantedHandler) GetRecentCommands(c echo.Context) error {
+func (h *WantedHandler) GetRecentCommands(c *echo.Context) error {
 	limitStr := c.QueryParam("limit")
 	limit := 20
 	if limitStr != "" {
@@ -177,7 +178,7 @@ type SearchBookRequest struct {
 }
 
 // SearchBook triggers a search for a specific book.
-func (h *WantedHandler) SearchBook(c echo.Context) error {
+func (h *WantedHandler) SearchBook(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid book id")
@@ -218,7 +219,7 @@ type ManualGrabRequest struct {
 }
 
 // ManualGrab manually grabs a release.
-func (h *WantedHandler) ManualGrab(c echo.Context) error {
+func (h *WantedHandler) ManualGrab(c *echo.Context) error {
 	var req ManualGrabRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
@@ -252,7 +253,7 @@ func (h *WantedHandler) ManualGrab(c echo.Context) error {
 }
 
 // GetHistory returns history events.
-func (h *WantedHandler) GetHistory(c echo.Context) error {
+func (h *WantedHandler) GetHistory(c *echo.Context) error {
 	limit := 50
 	if l := c.QueryParam("limit"); l != "" {
 		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 {
@@ -274,7 +275,7 @@ func (h *WantedHandler) GetHistory(c echo.Context) error {
 }
 
 // GetBlocklist returns blocklisted releases.
-func (h *WantedHandler) GetBlocklist(c echo.Context) error {
+func (h *WantedHandler) GetBlocklist(c *echo.Context) error {
 	items, err := h.wantedService.GetBlocklist(c.Request().Context())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get blocklist")
@@ -296,7 +297,7 @@ type AddToBlocklistRequest struct {
 }
 
 // AddToBlocklist adds a release to the blocklist.
-func (h *WantedHandler) AddToBlocklist(c echo.Context) error {
+func (h *WantedHandler) AddToBlocklist(c *echo.Context) error {
 	var req AddToBlocklistRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
@@ -317,7 +318,7 @@ func (h *WantedHandler) AddToBlocklist(c echo.Context) error {
 }
 
 // RemoveFromBlocklist removes an item from the blocklist.
-func (h *WantedHandler) RemoveFromBlocklist(c echo.Context) error {
+func (h *WantedHandler) RemoveFromBlocklist(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid blocklist item id")

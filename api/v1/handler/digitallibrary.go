@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
 	"github.com/woliveiras/bookaneer/internal/library"
 )
@@ -32,7 +32,7 @@ type DigitalLibrarySearchResponse struct {
 }
 
 // Search searches all digital library providers.
-func (h *DigitalLibraryHandler) Search(c echo.Context) error {
+func (h *DigitalLibraryHandler) Search(c *echo.Context) error {
 	query := c.QueryParam("q")
 	if query == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "query parameter 'q' is required")
@@ -55,7 +55,7 @@ type DigitalLibraryProvidersResponse struct {
 }
 
 // Providers returns the list of configured digital library providers.
-func (h *DigitalLibraryHandler) Providers(c echo.Context) error {
+func (h *DigitalLibraryHandler) Providers(c *echo.Context) error {
 	return c.JSON(http.StatusOK, DigitalLibraryProvidersResponse{
 		Providers: h.agg.Providers(),
 	})

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/woliveiras/bookaneer/internal/notification"
 )
 
@@ -30,7 +30,7 @@ func (h *NotificationHandler) Register(g *echo.Group) {
 }
 
 // List returns all notification configs.
-func (h *NotificationHandler) List(c echo.Context) error {
+func (h *NotificationHandler) List(c *echo.Context) error {
 	configs, err := h.svc.List(c.Request().Context())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -42,7 +42,7 @@ func (h *NotificationHandler) List(c echo.Context) error {
 }
 
 // Get returns a single notification config.
-func (h *NotificationHandler) Get(c echo.Context) error {
+func (h *NotificationHandler) Get(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
@@ -58,7 +58,7 @@ func (h *NotificationHandler) Get(c echo.Context) error {
 }
 
 // Create creates a new notification config.
-func (h *NotificationHandler) Create(c echo.Context) error {
+func (h *NotificationHandler) Create(c *echo.Context) error {
 	var input notification.CreateInput
 	if err := c.Bind(&input); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -74,7 +74,7 @@ func (h *NotificationHandler) Create(c echo.Context) error {
 }
 
 // Update modifies an existing notification config.
-func (h *NotificationHandler) Update(c echo.Context) error {
+func (h *NotificationHandler) Update(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
@@ -94,7 +94,7 @@ func (h *NotificationHandler) Update(c echo.Context) error {
 }
 
 // Delete removes a notification config.
-func (h *NotificationHandler) Delete(c echo.Context) error {
+func (h *NotificationHandler) Delete(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
@@ -110,7 +110,7 @@ func (h *NotificationHandler) Delete(c echo.Context) error {
 }
 
 // Test sends a test notification to the specified channel.
-func (h *NotificationHandler) Test(c echo.Context) error {
+func (h *NotificationHandler) Test(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")

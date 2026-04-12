@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
 	"github.com/woliveiras/bookaneer/internal/download"
 )
@@ -31,8 +31,8 @@ func (h *DownloadHandler) Register(g *echo.Group) {
 	g.POST("/downloadclient/test", h.TestClient)
 
 	// Queue
-	g.GET("/queue", h.GetQueue)
-	g.GET("/queue/:clientId", h.GetClientQueue)
+	g.GET("/downloadclient/queue", h.GetQueue)
+	g.GET("/downloadclient/queue/:clientId", h.GetClientQueue)
 
 	// Grabs
 	g.GET("/grab", h.ListGrabs)
@@ -41,7 +41,7 @@ func (h *DownloadHandler) Register(g *echo.Group) {
 }
 
 // ListClients returns all download clients.
-func (h *DownloadHandler) ListClients(c echo.Context) error {
+func (h *DownloadHandler) ListClients(c *echo.Context) error {
 	clients, err := h.svc.ListClients(c.Request().Context())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list download clients")
@@ -50,7 +50,7 @@ func (h *DownloadHandler) ListClients(c echo.Context) error {
 }
 
 // GetClient returns a download client by ID.
-func (h *DownloadHandler) GetClient(c echo.Context) error {
+func (h *DownloadHandler) GetClient(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid client id")
@@ -88,7 +88,7 @@ type CreateClientRequest struct {
 }
 
 // CreateClient creates a new download client.
-func (h *DownloadHandler) CreateClient(c echo.Context) error {
+func (h *DownloadHandler) CreateClient(c *echo.Context) error {
 	var req CreateClientRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
@@ -128,7 +128,7 @@ func (h *DownloadHandler) CreateClient(c echo.Context) error {
 }
 
 // UpdateClient updates an existing download client.
-func (h *DownloadHandler) UpdateClient(c echo.Context) error {
+func (h *DownloadHandler) UpdateClient(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid client id")
@@ -170,7 +170,7 @@ func (h *DownloadHandler) UpdateClient(c echo.Context) error {
 }
 
 // DeleteClient deletes a download client.
-func (h *DownloadHandler) DeleteClient(c echo.Context) error {
+func (h *DownloadHandler) DeleteClient(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid client id")
@@ -201,7 +201,7 @@ type TestClientRequest struct {
 }
 
 // TestClient tests connectivity to a download client.
-func (h *DownloadHandler) TestClient(c echo.Context) error {
+func (h *DownloadHandler) TestClient(c *echo.Context) error {
 	var req TestClientRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
@@ -235,7 +235,7 @@ func (h *DownloadHandler) TestClient(c echo.Context) error {
 }
 
 // GetQueue returns the combined queue from all enabled clients.
-func (h *DownloadHandler) GetQueue(c echo.Context) error {
+func (h *DownloadHandler) GetQueue(c *echo.Context) error {
 	items, err := h.svc.GetQueue(c.Request().Context())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get queue")
@@ -244,7 +244,7 @@ func (h *DownloadHandler) GetQueue(c echo.Context) error {
 }
 
 // GetClientQueue returns the queue from a specific client.
-func (h *DownloadHandler) GetClientQueue(c echo.Context) error {
+func (h *DownloadHandler) GetClientQueue(c *echo.Context) error {
 	clientID, err := strconv.ParseInt(c.Param("clientId"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid client id")
@@ -261,7 +261,7 @@ func (h *DownloadHandler) GetClientQueue(c echo.Context) error {
 }
 
 // ListGrabs returns all grabs.
-func (h *DownloadHandler) ListGrabs(c echo.Context) error {
+func (h *DownloadHandler) ListGrabs(c *echo.Context) error {
 	grabs, err := h.svc.ListGrabs(c.Request().Context())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list grabs")
@@ -280,7 +280,7 @@ type CreateGrabRequest struct {
 }
 
 // CreateGrab creates a new grab.
-func (h *DownloadHandler) CreateGrab(c echo.Context) error {
+func (h *DownloadHandler) CreateGrab(c *echo.Context) error {
 	var req CreateGrabRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
@@ -307,7 +307,7 @@ type SendGrabRequest struct {
 }
 
 // SendGrab sends a grab to a download client.
-func (h *DownloadHandler) SendGrab(c echo.Context) error {
+func (h *DownloadHandler) SendGrab(c *echo.Context) error {
 	grabID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid grab id")

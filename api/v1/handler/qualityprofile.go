@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
 	"github.com/woliveiras/bookaneer/internal/core/qualityprofile"
 )
@@ -30,7 +30,7 @@ func (h *QualityProfileHandler) Register(g *echo.Group) {
 }
 
 // List returns all quality profiles.
-func (h *QualityProfileHandler) List(c echo.Context) error {
+func (h *QualityProfileHandler) List(c *echo.Context) error {
 	profiles, err := h.svc.List(c.Request().Context())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list quality profiles")
@@ -40,7 +40,7 @@ func (h *QualityProfileHandler) List(c echo.Context) error {
 }
 
 // GetByID returns a quality profile by ID.
-func (h *QualityProfileHandler) GetByID(c echo.Context) error {
+func (h *QualityProfileHandler) GetByID(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid quality profile id")
@@ -58,7 +58,7 @@ func (h *QualityProfileHandler) GetByID(c echo.Context) error {
 }
 
 // Create creates a new quality profile.
-func (h *QualityProfileHandler) Create(c echo.Context) error {
+func (h *QualityProfileHandler) Create(c *echo.Context) error {
 	var input qualityprofile.CreateQualityProfileInput
 	if err := c.Bind(&input); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
@@ -76,7 +76,7 @@ func (h *QualityProfileHandler) Create(c echo.Context) error {
 }
 
 // Update updates an existing quality profile.
-func (h *QualityProfileHandler) Update(c echo.Context) error {
+func (h *QualityProfileHandler) Update(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid quality profile id")
@@ -99,7 +99,7 @@ func (h *QualityProfileHandler) Update(c echo.Context) error {
 }
 
 // Delete deletes a quality profile.
-func (h *QualityProfileHandler) Delete(c echo.Context) error {
+func (h *QualityProfileHandler) Delete(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid quality profile id")

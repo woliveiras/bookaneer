@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
 	"github.com/woliveiras/bookaneer/internal/core/series"
 )
@@ -35,7 +35,7 @@ func (h *SeriesHandler) Register(g *echo.Group) {
 }
 
 // List returns a list of series.
-func (h *SeriesHandler) List(c echo.Context) error {
+func (h *SeriesHandler) List(c *echo.Context) error {
 	filter := series.ListSeriesFilter{
 		Search:  c.QueryParam("search"),
 		SortBy:  c.QueryParam("sortBy"),
@@ -69,7 +69,7 @@ func (h *SeriesHandler) List(c echo.Context) error {
 }
 
 // GetByID returns a series by ID with its books.
-func (h *SeriesHandler) GetByID(c echo.Context) error {
+func (h *SeriesHandler) GetByID(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid series id")
@@ -87,7 +87,7 @@ func (h *SeriesHandler) GetByID(c echo.Context) error {
 }
 
 // Create creates a new series.
-func (h *SeriesHandler) Create(c echo.Context) error {
+func (h *SeriesHandler) Create(c *echo.Context) error {
 	var input series.CreateSeriesInput
 	if err := c.Bind(&input); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
@@ -108,7 +108,7 @@ func (h *SeriesHandler) Create(c echo.Context) error {
 }
 
 // Update updates an existing series.
-func (h *SeriesHandler) Update(c echo.Context) error {
+func (h *SeriesHandler) Update(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid series id")
@@ -134,7 +134,7 @@ func (h *SeriesHandler) Update(c echo.Context) error {
 }
 
 // Delete deletes a series.
-func (h *SeriesHandler) Delete(c echo.Context) error {
+func (h *SeriesHandler) Delete(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid series id")
@@ -151,7 +151,7 @@ func (h *SeriesHandler) Delete(c echo.Context) error {
 }
 
 // AddBook adds a book to a series.
-func (h *SeriesHandler) AddBook(c echo.Context) error {
+func (h *SeriesHandler) AddBook(c *echo.Context) error {
 	seriesID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid series id")
@@ -179,7 +179,7 @@ func (h *SeriesHandler) AddBook(c echo.Context) error {
 }
 
 // RemoveBook removes a book from a series.
-func (h *SeriesHandler) RemoveBook(c echo.Context) error {
+func (h *SeriesHandler) RemoveBook(c *echo.Context) error {
 	seriesID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid series id")
@@ -201,7 +201,7 @@ func (h *SeriesHandler) RemoveBook(c echo.Context) error {
 }
 
 // UpdateBookPosition updates the position of a book in a series.
-func (h *SeriesHandler) UpdateBookPosition(c echo.Context) error {
+func (h *SeriesHandler) UpdateBookPosition(c *echo.Context) error {
 	seriesID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid series id")

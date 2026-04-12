@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/woliveiras/bookaneer/internal/auth"
 	"github.com/woliveiras/bookaneer/internal/config"
 )
@@ -36,7 +36,7 @@ type GeneralSettingsResponse struct {
 
 // GetGeneral returns general application settings including the API key.
 // GET /api/v1/settings/general
-func (h *SettingsHandler) GetGeneral(c echo.Context) error {
+func (h *SettingsHandler) GetGeneral(c *echo.Context) error {
 	ctx := c.Request().Context()
 
 	apiKey, err := h.authSvc.GetAPIKey(ctx)

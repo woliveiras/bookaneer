@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
 	"github.com/woliveiras/bookaneer/internal/core/author"
 )
@@ -31,7 +31,7 @@ func (h *AuthorHandler) Register(g *echo.Group) {
 }
 
 // List returns a list of authors.
-func (h *AuthorHandler) List(c echo.Context) error {
+func (h *AuthorHandler) List(c *echo.Context) error {
 	filter := author.ListAuthorsFilter{
 		Status:  c.QueryParam("status"),
 		Search:  c.QueryParam("search"),
@@ -66,7 +66,7 @@ func (h *AuthorHandler) List(c echo.Context) error {
 }
 
 // GetByID returns an author by ID.
-func (h *AuthorHandler) GetByID(c echo.Context) error {
+func (h *AuthorHandler) GetByID(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid author id")
@@ -84,7 +84,7 @@ func (h *AuthorHandler) GetByID(c echo.Context) error {
 }
 
 // Create creates a new author.
-func (h *AuthorHandler) Create(c echo.Context) error {
+func (h *AuthorHandler) Create(c *echo.Context) error {
 	var input author.CreateAuthorInput
 	if err := c.Bind(&input); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
@@ -105,7 +105,7 @@ func (h *AuthorHandler) Create(c echo.Context) error {
 }
 
 // Update updates an existing author.
-func (h *AuthorHandler) Update(c echo.Context) error {
+func (h *AuthorHandler) Update(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid author id")
@@ -133,7 +133,7 @@ func (h *AuthorHandler) Update(c echo.Context) error {
 // Delete deletes an author.
 // Query params:
 //   - deleteFiles: if "true", also deletes the author's folder and all files
-func (h *AuthorHandler) Delete(c echo.Context) error {
+func (h *AuthorHandler) Delete(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid author id")
@@ -152,7 +152,7 @@ func (h *AuthorHandler) Delete(c echo.Context) error {
 }
 
 // GetStats returns statistics for an author.
-func (h *AuthorHandler) GetStats(c echo.Context) error {
+func (h *AuthorHandler) GetStats(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid author id")
