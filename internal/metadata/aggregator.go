@@ -3,10 +3,11 @@ package metadata
 import (
 	"context"
 	"log/slog"
+	"strings"
 )
 
-// Aggregator wraps multiple providers and implements fallback logic.
-// It tries each provider in order until one succeeds.
+// Aggregator wraps multiple providers and merges results from all of them.
+// Providers that fail are skipped; results are deduplicated across providers.
 type Aggregator struct {
 	providers []Provider
 	logger    *slog.Logger
@@ -29,18 +30,22 @@ func (a *Aggregator) Providers() []Provider {
 	return a.providers
 }
 
-// SearchAuthors searches all providers and aggregates results.
-// Returns results from the first provider that succeeds.
+// SearchAuthors searches all providers and merges results.
+// Authors are deduplicated by normalized name.
 func (a *Aggregator) SearchAuthors(ctx context.Context, query string) ([]AuthorResult, error) {
 	if len(a.providers) == 0 {
 		return nil, ErrNoProviders
 	}
 
 	var lastErr error
+	var anySucceeded bool
+	var allResults []AuthorResult
+	seen := make(map[string]bool)
+
 	for _, p := range a.providers {
 		results, err := p.SearchAuthors(ctx, query)
 		if err != nil {
-			a.logger.Debug("provider search authors failed",
+			a.logger.Warn("provider search authors failed",
 				"provider", p.Name(),
 				"query", query,
 				"error", err,
@@ -48,29 +53,42 @@ func (a *Aggregator) SearchAuthors(ctx context.Context, query string) ([]AuthorR
 			lastErr = err
 			continue
 		}
-		if len(results) > 0 {
-			return results, nil
+		anySucceeded = true
+		for _, r := range results {
+			key := strings.ToLower(r.Name)
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			allResults = append(allResults, r)
 		}
 	}
 
-	if lastErr != nil {
+	if !anySucceeded && lastErr != nil {
 		return nil, lastErr
 	}
-	return []AuthorResult{}, nil
+	if allResults == nil {
+		allResults = []AuthorResult{}
+	}
+	return allResults, nil
 }
 
-// SearchBooks searches all providers and aggregates results.
-// Returns results from the first provider that succeeds.
+// SearchBooks searches all providers and merges results.
+// Books are deduplicated by ISBN13, ISBN10, or provider+foreignID.
 func (a *Aggregator) SearchBooks(ctx context.Context, query string) ([]BookResult, error) {
 	if len(a.providers) == 0 {
 		return nil, ErrNoProviders
 	}
 
 	var lastErr error
+	var anySucceeded bool
+	var allResults []BookResult
+	seen := make(map[string]bool)
+
 	for _, p := range a.providers {
 		results, err := p.SearchBooks(ctx, query)
 		if err != nil {
-			a.logger.Debug("provider search books failed",
+			a.logger.Warn("provider search books failed",
 				"provider", p.Name(),
 				"query", query,
 				"error", err,
@@ -78,15 +96,36 @@ func (a *Aggregator) SearchBooks(ctx context.Context, query string) ([]BookResul
 			lastErr = err
 			continue
 		}
-		if len(results) > 0 {
-			return results, nil
+		anySucceeded = true
+		for _, r := range results {
+			key := bookDedupeKey(r)
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			allResults = append(allResults, r)
 		}
 	}
 
-	if lastErr != nil {
+	if !anySucceeded && lastErr != nil {
 		return nil, lastErr
 	}
-	return []BookResult{}, nil
+	if allResults == nil {
+		allResults = []BookResult{}
+	}
+	return allResults, nil
+}
+
+// bookDedupeKey returns a deduplication key for a book result.
+// Prefers ISBN13, then ISBN10, then provider+foreignID.
+func bookDedupeKey(r BookResult) string {
+	if r.ISBN13 != "" {
+		return "isbn13:" + r.ISBN13
+	}
+	if r.ISBN10 != "" {
+		return "isbn10:" + r.ISBN10
+	}
+	return r.Provider + ":" + r.ForeignID
 }
 
 // GetAuthor fetches author details, trying each provider until one succeeds.

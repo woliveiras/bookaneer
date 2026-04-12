@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/labstack/echo/v5"
@@ -36,6 +37,7 @@ func (h *MetadataHandler) SearchAuthors(c *echo.Context) error {
 
 	results, err := h.aggregator.SearchAuthors(c.Request().Context(), req.Query)
 	if err != nil {
+		slog.Warn("metadata author search failed", "query", req.Query, "error", err)
 		return echo.NewHTTPError(http.StatusServiceUnavailable, "metadata search failed")
 	}
 
@@ -64,6 +66,7 @@ func (h *MetadataHandler) SearchBooks(c *echo.Context) error {
 
 	results, err := h.aggregator.SearchBooks(c.Request().Context(), req.Query)
 	if err != nil {
+		slog.Warn("metadata book search failed", "query", req.Query, "error", err)
 		return echo.NewHTTPError(http.StatusServiceUnavailable, "metadata search failed")
 	}
 
