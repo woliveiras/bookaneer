@@ -83,6 +83,7 @@ export function QueueList() {
   )
 
   const failedDownloads = downloadItems.filter((item) => item.status === "failed")
+  const completedDownloads = downloadItems.filter((item) => item.status === "completed")
 
   const handleClearAllFailed = async () => {
     for (const item of failedDownloads) {
@@ -94,14 +95,21 @@ export function QueueList() {
     }
   }
 
-  const clearAllFinishedCommands = () => {
+  const clearAllFinishedCommands = async () => {
     finishedCommands.forEach((cmd) => {
       dismissCommand(cmd.id)
     })
+    for (const item of completedDownloads) {
+      try {
+        await removeMutation.mutateAsync(item.id)
+      } catch (err) {
+        console.error("Failed to remove completed download:", err)
+      }
+    }
   }
 
   const hasActiveItems = activeBookCommands.length > 0 || downloadItems.length > 0
-  const hasFinishedItems = finishedCommands.length > 0
+  const hasFinishedItems = finishedCommands.length > 0 || completedDownloads.length > 0
   const isEmpty = !hasActiveItems && !hasFinishedItems
 
   return (
@@ -123,8 +131,8 @@ export function QueueList() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {finishedCommands.length > 1 && (
-            <Button variant="outline" size="sm" onClick={clearAllFinishedCommands}>
+          {(finishedCommands.length + completedDownloads.length) > 1 && (
+            <Button variant="outline" size="sm" onClick={clearAllFinishedCommands} disabled={removeMutation.isPending}>
               Clear All Results
             </Button>
           )}
