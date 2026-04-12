@@ -44,25 +44,12 @@ export const searchAnimationStyles = `
   @keyframes sail { 0%, 100% { left: 10%; } 50% { left: calc(90% - 4rem); } }
   @keyframes bob { 0%, 100% { transform: translateY(0) rotate(-2deg); } 25% { transform: translateY(-3px) rotate(0deg); } 50% { transform: translateY(0) rotate(2deg); } 75% { transform: translateY(2px) rotate(0deg); } }
   @keyframes waves { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-  @keyframes gradient-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   .animate-sail { animation: sail 4s ease-in-out infinite; }
   .animate-bob { animation: bob 2s ease-in-out infinite; }
   .animate-waves { animation: waves 3s linear infinite; }
-  .animate-gradient-spin { animation: gradient-spin 1s linear infinite; }
 `
 
-interface SearchSourceStatus {
-  name: string
-  done: boolean
-  error: unknown
-  retrying: boolean
-}
-
-interface SearchLoadingAnimationProps {
-  sources: SearchSourceStatus[]
-}
-
-export function SearchLoadingAnimation({ sources }: SearchLoadingAnimationProps) {
+export function SearchLoadingAnimation() {
   return (
     <div className="py-6">
       <div className="relative h-24 mx-auto max-w-sm overflow-hidden rounded-lg">
@@ -82,47 +69,9 @@ export function SearchLoadingAnimation({ sources }: SearchLoadingAnimationProps)
         </div>
       </div>
       <div className="text-center mt-4">
-        {sources.some((s) => s.retrying) ? (
-          <p className="text-sm text-amber-500 animate-pulse">
-            Some sources had issues, retrying...
-          </p>
-        ) : (
-          <p className="text-sm text-muted-foreground animate-pulse">
-            Sailing the seven seas for books...
-          </p>
-        )}
-      </div>
-      <div className="flex justify-center gap-3 mt-3 flex-wrap">
-        {sources.map((source) => (
-          <div
-            key={source.name}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground"
-          >
-            {source.done ? (
-              source.error ? (
-                <span className="text-destructive">✗</span>
-              ) : (
-                <span className="text-green-500">✓</span>
-              )
-            ) : (
-              <div className="relative h-3.5 w-3.5">
-                <div
-                  className="absolute inset-0 rounded-full animate-gradient-spin"
-                  style={{
-                    background: source.retrying
-                      ? "conic-gradient(from 0deg, transparent, #f59e0b, #eab308, transparent)"
-                      : "conic-gradient(from 0deg, transparent, #60a5fa, #3b82f6, transparent)",
-                  }}
-                />
-                <div className="absolute inset-0.5 rounded-full bg-background" />
-              </div>
-            )}
-            <span className="hidden sm:inline">
-              {source.name}
-              {source.retrying && <span className="text-amber-500 ml-1">(retrying...)</span>}
-            </span>
-          </div>
-        ))}
+        <p className="text-sm text-muted-foreground animate-pulse">
+          Sailing the seven seas for books...
+        </p>
       </div>
 
       <style>{searchAnimationStyles}</style>

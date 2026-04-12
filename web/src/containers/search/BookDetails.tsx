@@ -269,34 +269,6 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
 
   const totalResults = filteredLibraryResults.length + filteredIndexerResults.length
 
-  // Source status for loading indicator
-  const sources = [
-    {
-      name: "Anna's Archive",
-      done: libraryDone,
-      error: librarySearch.error,
-      retrying: (librarySearch.failureCount || 0) > 0 && librarySearch.isLoading,
-    },
-    {
-      name: "Library Genesis",
-      done: libraryDone,
-      error: librarySearch.error,
-      retrying: (librarySearch.failureCount || 0) > 0 && librarySearch.isLoading,
-    },
-    {
-      name: "Internet Archive",
-      done: libraryDone,
-      error: librarySearch.error,
-      retrying: (librarySearch.failureCount || 0) > 0 && librarySearch.isLoading,
-    },
-    {
-      name: "Torrent Indexers",
-      done: indexerDone,
-      error: indexerSearch.error,
-      retrying: (indexerSearch.failureCount || 0) > 0 && indexerSearch.isLoading,
-    },
-  ]
-
   return (
     <div className="space-y-6">
       <BookHeader
@@ -323,7 +295,7 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
       )}
 
       {/* Loading Animation */}
-      {searchStarted && isLoading && <SearchLoadingAnimation sources={sources} />}
+      {searchStarted && isLoading && <SearchLoadingAnimation />}
 
       {/* Filters */}
       {searchStarted && !isLoading && (libraryResults.length > 0 || indexerResults.length > 0) && (
