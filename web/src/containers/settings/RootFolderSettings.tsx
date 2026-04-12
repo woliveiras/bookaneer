@@ -197,74 +197,62 @@ export function RootFolderList() {
   return (
     <div className="space-y-6">
       {/* Folder cards */}
-      {!isFormOpen && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {folders?.map((folder) => (
+      {!isFormOpen && folders?.length ? (
+        <div className="space-y-4">
+          {folders.map((folder) => (
             <Card
               key={folder.id}
               className="cursor-pointer hover:border-primary transition-colors"
               onClick={() => setEditingFolder(folder)}
             >
               <CardContent className="p-4">
-                <div className="font-medium truncate">{folder.name}</div>
-                <div
-                  className="text-xs text-muted-foreground mt-1 font-mono truncate"
-                  title={folder.path}
-                >
-                  {folder.path}
-                </div>
-                <div className="flex gap-2 mt-2">
-                  {folder.accessible ? (
-                    <Badge variant="secondary" className="text-xs">
-                      Accessible
-                    </Badge>
-                  ) : (
-                    <Badge variant="destructive" className="text-xs">
-                      Not Accessible
-                    </Badge>
-                  )}
-                  {folder.authorCount !== undefined && folder.authorCount > 0 && (
-                    <Badge variant="outline" className="text-xs">
-                      {folder.authorCount} authors
-                    </Badge>
-                  )}
-                </div>
-                {folder.freeSpace !== undefined &&
-                  folder.totalSpace !== undefined &&
-                  folder.totalSpace > 0 && (
-                    <div className="mt-2">
-                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                        <span>{formatBytes(folder.freeSpace)} free</span>
-                        <span>{formatBytes(folder.totalSpace)} total</span>
-                      </div>
-                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary rounded-full"
-                          style={{
-                            width: `${((folder.totalSpace - folder.freeSpace) / folder.totalSpace) * 100}%`,
-                          }}
-                        />
-                      </div>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-lg font-medium">{folder.name}</div>
+                    <div className="text-sm text-muted-foreground mt-1 font-mono break-all">
+                      {folder.path}
                     </div>
-                  )}
+                    <div className="flex gap-2 mt-3">
+                      {folder.accessible ? (
+                        <Badge variant="secondary" className="text-xs">
+                          Accessible
+                        </Badge>
+                      ) : (
+                        <Badge variant="destructive" className="text-xs">
+                          Not Accessible
+                        </Badge>
+                      )}
+                      {folder.authorCount !== undefined && folder.authorCount > 0 && (
+                        <Badge variant="outline" className="text-xs">
+                          {folder.authorCount} authors
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  {folder.freeSpace !== undefined &&
+                    folder.totalSpace !== undefined &&
+                    folder.totalSpace > 0 && (
+                      <div className="w-48 shrink-0">
+                        <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                          <span>{formatBytes(folder.freeSpace)} free</span>
+                          <span>{formatBytes(folder.totalSpace)} total</span>
+                        </div>
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary rounded-full"
+                            style={{
+                              width: `${((folder.totalSpace - folder.freeSpace) / folder.totalSpace) * 100}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                </div>
               </CardContent>
             </Card>
           ))}
-
-          {/* Add button */}
-          <Card
-            className="cursor-pointer hover:border-primary transition-colors border-dashed"
-            onClick={() => setShowAddForm(true)}
-          >
-            <CardContent className="p-4 flex items-center justify-center min-h-[120px]">
-              <div className="text-center">
-                <span className="text-4xl text-muted-foreground">+</span>
-                <p className="text-sm text-muted-foreground mt-2">Add Root Folder</p>
-              </div>
-            </CardContent>
-          </Card>
         </div>
-      )}
+      ) : null}
 
       {/* Add form */}
       {showAddForm && (
