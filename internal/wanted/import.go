@@ -101,7 +101,8 @@ func (s *Service) ProcessDownloads(ctx context.Context) (*ProcessDownloadsResult
 			result.Completed++
 			// Import file to library
 			if status.SavePath != "" {
-				if err := s.importCompletedDownload(ctx, d.ID, status.SavePath); err != nil {
+				mismatch, err := s.importCompletedDownload(ctx, d.ID, status.SavePath)
+				if err != nil {
 					slog.Warn("Failed to import download",
 						"queueId", d.ID,
 						"path", status.SavePath,
@@ -111,11 +112,20 @@ func (s *Service) ProcessDownloads(ctx context.Context) (*ProcessDownloadsResult
 					slog.Info("Download imported to library",
 						"queueId", d.ID,
 						"path", status.SavePath,
+						"contentMismatch", mismatch,
 					)
 					result.Imported++
 
-					// Clean up search results after successful import
-					s.cleanupSearchResults(ctx, d.ID)
+					// If content mismatch detected and alternative sources exist, try next source
+					if mismatch {
+						slog.Warn("Content mismatch — trying next download source",
+							"queueId", d.ID,
+						)
+						s.tryNextSourceForMismatch(ctx, d.ID)
+					} else {
+						// Clean up search results after successful import with verified content
+						s.cleanupSearchResults(ctx, d.ID)
+					}
 				}
 			}
 		case download.StatusFailed:
@@ -186,7 +196,7 @@ func (s *Service) importPendingCompletedDownloads(ctx context.Context) (int, err
 		}
 
 		// Import the download
-		if err := s.importCompletedDownload(ctx, p.queueID, p.savePath); err != nil {
+		if _, err := s.importCompletedDownload(ctx, p.queueID, p.savePath); err != nil {
 			slog.Warn("Failed to import pending download",
 				"queueId", p.queueID,
 				"path", p.savePath,

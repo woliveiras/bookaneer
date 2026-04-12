@@ -14,7 +14,8 @@ import (
 )
 
 // importCompletedDownload imports a completed download to the library.
-func (s *Service) importCompletedDownload(ctx context.Context, queueID int64, sourcePath string) error {
+// Returns contentMismatch=true if the file's metadata doesn't match the expected book.
+func (s *Service) importCompletedDownload(ctx context.Context, queueID int64, sourcePath string) (bool, error) {
 	// Get queue item to find book_id
 	var bookID int64
 	var format string
@@ -22,20 +23,20 @@ func (s *Service) importCompletedDownload(ctx context.Context, queueID int64, so
 		SELECT book_id, format FROM download_queue WHERE id = ?
 	`, queueID).Scan(&bookID, &format)
 	if err != nil {
-		return fmt.Errorf("get queue item: %w", err)
+		return false, fmt.Errorf("get queue item: %w", err)
 	}
 
 	// Get book info
 	b, err := s.bookService.FindByID(ctx, bookID)
 	if err != nil {
-		return fmt.Errorf("find book: %w", err)
+		return false, fmt.Errorf("find book: %w", err)
 	}
 
 	// Get first root folder
 	var rootPath string
 	err = s.db.QueryRowContext(ctx, `SELECT path FROM root_folders ORDER BY id LIMIT 1`).Scan(&rootPath)
 	if err != nil {
-		return fmt.Errorf("get root folder: %w", err)
+		return false, fmt.Errorf("get root folder: %w", err)
 	}
 
 	// Determine format from source file if not in queue
@@ -55,7 +56,7 @@ func (s *Service) importCompletedDownload(ctx context.Context, queueID int64, so
 
 	authorDir := filepath.Dir(result.FullPath)
 	if err := os.MkdirAll(authorDir, 0755); err != nil {
-		return fmt.Errorf("create author directory: %w", err)
+		return false, fmt.Errorf("create author directory: %w", err)
 	}
 
 	destPath := result.FullPath
@@ -77,7 +78,7 @@ func (s *Service) importCompletedDownload(ctx context.Context, queueID int64, so
 	if !sameFile {
 		// Copy file to library (copy instead of move for safety)
 		if err := copyFile(sourcePath, destPath); err != nil {
-			return fmt.Errorf("copy file: %w", err)
+			return false, fmt.Errorf("copy file: %w", err)
 		}
 	} else {
 		slog.Debug("Source and destination are the same, skipping copy", "path", destPath)
@@ -86,7 +87,7 @@ func (s *Service) importCompletedDownload(ctx context.Context, queueID int64, so
 	// Get file info
 	info, err := os.Stat(destPath)
 	if err != nil {
-		return fmt.Errorf("stat destination: %w", err)
+		return false, fmt.Errorf("stat destination: %w", err)
 	}
 
 	// Calculate hash for smaller files
@@ -96,6 +97,7 @@ func (s *Service) importCompletedDownload(ctx context.Context, queueID int64, so
 	}
 
 	// Extract metadata from the file (best effort)
+	var contentMismatch bool
 	if meta, err := mediafile.ExtractMetadata(destPath); err == nil && meta != nil {
 		slog.Debug("Extracted metadata from file",
 			"bookId", bookID,
@@ -103,6 +105,29 @@ func (s *Service) importCompletedDownload(ctx context.Context, queueID int64, so
 			"authors", meta.Authors,
 			"isbn", meta.ISBN,
 		)
+
+		// Verify content matches expected book
+		match := mediafile.VerifyContent(meta, b.Title, b.AuthorName)
+		if match.Mismatch {
+			contentMismatch = true
+			slog.Warn("Content mismatch detected",
+				"bookId", bookID,
+				"expectedTitle", b.Title,
+				"actualTitle", meta.Title,
+				"expectedAuthor", b.AuthorName,
+				"actualAuthors", meta.Authors,
+				"titleScore", match.TitleScore,
+				"authorScore", match.AuthorScore,
+			)
+			s.recordHistory(ctx, bookID, b.AuthorID, "contentMismatch", b.Title, format, map[string]any{
+				"expectedTitle":  b.Title,
+				"actualTitle":    meta.Title,
+				"expectedAuthor": b.AuthorName,
+				"actualAuthors":  meta.Authors,
+				"titleScore":     match.TitleScore,
+				"authorScore":    match.AuthorScore,
+			})
+		}
 
 		// Enrich book record with metadata if fields are empty
 		if meta.ISBN != "" && b.ISBN13 == "" {
@@ -122,23 +147,24 @@ func (s *Service) importCompletedDownload(ctx context.Context, queueID int64, so
 
 	// Add to book_files
 	_, err = s.db.ExecContext(ctx, `
-		INSERT INTO book_files (book_id, path, relative_path, size, format, quality, hash)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-	`, bookID, destPath, relativePath, info.Size(), format, format, hash)
+		INSERT INTO book_files (book_id, path, relative_path, size, format, quality, hash, content_mismatch)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, bookID, destPath, relativePath, info.Size(), format, format, hash, contentMismatch)
 	if err != nil {
-		return fmt.Errorf("insert book_file: %w", err)
+		return false, fmt.Errorf("insert book_file: %w", err)
 	}
 
 	// Update queue status to completed
 	if err := s.UpdateQueueItemStatus(ctx, queueID, "completed", 100); err != nil {
-		return fmt.Errorf("update queue status: %w", err)
+		return false, fmt.Errorf("update queue status: %w", err)
 	}
 
 	// Record history
 	s.recordHistory(ctx, bookID, b.AuthorID, "bookImported", b.Title, format, map[string]any{
-		"path":       destPath,
-		"size":       info.Size(),
-		"sourcePath": sourcePath,
+		"path":            destPath,
+		"size":            info.Size(),
+		"sourcePath":      sourcePath,
+		"contentMismatch": contentMismatch,
 	})
 
 	// Try to remove source file (best effort) — only if source != destination
@@ -162,7 +188,7 @@ func (s *Service) importCompletedDownload(ctx context.Context, queueID int64, so
 		}()
 	}
 
-	return nil
+	return contentMismatch, nil
 }
 
 // buildNamingContext creates a naming.Context from book data and series info.

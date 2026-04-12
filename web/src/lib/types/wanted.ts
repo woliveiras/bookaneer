@@ -36,6 +36,9 @@ export type HistoryEventType =
   | "bookFileDeleted"
   | "bookFileRenamed"
   | "bookImported"
+  | "contentMismatch"
+  | "wrongContent"
+  | "metadataExtracted"
 
 export interface HistoryItem {
   id: number

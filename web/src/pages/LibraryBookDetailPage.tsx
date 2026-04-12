@@ -6,13 +6,16 @@ import { PageError, PageLoading } from "../components/common"
 import { Button } from "../components/ui"
 import { bookApi } from "../lib/api"
 import { navigateToBookSearch } from "../lib/navigation"
-import { BookOpen, Search, Trash2 } from "lucide-react"
+import { useReportWrongContent } from "../hooks/useWanted"
+import { AlertTriangle, BookOpen, Search, Trash2 } from "lucide-react"
 
 export function LibraryBookDetailPage() {
   const { bookId } = useParams({ from: "/book/$bookId" })
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showWrongContentConfirm, setShowWrongContentConfirm] = useState(false)
+  const wrongContentMutation = useReportWrongContent()
 
   const {
     data: book,
@@ -52,6 +55,7 @@ export function LibraryBookDetailPage() {
   }
 
   const hasFile = book.files && book.files.length > 0
+  const hasContentMismatch = book.files?.some((f) => f.contentMismatch) ?? false
 
   return (
     <AuthLayout>
@@ -118,6 +122,19 @@ export function LibraryBookDetailPage() {
               <p className="text-sm text-muted-foreground line-clamp-4">{book.overview}</p>
             )}
 
+            {/* Content mismatch warning */}
+            {hasContentMismatch && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-amber-500">Possible wrong content</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    The downloaded file's metadata doesn't match this book. Open to verify, or report as wrong content to try another source.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-2 pt-4">
               {hasFile && (
                 <Button
@@ -129,6 +146,15 @@ export function LibraryBookDetailPage() {
                   }
                 >
                   <BookOpen className="w-4 h-4" /> Read
+                </Button>
+              )}
+              {hasFile && (
+                <Button
+                  variant="outline"
+                  className="text-amber-500 border-amber-500/50 hover:bg-amber-500/10"
+                  onClick={() => setShowWrongContentConfirm(true)}
+                >
+                  <AlertTriangle className="w-4 h-4" /> Wrong Content
                 </Button>
               )}
               <Button
@@ -165,6 +191,34 @@ export function LibraryBookDetailPage() {
                       disabled={deleteMutation.isPending}
                     >
                       {deleteMutation.isPending ? "Deleting..." : "Delete"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Wrong content confirmation dialog */}
+            {showWrongContentConfirm && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+                  <h3 className="text-lg font-semibold mb-2">Report Wrong Content?</h3>
+                  <p className="text-muted-foreground mb-4">
+                    This will remove the current file, blocklist this source, and automatically search for an alternative download.
+                  </p>
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={() => setShowWrongContentConfirm(false)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      className="bg-amber-500 hover:bg-amber-600 text-white"
+                      onClick={() => {
+                        wrongContentMutation.mutate(book.id, {
+                          onSuccess: () => setShowWrongContentConfirm(false),
+                        })
+                      }}
+                      disabled={wrongContentMutation.isPending}
+                    >
+                      {wrongContentMutation.isPending ? "Reporting..." : "Report & Retry"}
                     </Button>
                   </div>
                 </div>

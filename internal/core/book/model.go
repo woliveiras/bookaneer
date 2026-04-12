@@ -41,16 +41,17 @@ type Edition struct {
 
 // BookFile represents a book file on disk.
 type BookFile struct {
-	ID           int64  `json:"id"`
-	BookID       int64  `json:"bookId"`
-	EditionID    *int64 `json:"editionId,omitempty"`
-	Path         string `json:"path"`
-	RelativePath string `json:"relativePath"`
-	Size         int64  `json:"size"`
-	Format       string `json:"format"` // epub, mobi, azw3, pdf, cbz
-	Quality      string `json:"quality"`
-	Hash         string `json:"hash"` // SHA-256
-	AddedAt      string `json:"addedAt"`
+	ID              int64  `json:"id"`
+	BookID          int64  `json:"bookId"`
+	EditionID       *int64 `json:"editionId,omitempty"`
+	Path            string `json:"path"`
+	RelativePath    string `json:"relativePath"`
+	Size            int64  `json:"size"`
+	Format          string `json:"format"` // epub, mobi, azw3, pdf, cbz
+	Quality         string `json:"quality"`
+	Hash            string `json:"hash"` // SHA-256
+	AddedAt         string `json:"addedAt"`
+	ContentMismatch bool   `json:"contentMismatch"`
 }
 
 // CreateBookInput holds the data needed to create a new book.

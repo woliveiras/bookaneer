@@ -39,6 +39,11 @@ export const wantedApi = {
     const params = limit ? `?limit=${limit}` : ""
     return fetchAPI<ActiveCommand[]>(`/commands/recent${params}`)
   },
+
+  reportWrongContent: (bookId: number) =>
+    fetchAPI<{ message: string }>(`/book/${bookId}/wrong-content`, {
+      method: "POST",
+    }),
 }
 
 export const historyApi = {

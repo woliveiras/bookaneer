@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log/slog"
+	"os"
 )
 
 // GetHistory returns recent history events.
@@ -109,4 +111,65 @@ func (s *Service) AddToBlocklist(ctx context.Context, bookID int64, sourceTitle,
 func (s *Service) RemoveFromBlocklist(ctx context.Context, id int64) error {
 	_, err := s.db.ExecContext(ctx, `DELETE FROM blocklist WHERE id = ?`, id)
 	return err
+}
+
+// ReportWrongContent handles when a user reports that a downloaded file has wrong content.
+// It removes the book file, blocklists the source, and tries the next available source.
+func (s *Service) ReportWrongContent(ctx context.Context, bookID int64) error {
+	// Get and remove the book file
+	var fileID int64
+	var filePath, format string
+	err := s.db.QueryRowContext(ctx, `
+		SELECT id, path, format FROM book_files WHERE book_id = ?
+	`, bookID).Scan(&fileID, &filePath, &format)
+	if err != nil {
+		return fmt.Errorf("no book file found for book %d: %w", bookID, err)
+	}
+
+	// Get book info for history
+	b, err := s.bookService.FindByID(ctx, bookID)
+	if err != nil {
+		return fmt.Errorf("find book: %w", err)
+	}
+
+	// Find the download URL from queue or history for blocklisting
+	var sourceTitle string
+	err = s.db.QueryRowContext(ctx, `
+		SELECT title FROM download_queue WHERE book_id = ? ORDER BY added_at DESC LIMIT 1
+	`, bookID).Scan(&sourceTitle)
+	if err != nil {
+		sourceTitle = filePath // fallback to file path
+	}
+
+	// Delete the file from disk
+	_ = os.Remove(filePath)
+
+	// Remove from book_files
+	_, _ = s.db.ExecContext(ctx, `DELETE FROM book_files WHERE id = ?`, fileID)
+
+	// Blocklist this source
+	_ = s.AddToBlocklist(ctx, bookID, sourceTitle, format, "wrong content reported by user")
+
+	// Record history
+	s.recordHistory(ctx, bookID, b.AuthorID, "wrongContent", b.Title, format, map[string]any{
+		"path":        filePath,
+		"sourceTitle": sourceTitle,
+	})
+
+	// Try next available source
+	pending := s.GetPendingSourcesCount(ctx, bookID)
+	if pending > 0 {
+		grabResult, grabErr := s.grabNextSearchResult(ctx, b)
+		if grabErr != nil {
+			slog.Warn("Failed to grab next source after wrong content report", "book", b.Title, "error", grabErr)
+		} else {
+			slog.Info("Retrying download after wrong content report",
+				"book", b.Title,
+				"source", grabResult.ProviderName,
+				"remaining", pending-1,
+			)
+		}
+	}
+
+	return nil
 }

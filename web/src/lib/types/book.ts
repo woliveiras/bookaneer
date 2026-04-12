@@ -44,6 +44,7 @@ export interface BookFile {
   quality: string
   hash: string
   addedAt: string
+  contentMismatch: boolean
 }
 
 export interface BookWithEditions extends Book {

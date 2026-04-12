@@ -51,6 +51,7 @@ func (h *WantedHandler) Register(g *echo.Group) {
 
 	// Manual search and grab
 	g.POST("/book/:id/search", h.SearchBook)
+	g.POST("/book/:id/wrong-content", h.ReportWrongContent)
 	g.POST("/release", h.ManualGrab)
 }
 
@@ -329,4 +330,22 @@ func (h *WantedHandler) RemoveFromBlocklist(c *echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusOK)
+}
+
+// ReportWrongContent marks a book file as having wrong content.
+// It removes the file, blocklists the source, and tries the next available source.
+func (h *WantedHandler) ReportWrongContent(c *echo.Context) error {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid book id")
+	}
+
+	if err := h.wantedService.ReportWrongContent(c.Request().Context(), id); err != nil {
+		slog.Error("failed to report wrong content", "bookId", id, "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to report wrong content")
+	}
+
+	return c.JSON(http.StatusOK, map[string]any{
+		"message": "File removed, source blocklisted. Searching for alternative sources.",
+	})
 }

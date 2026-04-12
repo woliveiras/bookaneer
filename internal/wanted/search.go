@@ -249,3 +249,45 @@ func (s *Service) GetPendingSourcesCount(ctx context.Context, bookID int64) int 
 	`, bookID, searchResultPending).Scan(&count)
 	return count
 }
+
+// tryNextSourceForMismatch handles content mismatch by blocklisting the bad source
+// and attempting the next available one. The mismatched file is kept (flagged)
+// so the user can inspect it.
+func (s *Service) tryNextSourceForMismatch(ctx context.Context, queueID int64) {
+	var bookID int64
+	var title, downloadURL, format string
+	err := s.db.QueryRowContext(ctx, `
+		SELECT book_id, title, download_url, format FROM download_queue WHERE id = ?
+	`, queueID).Scan(&bookID, &title, &downloadURL, &format)
+	if err != nil {
+		slog.Warn("failed to get queue item for mismatch retry", "queueId", queueID, "error", err)
+		return
+	}
+
+	// Blocklist the bad source so we don't try it again
+	_ = s.AddToBlocklist(ctx, bookID, title, format, "content mismatch detected automatically")
+
+	// Check if there are more sources to try
+	pending := s.GetPendingSourcesCount(ctx, bookID)
+	if pending == 0 {
+		slog.Info("No alternative sources for content mismatch", "book", title)
+		return
+	}
+
+	b, err := s.bookService.FindByID(ctx, bookID)
+	if err != nil {
+		return
+	}
+
+	grabResult, err := s.grabNextSearchResult(ctx, b)
+	if err != nil {
+		slog.Warn("Failed to grab next source after mismatch", "book", b.Title, "error", err)
+		return
+	}
+
+	slog.Info("Retrying with alternative source after content mismatch",
+		"book", b.Title,
+		"source", grabResult.ProviderName,
+		"remaining", pending-1,
+	)
+}

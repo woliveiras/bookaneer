@@ -130,3 +130,17 @@ export function useRemoveFromBlocklist() {
     },
   })
 }
+
+export function useReportWrongContent() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: wantedApi.reportWrongContent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["books"] })
+      queryClient.invalidateQueries({ queryKey: ["book"] })
+      queryClient.invalidateQueries({ queryKey: ["queue"] })
+      queryClient.invalidateQueries({ queryKey: ["blocklist"] })
+      queryClient.invalidateQueries({ queryKey: ["history"] })
+    },
+  })
+}

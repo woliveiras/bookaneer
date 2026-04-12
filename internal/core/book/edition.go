@@ -44,7 +44,7 @@ func (s *Service) GetWithEditions(ctx context.Context, id int64) (*BookWithEditi
 
 	// Get files
 	fileRows, err := s.db.QueryContext(ctx, `
-		SELECT id, book_id, edition_id, path, relative_path, size, format, quality, hash, added_at
+		SELECT id, book_id, edition_id, path, relative_path, size, format, quality, hash, added_at, content_mismatch
 		FROM book_files WHERE book_id = ?
 	`, id)
 	if err != nil {
@@ -55,7 +55,7 @@ func (s *Service) GetWithEditions(ctx context.Context, id int64) (*BookWithEditi
 	for fileRows.Next() {
 		var f BookFile
 		if err := fileRows.Scan(
-			&f.ID, &f.BookID, &f.EditionID, &f.Path, &f.RelativePath, &f.Size, &f.Format, &f.Quality, &f.Hash, &f.AddedAt,
+			&f.ID, &f.BookID, &f.EditionID, &f.Path, &f.RelativePath, &f.Size, &f.Format, &f.Quality, &f.Hash, &f.AddedAt, &f.ContentMismatch,
 		); err != nil {
 			return nil, fmt.Errorf("scan book file: %w", err)
 		}
