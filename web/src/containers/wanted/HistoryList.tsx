@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router"
 import { useState } from "react"
-import { CheckCircle, ClipboardList, Download, FileEdit, Library, ScrollText, Trash2, XCircle } from "lucide-react"
+import { AlertTriangle, CheckCircle, ClipboardList, Download, FileEdit, FileSearch, Library, ScrollText, Trash2, XCircle } from "lucide-react"
 import type { ReactNode } from "react"
 import { Button, Card, CardContent } from "../../components/ui"
 import { useHistory } from "../../hooks/useWanted"
@@ -36,6 +36,21 @@ const eventTypeLabels: Record<HistoryEventType, { label: string; color: string; 
     label: "Imported",
     color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
     icon: <Library className="w-5 h-5" />,
+  },
+  contentMismatch: {
+    label: "Content Mismatch",
+    color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+    icon: <AlertTriangle className="w-5 h-5" />,
+  },
+  wrongContent: {
+    label: "Wrong Content",
+    color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    icon: <AlertTriangle className="w-5 h-5" />,
+  },
+  metadataExtracted: {
+    label: "Metadata Extracted",
+    color: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
+    icon: <FileSearch className="w-5 h-5" />,
   },
 }
 
