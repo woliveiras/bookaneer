@@ -237,10 +237,11 @@ func setupEcho(authSvc *auth.Service) *echo.Echo {
 func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Config, authSvc *auth.Service) error {
 	ctx := context.Background()
 
-	// Public endpoints
+	// Public endpoints (registered on Echo, not on api group, to avoid
+	// group-middleware leaking from the protected subgroup).
 	systemHandler := handler.NewSystemHandler(version, buildTime, cfg, db)
-	api.GET("/system/status", systemHandler.Status)
-	api.GET("/system/health", systemHandler.Health)
+	e.GET("/api/v1/system/status", systemHandler.Status)
+	e.GET("/api/v1/system/health", systemHandler.Health)
 	api.GET("/tag", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, []interface{}{})
 	})
