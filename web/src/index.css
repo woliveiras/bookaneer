@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+/* @theme must be top-level in Tailwind v4 — define all tokens here (light mode defaults) */
 @theme {
   --color-background: oklch(100% 0 0);
   --color-foreground: oklch(14.1% 0.005 286);
@@ -15,6 +16,8 @@
   --color-accent-foreground: oklch(14.1% 0.005 286);
   --color-destructive: oklch(57.7% 0.245 27.3);
   --color-destructive-foreground: oklch(99.3% 0.002 286);
+  --color-success: oklch(64% 0.17 145);
+  --color-success-foreground: oklch(99.3% 0.002 286);
   --color-border: oklch(91.7% 0.003 286);
   --color-input: oklch(91.7% 0.003 286);
   --color-ring: oklch(14.1% 0.005 286);
@@ -22,8 +25,9 @@
   --font-sans: system-ui, -apple-system, sans-serif;
 }
 
+/* Dark mode — override CSS variables at :root (not inside @theme) */
 @media (prefers-color-scheme: dark) {
-  @theme {
+  :root {
     --color-background: oklch(14.1% 0.005 286);
     --color-foreground: oklch(99.3% 0.002 286);
     --color-muted: oklch(21.8% 0.006 286);
@@ -38,6 +42,8 @@
     --color-accent-foreground: oklch(99.3% 0.002 286);
     --color-destructive: oklch(57.7% 0.245 27.3);
     --color-destructive-foreground: oklch(99.3% 0.002 286);
+    --color-success: oklch(52% 0.15 145);
+    --color-success-foreground: oklch(99.3% 0.002 286);
     --color-border: oklch(21.8% 0.006 286);
     --color-input: oklch(21.8% 0.006 286);
     --color-ring: oklch(87.5% 0.004 286);

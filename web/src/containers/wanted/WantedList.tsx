@@ -194,7 +194,7 @@ function WantedBookCard({
     <Card>
       <div className="flex items-start gap-4 p-4">
         {/* Cover image */}
-        <div className="flex-shrink-0 w-16 h-24 bg-muted rounded overflow-hidden">
+        <div className="shrink-0 w-16 h-24 bg-muted rounded overflow-hidden">
           {book.imageUrl ? (
             <img src={book.imageUrl} alt={book.title} className="w-full h-full object-cover" />
           ) : (
