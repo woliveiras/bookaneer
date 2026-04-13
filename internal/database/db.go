@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/pressly/goose/v3"
 	_ "modernc.org/sqlite"
 )
@@ -37,6 +38,11 @@ func Open(path string) (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+// OpenX wraps an existing *sql.DB with sqlx, using the sqlite driver name.
+func OpenX(db *sql.DB) *sqlx.DB {
+	return sqlx.NewDb(db, "sqlite")
 }
 
 // Migrate runs all pending database migrations.

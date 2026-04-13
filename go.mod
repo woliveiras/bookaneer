@@ -15,6 +15,8 @@ require (
 
 require github.com/labstack/echo/v5 v5.1.0
 
+require github.com/jmoiron/sqlx v1.4.0
+
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"testing"
 
+	"github.com/jmoiron/sqlx"
 	bookaneer "github.com/woliveiras/bookaneer"
 
 	"github.com/pressly/goose/v3"
@@ -45,6 +46,12 @@ func OpenTestDB(t *testing.T) *sql.DB {
 	}
 
 	return db
+}
+
+// OpenTestDBX wraps OpenTestDB with sqlx, using the sqlite driver name.
+func OpenTestDBX(t *testing.T) *sqlx.DB {
+	t.Helper()
+	return sqlx.NewDb(OpenTestDB(t), "sqlite")
 }
 
 // SeedAuthor inserts a test author and returns its ID.
