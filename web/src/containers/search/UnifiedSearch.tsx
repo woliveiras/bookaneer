@@ -24,7 +24,7 @@ function BookCard({ book, onSelect, isSelected }: BookCardProps) {
           <img
             src={book.coverUrl}
             alt={book.title}
-            className="w-16 h-24 object-cover rounded shadow"
+            className="w-16 h-24 object-cover rounded shadow-sm"
             loading="lazy"
           />
         ) : (
