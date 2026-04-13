@@ -187,7 +187,7 @@ function MobileBottomNav() {
                     onClick={() => setDrawerOpen(false)}
                     className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-accent"
                     activeProps={{ className: "text-primary bg-accent" }}
-                    activeOptions={{ exact: (to as string) === "/" }}
+                    activeOptions={{ exact: false }}
                   >
                     <Icon className="w-5 h-5" aria-hidden="true" />
                     {label}
@@ -213,7 +213,7 @@ function MobileBottomNav() {
                 className="flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] w-full text-xs font-medium transition-colors text-muted-foreground"
                 activeProps={{ className: "text-primary" }}
                 inactiveProps={{ className: "text-muted-foreground" }}
-                activeOptions={{ exact: (to as string) === "/" }}
+                activeOptions={{ exact: to === "/" }}
               >
                 <Icon className="w-5 h-5" aria-hidden="true" />
                 <span>{label}</span>
