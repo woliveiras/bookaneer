@@ -68,7 +68,7 @@ export function LibraryBookDetailPage() {
 
         <div className="flex flex-col sm:flex-row gap-6">
           {/* Cover */}
-          <div className="shrink-0 w-32 h-48 bg-muted rounded-lg overflow-hidden self-start">
+          <div className="shrink-0 w-32 h-48 bg-muted rounded-lg overflow-hidden self-center sm:self-start mx-auto sm:mx-0">
             {book.imageUrl ? (
               <img src={book.imageUrl} alt={book.title} className="w-full h-full object-cover" />
             ) : (
