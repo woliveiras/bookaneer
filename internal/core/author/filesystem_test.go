@@ -40,7 +40,7 @@ func TestSanitizeFolderName(t *testing.T) {
 }
 
 func TestDeleteAuthorFiles_NoRootFolder(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := New(db)
 	ctx := context.Background()
 
@@ -51,12 +51,12 @@ func TestDeleteAuthorFiles_NoRootFolder(t *testing.T) {
 }
 
 func TestDeleteAuthorFiles_FolderDoesNotExist(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := New(db)
 	ctx := context.Background()
 
 	dir := t.TempDir()
-	testutil.SeedRootFolder(t, db, dir, "Library")
+	testutil.SeedRootFolder(t, db.DB, dir, "Library")
 
 	// Author folder does not exist on disk — should return nil
 	a := &Author{ID: 1, Name: "Nonexistent Author"}
@@ -65,12 +65,12 @@ func TestDeleteAuthorFiles_FolderDoesNotExist(t *testing.T) {
 }
 
 func TestDeleteAuthorFiles_RemovesFolder(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := New(db)
 	ctx := context.Background()
 
 	dir := t.TempDir()
-	testutil.SeedRootFolder(t, db, dir, "Library")
+	testutil.SeedRootFolder(t, db.DB, dir, "Library")
 
 	// Create the author folder with a file inside
 	authorFolderName := sanitizeFolderName("Brandon Sanderson")
@@ -87,7 +87,7 @@ func TestDeleteAuthorFiles_RemovesFolder(t *testing.T) {
 }
 
 func TestDeleteAuthorFiles_DBError(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := New(db)
 	ctx := context.Background()
 
@@ -105,12 +105,12 @@ func TestDeleteAuthorFiles_RemoveAllError(t *testing.T) {
 		t.Skip("cannot test RemoveAll errors as root")
 	}
 
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := New(db)
 	ctx := context.Background()
 
 	dir := t.TempDir()
-	testutil.SeedRootFolder(t, db, dir, "Library")
+	testutil.SeedRootFolder(t, db.DB, dir, "Library")
 
 	authorFolderName := sanitizeFolderName("Protected Author")
 	authorPath := filepath.Join(dir, authorFolderName)
@@ -127,13 +127,13 @@ func TestDeleteAuthorFiles_RemoveAllError(t *testing.T) {
 }
 
 func TestGetStats_TotalSize(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Isaac Asimov")
-	bookID1 := testutil.SeedBook(t, db, authorID, "Foundation")
-	bookID2 := testutil.SeedBook(t, db, authorID, "I Robot")
+	authorID := testutil.SeedAuthor(t, db.DB, "Isaac Asimov")
+	bookID1 := testutil.SeedBook(t, db.DB, authorID, "Foundation")
+	bookID2 := testutil.SeedBook(t, db.DB, authorID, "I Robot")
 
 	_, err := db.ExecContext(ctx,
 		`INSERT INTO book_files (book_id, path, relative_path, size, format, quality) VALUES (?, ?, ?, ?, 'epub', 'epub')`,

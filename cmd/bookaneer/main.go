@@ -255,7 +255,7 @@ func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Confi
 	settingsHandler.Register(protected)
 
 	// Core domain services + handlers
-	authorSvc := author.New(db)
+	authorSvc := author.New(database.OpenX(db))
 	bookSvc := book.New(db)
 	seriesSvc := series.New(db)
 	rootFolderSvc := rootfolder.New(db)

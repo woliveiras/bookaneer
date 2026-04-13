@@ -2,17 +2,17 @@ package author
 
 // Author represents a book author in the library.
 type Author struct {
-	ID        int64  `json:"id"`
-	Name      string `json:"name"`
-	SortName  string `json:"sortName"`  // "Tolkien, J.R.R."
-	ForeignID string `json:"foreignId"` // OpenLibrary author key
-	Overview  string `json:"overview"`
-	ImageURL  string `json:"imageUrl"`
-	Status    string `json:"status"` // active, paused, ended
-	Monitored bool   `json:"monitored"`
-	Path      string `json:"path"` // /library/J.R.R. Tolkien
-	AddedAt   string `json:"addedAt"`
-	UpdatedAt string `json:"updatedAt"`
+	ID        int64  `json:"id"        db:"id"`
+	Name      string `json:"name"      db:"name"`
+	SortName  string `json:"sortName"  db:"sort_name"`  // "Tolkien, J.R.R."
+	ForeignID string `json:"foreignId" db:"foreign_id"` // OpenLibrary author key
+	Overview  string `json:"overview"  db:"overview"`
+	ImageURL  string `json:"imageUrl"  db:"image_url"`
+	Status    string `json:"status"    db:"status"` // active, paused, ended
+	Monitored bool   `json:"monitored" db:"monitored"`
+	Path      string `json:"path"      db:"path"` // /library/J.R.R. Tolkien
+	AddedAt   string `json:"addedAt"   db:"added_at"`
+	UpdatedAt string `json:"updatedAt" db:"updated_at"`
 
 	// Computed fields (not stored in DB)
 	BookCount     int `json:"bookCount,omitempty"`
