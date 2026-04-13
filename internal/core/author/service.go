@@ -6,79 +6,66 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jmoiron/sqlx"
+
 	"github.com/woliveiras/bookaneer/internal/database"
 )
 
 // Service provides author-related operations.
 type Service struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
 // New creates a new author service.
-func New(db *sql.DB) *Service {
+func New(db *sqlx.DB) *Service {
 	return &Service{db: db}
 }
 
 // FindByID returns an author by ID.
 func (s *Service) FindByID(ctx context.Context, id int64) (*Author, error) {
 	var a Author
-	var monitored int
-	err := s.db.QueryRowContext(ctx, `
-		SELECT id, name, sort_name, COALESCE(foreign_id, ''), overview, image_url, status, monitored, path, added_at, updated_at
+	err := s.db.GetContext(ctx, &a, `
+		SELECT id, name, sort_name, COALESCE(foreign_id, '') AS foreign_id, overview, image_url, status, monitored, path, added_at, updated_at
 		FROM authors WHERE id = ?
-	`, id).Scan(
-		&a.ID, &a.Name, &a.SortName, &a.ForeignID, &a.Overview, &a.ImageURL,
-		&a.Status, &monitored, &a.Path, &a.AddedAt, &a.UpdatedAt,
-	)
+	`, id)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("find author %d: %w", id, err)
 	}
-	a.Monitored = monitored == 1
 	return &a, nil
 }
 
 // FindByForeignID returns an author by foreign ID (e.g., OpenLibrary key).
 func (s *Service) FindByForeignID(ctx context.Context, foreignID string) (*Author, error) {
 	var a Author
-	var monitored int
-	err := s.db.QueryRowContext(ctx, `
-		SELECT id, name, sort_name, COALESCE(foreign_id, ''), overview, image_url, status, monitored, path, added_at, updated_at
+	err := s.db.GetContext(ctx, &a, `
+		SELECT id, name, sort_name, COALESCE(foreign_id, '') AS foreign_id, overview, image_url, status, monitored, path, added_at, updated_at
 		FROM authors WHERE foreign_id = ?
-	`, foreignID).Scan(
-		&a.ID, &a.Name, &a.SortName, &a.ForeignID, &a.Overview, &a.ImageURL,
-		&a.Status, &monitored, &a.Path, &a.AddedAt, &a.UpdatedAt,
-	)
+	`, foreignID)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("find author by foreign id %s: %w", foreignID, err)
 	}
-	a.Monitored = monitored == 1
 	return &a, nil
 }
 
 // FindByName returns an author by exact name match (case-insensitive).
 func (s *Service) FindByName(ctx context.Context, name string) (*Author, error) {
 	var a Author
-	var monitored int
-	err := s.db.QueryRowContext(ctx, `
-		SELECT id, name, sort_name, COALESCE(foreign_id, ''), overview, image_url, status, monitored, path, added_at, updated_at
+	err := s.db.GetContext(ctx, &a, `
+		SELECT id, name, sort_name, COALESCE(foreign_id, '') AS foreign_id, overview, image_url, status, monitored, path, added_at, updated_at
 		FROM authors WHERE LOWER(name) = LOWER(?)
-	`, name).Scan(
-		&a.ID, &a.Name, &a.SortName, &a.ForeignID, &a.Overview, &a.ImageURL,
-		&a.Status, &monitored, &a.Path, &a.AddedAt, &a.UpdatedAt,
-	)
+	`, name)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("find author by name %s: %w", name, err)
 	}
-	a.Monitored = monitored == 1
 	return &a, nil
 }
 
@@ -130,32 +117,14 @@ func (s *Service) List(ctx context.Context, filter ListAuthorsFilter) ([]Author,
 	offset := filter.Offset
 
 	query := fmt.Sprintf(`
-		SELECT id, name, sort_name, COALESCE(foreign_id, ''), overview, image_url, status, monitored, path, added_at, updated_at
+		SELECT id, name, sort_name, COALESCE(foreign_id, '') AS foreign_id, overview, image_url, status, monitored, path, added_at, updated_at
 		FROM authors %s ORDER BY %s %s LIMIT ? OFFSET ?
 	`, where, sortBy, sortDir)
 	args = append(args, limit, offset)
 
-	rows, err := s.db.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, 0, fmt.Errorf("list authors: %w", err)
-	}
-	defer func() { _ = rows.Close() }()
-
 	var authors []Author
-	for rows.Next() {
-		var a Author
-		var monitored int
-		if err := rows.Scan(
-			&a.ID, &a.Name, &a.SortName, &a.ForeignID, &a.Overview, &a.ImageURL,
-			&a.Status, &monitored, &a.Path, &a.AddedAt, &a.UpdatedAt,
-		); err != nil {
-			return nil, 0, fmt.Errorf("scan author: %w", err)
-		}
-		a.Monitored = monitored == 1
-		authors = append(authors, a)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, 0, fmt.Errorf("iterate authors: %w", err)
+	if err := s.db.SelectContext(ctx, &authors, query, args...); err != nil {
+		return nil, 0, fmt.Errorf("list authors: %w", err)
 	}
 
 	return authors, total, nil
