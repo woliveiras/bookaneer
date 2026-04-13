@@ -119,7 +119,7 @@ export function QueueList() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-muted-foreground">
             {activeBookCommands.length > 0 && <span>{activeBookCommands.length} searching</span>}

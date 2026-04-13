@@ -135,8 +135,8 @@ export function IndexerForm({
           </div>
 
           {/* URL and API Path */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="col-span-2 space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="sm:col-span-2 space-y-2">
               <Label htmlFor="baseUrl">URL</Label>
               <Input
                 id="baseUrl"
@@ -203,7 +203,7 @@ export function IndexerForm({
 
           {/* Torznab-specific fields */}
           {isTorznab && (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="minimumSeeders" className="text-amber-500">
                     Minimum Seeders
@@ -313,7 +313,7 @@ export function IndexerForm({
           )}
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-4 border-t">
+          <div className="flex flex-wrap justify-end gap-2 pt-4 border-t">
             <Button
               type="button"
               variant="outline"

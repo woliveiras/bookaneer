@@ -21,14 +21,14 @@ export function ActivityPage({ tab, onTabChange }: ActivityPageProps) {
 
       {/* Tab navigation */}
       <div className="border-b border-border mb-6">
-        <nav className="-mb-px flex space-x-8" aria-label="Activity tabs">
+        <nav className="-mb-px flex gap-1 overflow-x-auto" aria-label="Activity tabs">
           {tabs.map((t) => (
             <button
               type="button"
               key={t.id}
               onClick={() => onTabChange(t.id)}
               className={`
-                whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition-colors
+                whitespace-nowrap border-b-2 py-3 px-4 text-sm font-medium transition-colors min-h-[44px]
                 ${
                   tab === t.id
                     ? "border-primary text-primary"

@@ -36,8 +36,8 @@ export function AuthorList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex-1 max-w-md">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex-1 min-w-0 w-full sm:max-w-md">
           <label htmlFor="author-search" className="sr-only">
             Search authors
           </label>

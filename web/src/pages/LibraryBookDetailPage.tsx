@@ -66,9 +66,9 @@ export function LibraryBookDetailPage() {
           </Button>
         </div>
 
-        <div className="flex gap-6">
+        <div className="flex flex-col sm:flex-row gap-6">
           {/* Cover */}
-          <div className="shrink-0 w-32 h-48 bg-muted rounded-lg overflow-hidden">
+          <div className="shrink-0 w-32 h-48 bg-muted rounded-lg overflow-hidden self-start">
             {book.imageUrl ? (
               <img src={book.imageUrl} alt={book.title} className="w-full h-full object-cover" />
             ) : (
@@ -79,7 +79,7 @@ export function LibraryBookDetailPage() {
           {/* Info */}
           <div className="flex-1 space-y-4">
             <div>
-              <h2 className="text-2xl font-bold">{book.title}</h2>
+              <h2 className="text-xl sm:text-2xl font-bold">{book.title}</h2>
               <p className="text-muted-foreground">
                 by{" "}
                 <Link
@@ -135,7 +135,7 @@ export function LibraryBookDetailPage() {
               </div>
             )}
 
-            <div className="flex gap-2 pt-4">
+            <div className="flex flex-wrap gap-2 pt-4">
               {hasFile && (
                 <Button
                   onClick={() =>

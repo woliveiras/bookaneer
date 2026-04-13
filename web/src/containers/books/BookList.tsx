@@ -43,9 +43,9 @@ export function BookList({ authorId }: BookListProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-64">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3 flex-1 min-w-0">
+          <div className="w-full sm:w-64">
             <label htmlFor="book-search" className="sr-only">
               Search books
             </label>

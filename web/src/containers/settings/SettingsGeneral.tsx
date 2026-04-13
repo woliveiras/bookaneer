@@ -58,7 +58,7 @@ export function SettingsGeneral() {
             <label htmlFor="api-key" className="block text-sm font-medium mb-1.5">
               API Key
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
                 <Input
                   id="api-key"

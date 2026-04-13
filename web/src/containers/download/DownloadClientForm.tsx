@@ -87,8 +87,8 @@ export function DownloadClientForm({
 
           {/* Host and Port (not for blackhole) */}
           {!isBlackhole && (
-            <div className="grid grid-cols-3 gap-4">
-              <div className="col-span-2 space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="sm:col-span-2 space-y-2">
                 <Label htmlFor="host">Host</Label>
                 <Input
                   id="host"
@@ -146,7 +146,7 @@ export function DownloadClientForm({
 
           {/* Username/Password (qBittorrent, Transmission) */}
           {!isBlackhole && !isSabnzbd && (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="username">Username</Label>
                 <Input
@@ -262,7 +262,7 @@ export function DownloadClientForm({
           )}
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-4 border-t">
+          <div className="flex flex-wrap justify-end gap-2 pt-4 border-t">
             <Button
               type="button"
               variant="outline"

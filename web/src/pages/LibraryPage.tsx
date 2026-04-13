@@ -20,7 +20,7 @@ function StatCard({
     <Card>
       <CardContent className="p-4">
         <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="text-3xl font-bold mt-1">{value}</p>
+        <p className="text-2xl sm:text-3xl font-bold mt-1">{value}</p>
         {detail && <p className="text-xs text-muted-foreground mt-1">{detail}</p>}
       </CardContent>
     </Card>

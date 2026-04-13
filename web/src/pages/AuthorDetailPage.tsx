@@ -58,12 +58,12 @@ export function AuthorDetailPage() {
   return (
     <AuthLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <Button variant="outline" size="sm" onClick={() => navigate({ to: "/authors" })}>
               ← Back
             </Button>
-            <h2 className="text-2xl font-bold">{author.name}</h2>
+            <h2 className="text-xl sm:text-2xl font-bold truncate">{author.name}</h2>
           </div>
           <Button variant="destructive" size="sm" onClick={() => setShowDeleteModal(true)}>
             Delete Author
