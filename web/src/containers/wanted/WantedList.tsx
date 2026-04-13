@@ -202,38 +202,40 @@ function WantedBookCard({
           )}
         </div>
 
-        {/* Book info */}
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold truncate">{book.title}</h3>
-          {book.authorName && <p className="text-sm text-muted-foreground">{book.authorName}</p>}
-          <div className="flex flex-wrap gap-2 mt-2">
-            {book.releaseDate && (
-              <span className="text-xs bg-muted px-2 py-1 rounded">
-                {new Date(book.releaseDate).getFullYear()}
+        {/* Book info + actions */}
+        <div className="flex-1 min-w-0 space-y-3">
+          <div>
+            <h3 className="font-semibold truncate">{book.title}</h3>
+            {book.authorName && <p className="text-sm text-muted-foreground">{book.authorName}</p>}
+            <div className="flex flex-wrap gap-2 mt-2">
+              {book.releaseDate && (
+                <span className="text-xs bg-muted px-2 py-1 rounded">
+                  {new Date(book.releaseDate).getFullYear()}
+                </span>
+              )}
+              {book.isbn13 && (
+                <span className="text-xs bg-muted px-2 py-1 rounded">ISBN: {book.isbn13}</span>
+              )}
+              <span className="text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-2 py-1 rounded">
+                Missing
               </span>
-            )}
-            {book.isbn13 && (
-              <span className="text-xs bg-muted px-2 py-1 rounded">ISBN: {book.isbn13}</span>
-            )}
-            <span className="text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-2 py-1 rounded">
-              Missing
-            </span>
+            </div>
           </div>
-        </div>
 
-        {/* Actions */}
-        <div className="flex-shrink-0 flex gap-2">
-          <Button size="sm" onClick={onSearch} disabled={isSearching || isRemoving}>
-            {isSearching ? "Searching..." : "Search"}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onRemove}
-            disabled={isRemoving || isSearching}
-          >
-            {isRemoving ? "Removing..." : "Remove"}
-          </Button>
+          {/* Actions — sit below info, always fully visible */}
+          <div className="flex gap-2">
+            <Button size="sm" onClick={onSearch} disabled={isSearching || isRemoving}>
+              {isSearching ? "Searching..." : "Search"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onRemove}
+              disabled={isRemoving || isSearching}
+            >
+              {isRemoving ? "Removing..." : "Remove"}
+            </Button>
+          </div>
         </div>
       </div>
     </Card>
