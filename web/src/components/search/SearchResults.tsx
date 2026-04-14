@@ -17,6 +17,9 @@ interface SearchResultsProps {
   isGrabbing: boolean
   isLibraryLoading?: boolean
   isIndexerLoading?: boolean
+  libraryError?: boolean
+  indexerError?: boolean
+  searchActive?: boolean
   onGrab: (downloadUrl: string, releaseTitle: string, size: number) => Promise<void>
   onResetFilters: () => void
   onExpandSearch?: () => void
@@ -36,6 +39,9 @@ export function SearchResults({
   isGrabbing,
   isLibraryLoading = false,
   isIndexerLoading = false,
+  libraryError = false,
+  indexerError = false,
+  searchActive = false,
   onGrab,
   onResetFilters,
   onExpandSearch,
@@ -51,8 +57,8 @@ export function SearchResults({
 
   return (
     <div className="space-y-4">
-      {/* Source tabs */}
-      {(filteredLibraryResults.length > 0 || filteredIndexerResults.length > 0 || isLibraryLoading || isIndexerLoading) && (
+      {/* Source tabs — always visible once search is active */}
+      {searchActive && (
         <div className="flex gap-1 border-b" role="tablist" aria-label="Result sources">
           <TabButton
             active={activeTab === "all"}
@@ -102,9 +108,14 @@ export function SearchResults({
         </div>
       )}
 
-      {/* Library loading in tab view */}
-      {showLibrary && isLibraryLoading && activeTab === "library" && (
-        <p className="text-center text-muted-foreground py-6 text-sm">Searching libraries…</p>
+      {/* Library loading / empty in tab view */}
+      {showLibrary && isLibraryLoading && (
+        <p className="text-center text-muted-foreground py-6 text-sm">Searching digital libraries…</p>
+      )}
+      {showLibrary && !isLibraryLoading && filteredLibraryResults.length === 0 && activeTab === "library" && (
+        <p className="text-center text-muted-foreground py-6 text-sm">
+          {libraryError ? "Digital libraries could not be reached" : "No library results found"}
+        </p>
       )}
 
       {/* Indexer Results */}
@@ -130,9 +141,14 @@ export function SearchResults({
         </div>
       )}
 
-      {/* Indexer loading in tab view */}
-      {showIndexer && isIndexerLoading && activeTab === "indexer" && (
+      {/* Indexer loading / empty in tab view */}
+      {showIndexer && isIndexerLoading && (
         <p className="text-center text-muted-foreground py-6 text-sm">Searching indexers…</p>
+      )}
+      {showIndexer && !isIndexerLoading && filteredIndexerResults.length === 0 && activeTab === "indexer" && (
+        <p className="text-center text-muted-foreground py-6 text-sm">
+          {indexerError ? "Torrent/Usenet indexers could not be reached" : "No indexer results found"}
+        </p>
       )}
 
       {/* No results after filtering */}

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react"
 import { AlertTriangle } from "lucide-react"
 import { BookHeader } from "../../components/search/BookHeader"
 import { SearchFilters } from "../../components/search/SearchFilters"
-import { SearchLoadingAnimation } from "../../components/search/SearchLoadingAnimation"
 import { SearchResults } from "../../components/search/SearchResults"
 import { Card, CardContent } from "../../components/ui"
 import { useAuthors, useCreateAuthor } from "../../hooks/useAuthors"
@@ -197,7 +196,6 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
   // Loading and error states
   const libraryDone = !librarySearch.isLoading
   const indexerDone = !indexerSearch.isLoading
-  const isLoading = !libraryDone || !indexerDone
   const isExpandSearching = expandedSearch && (expandedIndexerSearch.isLoading || expandedLibrarySearch.isLoading)
 
   const libraryFailed = libraryDone && !!librarySearch.error && !librarySearch.data?.results?.length
@@ -353,11 +351,8 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
         </Card>
       )}
 
-      {/* Loading Animation */}
-      {searchStarted && isLoading && <SearchLoadingAnimation />}
-
-      {/* Filters */}
-      {searchStarted && !isLoading && (libraryResults.length > 0 || indexerResults.length > 0) && (
+      {/* Filters — show once at least one source has results */}
+      {searchStarted && (libraryResults.length > 0 || indexerResults.length > 0) && (
         <SearchFilters
           searchInResults={searchInResults}
           formatFilter={formatFilter}
@@ -373,7 +368,7 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
       )}
 
       {/* Warning for partial failures */}
-      {searchStarted && !isLoading && someSourcesFailed && (
+      {searchStarted && someSourcesFailed && (
         <div className="bg-amber-500/10 border border-amber-500/30 rounded p-3 text-sm">
           <p className="text-amber-600 dark:text-amber-400 font-medium flex items-center gap-2">
             <span><AlertTriangle className="w-4 h-4" /></span> Some sources unavailable after retrying
@@ -386,8 +381,8 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
         </div>
       )}
 
-      {/* Results */}
-      {searchStarted && !isLoading && (
+      {/* Results — show immediately, tabs handle per-source loading */}
+      {searchStarted && (
         <SearchResults
           filteredLibraryResults={filteredLibraryResults}
           filteredIndexerResults={filteredIndexerResults}
@@ -398,6 +393,9 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
           isGrabbing={isGrabbing}
           isLibraryLoading={librarySearch.isLoading}
           isIndexerLoading={indexerSearch.isLoading}
+          libraryError={libraryFailed}
+          indexerError={indexerFailed}
+          searchActive={searchStarted}
           onGrab={handleGrab}
           onResetFilters={() => {
             setFormatFilter("all")
