@@ -380,6 +380,8 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
           rawIndexerCount={indexerResults.length}
           bookTitle={book.title}
           isGrabbing={isGrabbing}
+          isLibraryLoading={librarySearch.isLoading}
+          isIndexerLoading={indexerSearch.isLoading}
           onGrab={handleGrab}
           onResetFilters={() => {
             setFormatFilter("all")
