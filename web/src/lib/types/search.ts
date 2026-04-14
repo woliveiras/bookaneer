@@ -84,4 +84,34 @@ export interface DigitalLibraryResult {
 export interface DigitalLibrarySearchResponse {
   results: DigitalLibraryResult[]
   total: number
+  columnConfig?: ColumnConfig
+}
+
+// Server-driven column configuration
+export type ColumnRenderType = "text" | "badge" | "size" | "number" | "peers" | "indexer"
+export type ColumnAlign = "left" | "center" | "right"
+
+export interface ColumnColorHint {
+  type: "map" | "static"
+  value: string
+}
+
+export interface ColumnSchema {
+  key: string
+  label: string
+  renderType: ColumnRenderType
+  align: ColumnAlign
+  width: string
+  hideMobile?: boolean
+  colorHint?: ColumnColorHint
+  fallback?: string
+  uppercase?: boolean
+  sortable?: boolean
+  sortKey?: string
+}
+
+export interface ColumnConfig {
+  columns: ColumnSchema[]
+  gridTemplate: string
+  supportedFilters?: string[]
 }

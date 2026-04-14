@@ -386,6 +386,8 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
           onExpandSearch={() => setExpandedSearch(true)}
           isExpanded={expandedSearch}
           isExpandSearching={isExpandSearching}
+          libraryColumnConfig={librarySearch.data?.columnConfig}
+          indexerColumnConfig={indexerSearch.data?.columnConfig}
         />
       )}
     </div>

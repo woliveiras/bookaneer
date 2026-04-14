@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v5"
 
 	"github.com/woliveiras/bookaneer/internal/library"
+	"github.com/woliveiras/bookaneer/internal/search"
 )
 
 // DigitalLibraryHandler handles digital library search HTTP requests.
@@ -27,8 +28,9 @@ func (h *DigitalLibraryHandler) Register(g *echo.Group) {
 
 // DigitalLibrarySearchResponse represents the library search response.
 type DigitalLibrarySearchResponse struct {
-	Results []library.SearchResult `json:"results"`
-	Total   int                    `json:"total"`
+	Results      []library.SearchResult `json:"results"`
+	Total        int                    `json:"total"`
+	ColumnConfig search.ColumnConfig    `json:"columnConfig"`
 }
 
 // Search searches all digital library providers.
@@ -44,8 +46,9 @@ func (h *DigitalLibraryHandler) Search(c *echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, DigitalLibrarySearchResponse{
-		Results: results,
-		Total:   len(results),
+		Results:      results,
+		Total:        len(results),
+		ColumnConfig: search.LibraryColumnConfig(),
 	})
 }
 

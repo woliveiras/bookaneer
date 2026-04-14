@@ -383,8 +383,9 @@ func (h *SearchHandler) Search(c *echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, map[string]any{
-		"results": results,
-		"total":   len(results),
+		"results":      results,
+		"total":        len(results),
+		"columnConfig": search.IndexerColumnConfig(),
 	})
 }
 

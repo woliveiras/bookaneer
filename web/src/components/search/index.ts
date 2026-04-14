@@ -1,4 +1,5 @@
 export { BookHeader } from "./BookHeader"
+export { DynamicCell, DynamicColumnHeader } from "./DynamicColumns"
 export { SearchFilters } from "./SearchFilters"
 export { SearchLoadingAnimation } from "./SearchLoadingAnimation"
 export { DownloadResult, LibraryResult } from "./SearchResultCards"

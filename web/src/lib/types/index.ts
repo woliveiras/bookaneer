@@ -44,6 +44,11 @@ export type {
   SaveProgressInput,
 } from "./reader"
 export type {
+  ColumnAlign,
+  ColumnColorHint,
+  ColumnConfig,
+  ColumnRenderType,
+  ColumnSchema,
   DigitalLibraryResult,
   DigitalLibrarySearchResponse,
   MetadataAuthor,

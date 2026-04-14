@@ -1,4 +1,5 @@
 import type { DigitalLibraryResult, SearchResult } from "../../lib/api"
+import type { ColumnConfig } from "../../lib/types"
 import { Library, Search } from "lucide-react"
 import { Badge, Button } from "../ui"
 import { DownloadResult, LibraryResult } from "./SearchResultCards"
@@ -16,6 +17,8 @@ interface SearchResultsProps {
   onExpandSearch?: () => void
   isExpanded?: boolean
   isExpandSearching?: boolean
+  libraryColumnConfig?: ColumnConfig
+  indexerColumnConfig?: ColumnConfig
 }
 
 export function SearchResults({
@@ -31,6 +34,8 @@ export function SearchResults({
   onExpandSearch,
   isExpanded = false,
   isExpandSearching = false,
+  libraryColumnConfig,
+  indexerColumnConfig,
 }: SearchResultsProps) {
   return (
     <div className="space-y-6">
@@ -48,6 +53,7 @@ export function SearchResults({
                 result={result}
                 onGrab={onGrab}
                 isGrabbing={isGrabbing}
+                columnConfig={libraryColumnConfig}
               />
             ))}
           </div>
@@ -68,6 +74,7 @@ export function SearchResults({
                 result={result}
                 onGrab={onGrab}
                 isGrabbing={isGrabbing}
+                columnConfig={indexerColumnConfig}
               />
             ))}
           </div>

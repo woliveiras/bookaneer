@@ -61,9 +61,12 @@ export interface SearchResult {
   indexerName: string
 }
 
+import type { ColumnConfig } from "./search"
+
 export interface SearchResponse {
   results: SearchResult[]
   total: number
+  columnConfig?: ColumnConfig
 }
 
 export interface TestIndexerResponse {
