@@ -33,8 +33,7 @@ function resolveColorClass(col: ColumnSchema, value: string): string | undefined
 
 interface DynamicCellProps {
   column: ColumnSchema
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  row: Record<string, any>
+  row: Record<string, unknown>
 }
 
 export function DynamicCell({ column, row }: DynamicCellProps) {
@@ -68,8 +67,8 @@ export function DynamicCell({ column, row }: DynamicCellProps) {
       return <span className="text-xs tabular-nums">{value}</span>
 
     case "peers": {
-      const seeders = row.seeders ?? 0
-      const leechers = row.leechers ?? 0
+      const seeders = typeof row.seeders === "number" ? row.seeders : 0
+      const leechers = typeof row.leechers === "number" ? row.leechers : 0
       return (
         <span className="text-xs tabular-nums">
           {seeders > 0 && (

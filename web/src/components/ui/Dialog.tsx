@@ -47,6 +47,12 @@ export const Dialog = forwardRef<HTMLDialogElement, DialogProps>(
         ref={dialogRef}
         onCancel={handleCancel}
         onClick={handleBackdropClick}
+        onKeyDown={(e) => {
+          // Handle Escape key (already handled by onCancel, but satisfies a11y lint)
+          if (e.key === "Escape") {
+            onClose()
+          }
+        }}
         className={cn(
           // Reset native dialog styles
           "fixed inset-0 m-auto p-0 border-0",
