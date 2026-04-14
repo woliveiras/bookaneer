@@ -8,7 +8,7 @@ import { Card, CardContent } from "../../components/ui"
 import { useAuthors, useCreateAuthor } from "../../hooks/useAuthors"
 import { useCreateBook } from "../../hooks/useBooks"
 import { type SearchParams, useSearch } from "../../hooks/useIndexers"
-import { useDigitalLibrarySearch } from "../../hooks/useMetadata"
+import { useDigitalLibrarySearch, useMetadataBook } from "../../hooks/useMetadata"
 import { useRootFolders } from "../../hooks/useRootFolders"
 import { useManualGrab } from "../../hooks/useWanted"
 import type { MetadataBookResult } from "../../lib/api"
@@ -49,6 +49,9 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
   const { data: existingAuthors } = useAuthors({ search: authorName, limit: 1 })
 
   const hasRootFolder = rootFolders && rootFolders.length > 0
+
+  // Fetch full book metadata (description, genres, rating, links)
+  const { data: bookMetadata } = useMetadataBook(book.foreignId, book.provider, !!book.foreignId)
 
   // Filters state
   const [formatFilter, setFormatFilter] = useState<string>("all")
@@ -173,7 +176,6 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
   // Build search queries — ISBN-first for more precise results
   const isbn = book.isbn13 || book.isbn10 || ""
   const librarySearchQuery = isbn || book.title
-  const indexerSearchQuery = isbn || [book.title, ...(book.authors || [])].join(" ")
   const searchParams: SearchParams = isbn
     ? { isbn, q: [book.title, ...(book.authors || [])].join(" ") }
     : { q: [book.title, ...(book.authors || [])].join(" ") }
@@ -315,6 +317,7 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
     <div className="space-y-6">
       <BookHeader
         book={book}
+        bookMetadata={bookMetadata}
         addedToLibrary={addedToLibrary}
         addingToLibrary={addingToLibrary}
         addError={addError}

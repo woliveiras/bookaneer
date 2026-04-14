@@ -1,10 +1,11 @@
 import { Link, useNavigate } from "@tanstack/react-router"
-import { AlertTriangle, ClipboardList, Flag, Library, Lightbulb, Plus, Search } from "lucide-react"
-import type { MetadataBookResult } from "../../lib/api"
+import { AlertTriangle, ClipboardList, ExternalLink, Flag, Library, Lightbulb, Plus, Search, Star } from "lucide-react"
+import type { MetadataBook, MetadataBookResult } from "../../lib/api"
 import { Badge, Button } from "../ui"
 
 interface BookHeaderProps {
   book: MetadataBookResult
+  bookMetadata?: MetadataBook
   addedToLibrary: boolean
   addingToLibrary: boolean
   addError: string | null
@@ -17,6 +18,7 @@ interface BookHeaderProps {
 
 export function BookHeader({
   book,
+  bookMetadata,
   addedToLibrary,
   addingToLibrary,
   addError,
@@ -45,14 +47,71 @@ export function BookHeader({
         )}
         <div className="flex-1">
           <h1 className="text-2xl font-bold">{book.title}</h1>
+          {bookMetadata?.subtitle && (
+            <p className="text-lg text-muted-foreground">{bookMetadata.subtitle}</p>
+          )}
           {book.authors && book.authors.length > 0 && (
             <p className="text-lg text-muted-foreground mt-1">{book.authors.join(", ")}</p>
           )}
-          {book.publishedYear && <p className="text-muted-foreground">{book.publishedYear}</p>}
-          <div className="flex flex-wrap gap-2 mt-4">
+
+          {/* Rating + Year + Page count */}
+          <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
+            {bookMetadata?.averageRating != null && bookMetadata.averageRating > 0 && (
+              <span className="flex items-center gap-1 text-amber-500" title={`${bookMetadata.ratingsCount ?? 0} ratings`}>
+                <Star className="w-4 h-4 fill-amber-500" aria-hidden="true" />
+                {bookMetadata.averageRating.toFixed(1)}
+              </span>
+            )}
+            {book.publishedYear && <span>{book.publishedYear}</span>}
+            {bookMetadata?.pageCount != null && bookMetadata.pageCount > 0 && (
+              <span>{bookMetadata.pageCount} pages</span>
+            )}
+            {bookMetadata?.language && <span className="uppercase">{bookMetadata.language}</span>}
+            {bookMetadata?.publisher && <span>{bookMetadata.publisher}</span>}
+          </div>
+
+          {/* Series */}
+          {bookMetadata?.series && (
+            <p className="text-sm text-muted-foreground mt-1">
+              {bookMetadata.series}
+              {bookMetadata.seriesPosition != null && ` #${bookMetadata.seriesPosition}`}
+            </p>
+          )}
+
+          {/* Description (truncated) */}
+          {bookMetadata?.description && (
+            <p className="text-sm text-muted-foreground mt-2 line-clamp-3">
+              {bookMetadata.description}
+            </p>
+          )}
+
+          {/* Badges: provider, ISBN, genres */}
+          <div className="flex flex-wrap gap-2 mt-3">
             <Badge variant="outline">{book.provider}</Badge>
             {book.isbn13 && <Badge variant="secondary">{book.isbn13}</Badge>}
+            {bookMetadata?.genres?.slice(0, 4).map((g) => (
+              <Badge key={g} variant="secondary" className="text-xs">{g}</Badge>
+            ))}
           </div>
+
+          {/* External links */}
+          {bookMetadata?.links && bookMetadata.links.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {bookMetadata.links.map((link) => (
+                <a
+                  key={link.url}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  <ExternalLink className="w-3 h-3" aria-hidden="true" />
+                  {link.type}
+                </a>
+              ))}
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-2 mt-4">
             <Button variant="outline" size="sm" onClick={() => navigate({ to: "/search" })}>
               ← Back to Search
