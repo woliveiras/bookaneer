@@ -13,6 +13,9 @@ interface SearchResultsProps {
   isGrabbing: boolean
   onGrab: (downloadUrl: string, releaseTitle: string, size: number) => Promise<void>
   onResetFilters: () => void
+  onExpandSearch?: () => void
+  isExpanded?: boolean
+  isExpandSearching?: boolean
 }
 
 export function SearchResults({
@@ -25,6 +28,9 @@ export function SearchResults({
   isGrabbing,
   onGrab,
   onResetFilters,
+  onExpandSearch,
+  isExpanded = false,
+  isExpandSearching = false,
 }: SearchResultsProps) {
   return (
     <div className="space-y-6">
@@ -83,13 +89,23 @@ export function SearchResults({
         <div className="text-center text-muted-foreground py-8">
           <p className="text-lg mb-2">No downloads found</p>
           <p className="text-sm mb-4">Could not find "{bookTitle}" in any available source.</p>
+          {onExpandSearch && !isExpanded && (
+            <Button variant="outline" onClick={onExpandSearch} disabled={isExpandSearching}>
+              {isExpandSearching ? "Searching…" : "Expand search"}
+            </Button>
+          )}
         </div>
       )}
 
       {/* Footer */}
       {totalResults > 0 && (
-        <div className="text-sm text-muted-foreground text-center pt-4 border-t">
-          {totalResults} download {totalResults === 1 ? "option" : "options"} found
+        <div className="text-sm text-muted-foreground text-center pt-4 border-t space-y-2">
+          <p>{totalResults} download {totalResults === 1 ? "option" : "options"} found</p>
+          {onExpandSearch && !isExpanded && (
+            <Button variant="ghost" size="sm" onClick={onExpandSearch} disabled={isExpandSearching}>
+              {isExpandSearching ? "Searching…" : "Expand search"}
+            </Button>
+          )}
         </div>
       )}
     </div>

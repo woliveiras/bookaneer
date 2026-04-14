@@ -56,6 +56,9 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
   const [sortBy, setSortBy] = useState<string>("score")
   const [searchInResults, setSearchInResults] = useState("")
 
+  // Expand search state — broader query without ISBN/format restrictions
+  const [expandedSearch, setExpandedSearch] = useState(false)
+
   // Track if we have an existing book ID (for manual search from book page)
   const [bookIdToUse, setBookIdToUse] = useState<number | undefined>(existingBookId)
 
@@ -179,32 +182,68 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
   const indexerSearch = useSearch(searchStarted ? searchParams : { q: "" }, searchStarted)
   const librarySearch = useDigitalLibrarySearch(librarySearchQuery, searchStarted)
 
+  // Expanded search — uses just title (broader, no ISBN)
+  const expandedLibraryQuery = book.title
+  const expandedIndexerQuery = [book.title, ...(book.authors || [])].join(" ")
+  const expandedIndexerSearch = useSearch(
+    expandedSearch ? { q: expandedIndexerQuery } : { q: "" },
+    expandedSearch,
+  )
+  const expandedLibrarySearch = useDigitalLibrarySearch(expandedLibraryQuery, expandedSearch && !!isbn)
+
   // Loading and error states
   const libraryDone = !librarySearch.isLoading
   const indexerDone = !indexerSearch.isLoading
   const isLoading = !libraryDone || !indexerDone
+  const isExpandSearching = expandedSearch && (expandedIndexerSearch.isLoading || expandedLibrarySearch.isLoading)
 
   const libraryFailed = libraryDone && !!librarySearch.error && !librarySearch.data?.results?.length
   const indexerFailed = indexerDone && !!indexerSearch.error && !indexerSearch.data?.results?.length
   const someSourcesFailed = (libraryFailed || indexerFailed) && !(libraryFailed && indexerFailed)
 
-  // Filter indexer results for ebooks
-  const indexerResults = (indexerSearch.data?.results ?? []).filter((result) => {
-    const title = result.title.toLowerCase()
-    const category = result.category?.toLowerCase() || ""
-    return (
-      title.includes("epub") ||
-      title.includes("pdf") ||
-      title.includes("mobi") ||
-      title.includes("azw") ||
-      title.includes("ebook") ||
-      category.includes("ebook") ||
-      category.includes("book") ||
-      result.size < 500 * 1024 * 1024
-    )
-  })
+  // Filter indexer results for ebooks — merge expanded results
+  const indexerResults = useMemo(() => {
+    const primary = indexerSearch.data?.results ?? []
+    const expanded = expandedIndexerSearch.data?.results ?? []
+    const seenGuids = new Set(primary.map((r) => r.guid))
+    const merged = [...primary]
+    for (const r of expanded) {
+      if (!seenGuids.has(r.guid)) {
+        seenGuids.add(r.guid)
+        merged.push(r)
+      }
+    }
+    return merged.filter((result) => {
+      const title = result.title.toLowerCase()
+      const category = result.category?.toLowerCase() || ""
+      return (
+        title.includes("epub") ||
+        title.includes("pdf") ||
+        title.includes("mobi") ||
+        title.includes("azw") ||
+        title.includes("ebook") ||
+        category.includes("ebook") ||
+        category.includes("book") ||
+        result.size < 500 * 1024 * 1024
+      )
+    })
+  }, [indexerSearch.data, expandedIndexerSearch.data])
 
-  const libraryResults = librarySearch.data?.results ?? []
+  // Merge library results with expanded library results (deduped by id+provider)
+  const libraryResults = useMemo(() => {
+    const primary = librarySearch.data?.results ?? []
+    const expanded = expandedLibrarySearch.data?.results ?? []
+    const seenKeys = new Set(primary.map((r) => `${r.provider}-${r.id}`))
+    const merged = [...primary]
+    for (const r of expanded) {
+      const key = `${r.provider}-${r.id}`
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key)
+        merged.push(r)
+      }
+    }
+    return merged
+  }, [librarySearch.data, expandedLibrarySearch.data])
 
   // Apply filters and sorting
   const filteredLibraryResults = useMemo(() => {
@@ -344,6 +383,9 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
             setProviderFilter("all")
             setSearchInResults("")
           }}
+          onExpandSearch={() => setExpandedSearch(true)}
+          isExpanded={expandedSearch}
+          isExpandSearching={isExpandSearching}
         />
       )}
     </div>
