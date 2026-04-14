@@ -56,6 +56,7 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
   // Filters state
   const [formatFilter, setFormatFilter] = useState<string>("all")
   const [providerFilter, setProviderFilter] = useState<string>("all")
+  const [languageFilter, setLanguageFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<string>("score")
   const [searchInResults, setSearchInResults] = useState("")
 
@@ -256,6 +257,13 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
       results = results.filter((r) => r.format.toLowerCase() === formatFilter)
     }
 
+    // Language filter
+    if (languageFilter !== "all") {
+      results = results.filter(
+        (r) => r.language?.toLowerCase().startsWith(languageFilter),
+      )
+    }
+
     // Provider filter
     if (providerFilter !== "all" && providerFilter !== "torrent") {
       results = results.filter((r) => r.provider === providerFilter)
@@ -279,6 +287,12 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
       case "year-asc":
         results.sort((a, b) => (a.year || 0) - (b.year || 0))
         break
+      case "size-asc":
+        results.sort((a, b) => (a.size || 0) - (b.size || 0))
+        break
+      case "size-desc":
+        results.sort((a, b) => (b.size || 0) - (a.size || 0))
+        break
       case "format": {
         const formatOrder = { epub: 1, pdf: 2, mobi: 3 }
         results.sort((a, b) => {
@@ -293,7 +307,7 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
     }
 
     return results
-  }, [libraryResults, formatFilter, providerFilter, sortBy, searchInResults])
+  }, [libraryResults, formatFilter, languageFilter, providerFilter, sortBy, searchInResults])
 
   const filteredIndexerResults = useMemo(() => {
     if (providerFilter !== "all" && providerFilter !== "torrent") {
@@ -347,10 +361,12 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
         <SearchFilters
           searchInResults={searchInResults}
           formatFilter={formatFilter}
+          languageFilter={languageFilter}
           providerFilter={providerFilter}
           sortBy={sortBy}
           onSearchChange={setSearchInResults}
           onFormatChange={setFormatFilter}
+          onLanguageChange={setLanguageFilter}
           onProviderChange={setProviderFilter}
           onSortChange={setSortBy}
         />
@@ -385,6 +401,7 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
           onGrab={handleGrab}
           onResetFilters={() => {
             setFormatFilter("all")
+            setLanguageFilter("all")
             setProviderFilter("all")
             setSearchInResults("")
           }}
