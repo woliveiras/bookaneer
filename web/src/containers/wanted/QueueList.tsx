@@ -81,10 +81,19 @@ export function QueueList() {
     ["AutomaticSearch", "BookSearch", "MissingBookSearch", "DownloadGrab"].includes(cmd.name),
   )
 
-  // Completed/failed commands
-  const finishedCommands = bookCommands.filter(
-    (cmd) => cmd.status === "completed" || cmd.status === "failed",
+  // Completed/failed commands — auto-dismiss "Found" if the book already has a completed download
+  const completedBookIds = new Set(
+    downloadItems.filter((item) => item.status === "completed").map((item) => item.bookId),
   )
+  const finishedCommands = bookCommands.filter((cmd) => {
+    if (cmd.status !== "completed" && cmd.status !== "failed") return false
+    // Auto-dismiss "Found" commands whose book already completed downloading
+    if (cmd.status === "completed" && cmd.payload?.bookId) {
+      const bookId = cmd.payload.bookId as number
+      if (completedBookIds.has(bookId)) return false
+    }
+    return true
+  })
 
   const failedDownloads = downloadItems.filter((item) => item.status === "failed")
   const completedDownloads = downloadItems.filter((item) => item.status === "completed")
