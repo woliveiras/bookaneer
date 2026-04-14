@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
-import { AlertTriangle } from "lucide-react"
 import { BookHeader } from "../../components/search/BookHeader"
-import { SearchFilters } from "../../components/search/SearchFilters"
-import { SearchResults } from "../../components/search/SearchResults"
+import { SearchModal } from "../../components/search/SearchModal"
 import { Card, CardContent } from "../../components/ui"
 import { useAuthors, useCreateAuthor } from "../../hooks/useAuthors"
 import { useCreateBook } from "../../hooks/useBooks"
@@ -340,7 +338,7 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
         onStartSearch={() => setSearchStarted(true)}
       />
 
-      {/* Grab success notification */}
+      {/* Grab success notification (visible on main page) */}
       {grabSuccess && (
         <Card className="border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950">
           <CardContent className="p-4">
@@ -351,65 +349,47 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
         </Card>
       )}
 
-      {/* Filters — show once at least one source has results */}
-      {searchStarted && (libraryResults.length > 0 || indexerResults.length > 0) && (
-        <SearchFilters
-          searchInResults={searchInResults}
-          formatFilter={formatFilter}
-          languageFilter={languageFilter}
-          providerFilter={providerFilter}
-          sortBy={sortBy}
-          onSearchChange={setSearchInResults}
-          onFormatChange={setFormatFilter}
-          onLanguageChange={setLanguageFilter}
-          onProviderChange={setProviderFilter}
-          onSortChange={setSortBy}
-        />
-      )}
-
-      {/* Warning for partial failures */}
-      {searchStarted && someSourcesFailed && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded p-3 text-sm">
-          <p className="text-amber-600 dark:text-amber-400 font-medium flex items-center gap-2">
-            <span><AlertTriangle className="w-4 h-4" /></span> Some sources unavailable after retrying
-          </p>
-          <p className="text-amber-600/80 dark:text-amber-400/80 mt-1">
-            {indexerFailed && "Torrent indexers (Prowlarr) could not be reached. "}
-            {libraryFailed && "Digital libraries did not respond. "}
-            Showing results from available sources.
-          </p>
-        </div>
-      )}
-
-      {/* Results — show immediately, tabs handle per-source loading */}
-      {searchStarted && (
-        <SearchResults
-          filteredLibraryResults={filteredLibraryResults}
-          filteredIndexerResults={filteredIndexerResults}
-          totalResults={totalResults}
-          rawLibraryCount={libraryResults.length}
-          rawIndexerCount={indexerResults.length}
-          bookTitle={book.title}
-          isGrabbing={isGrabbing}
-          isLibraryLoading={librarySearch.isLoading}
-          isIndexerLoading={indexerSearch.isLoading}
-          libraryError={libraryFailed}
-          indexerError={indexerFailed}
-          searchActive={searchStarted}
-          onGrab={handleGrab}
-          onResetFilters={() => {
-            setFormatFilter("all")
-            setLanguageFilter("all")
-            setProviderFilter("all")
-            setSearchInResults("")
-          }}
-          onExpandSearch={() => setExpandedSearch(true)}
-          isExpanded={expandedSearch}
-          isExpandSearching={isExpandSearching}
-          libraryColumnConfig={librarySearch.data?.columnConfig}
-          indexerColumnConfig={indexerSearch.data?.columnConfig}
-        />
-      )}
+      {/* Search results modal */}
+      <SearchModal
+        open={searchStarted}
+        onClose={() => setSearchStarted(false)}
+        bookTitle={book.title}
+        filteredLibraryResults={filteredLibraryResults}
+        filteredIndexerResults={filteredIndexerResults}
+        totalResults={totalResults}
+        rawLibraryCount={libraryResults.length}
+        rawIndexerCount={indexerResults.length}
+        isLibraryLoading={librarySearch.isLoading}
+        isIndexerLoading={indexerSearch.isLoading}
+        libraryFailed={libraryFailed}
+        indexerFailed={indexerFailed}
+        someSourcesFailed={someSourcesFailed}
+        isGrabbing={isGrabbing}
+        grabSuccess={grabSuccess}
+        grabError={grabError}
+        onGrab={handleGrab}
+        searchInResults={searchInResults}
+        formatFilter={formatFilter}
+        languageFilter={languageFilter}
+        providerFilter={providerFilter}
+        sortBy={sortBy}
+        onSearchChange={setSearchInResults}
+        onFormatChange={setFormatFilter}
+        onLanguageChange={setLanguageFilter}
+        onProviderChange={setProviderFilter}
+        onSortChange={setSortBy}
+        onResetFilters={() => {
+          setFormatFilter("all")
+          setLanguageFilter("all")
+          setProviderFilter("all")
+          setSearchInResults("")
+        }}
+        onExpandSearch={() => setExpandedSearch(true)}
+        isExpanded={expandedSearch}
+        isExpandSearching={isExpandSearching}
+        libraryColumnConfig={librarySearch.data?.columnConfig}
+        indexerColumnConfig={indexerSearch.data?.columnConfig}
+      />
     </div>
   )
 }
