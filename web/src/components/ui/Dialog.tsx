@@ -48,9 +48,10 @@ export const Dialog = forwardRef<HTMLDialogElement, DialogProps>(
         onCancel={handleCancel}
         onClick={handleBackdropClick}
         onKeyDown={(e) => {
-          // Handle Escape key (already handled by onCancel, but satisfies a11y lint)
-          if (e.key === "Escape") {
-            onClose()
+          // Keyboard accessibility for backdrop - space/enter should not close
+          // Escape is handled by onCancel event
+          if (e.key === " " || e.key === "Enter") {
+            e.stopPropagation()
           }
         }}
         className={cn(

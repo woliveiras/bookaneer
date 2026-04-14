@@ -20,12 +20,12 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
   // Search state - start automatically if autoSearch is true
   const [searchStarted, setSearchStarted] = useState(autoSearch)
 
-  // Auto-start search when autoSearch prop changes
+  // Auto-start search when autoSearch prop changes (only once when it becomes true)
   useEffect(() => {
-    if (autoSearch && !searchStarted) {
+    if (autoSearch) {
       setSearchStarted(true)
     }
-  }, [autoSearch, searchStarted])
+  }, [autoSearch])
 
   // Add to library state
   const [addedToLibrary, setAddedToLibrary] = useState(!!existingBookId)
