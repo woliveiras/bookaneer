@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -488,10 +489,13 @@ func TestSearchAndGrab_IndexerReturnsEbookResults(t *testing.T) {
 	ctx := context.Background()
 
 	_, err = svc.SearchAndGrab(ctx, bookID)
-	// All indexer grabs fail (no client), so SearchAndGrab ultimately returns
-	// "no suitable download found".
+	// All indexer grabs fail (no client), so SearchAndGrab returns an error.
+	// With parallel search + unified scoring: "all grab attempts failed".
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no suitable download found")
+	assert.True(t,
+		strings.Contains(err.Error(), "no suitable download found") ||
+			strings.Contains(err.Error(), "all grab attempts failed"),
+		"expected error about no downloads or grab failures, got: %v", err)
 }
 
 // TestSearchAndGrab_IndexerReturnsNonEbookResults covers the filter in

@@ -62,7 +62,9 @@ func (s *Service) GetBookInfo(ctx context.Context, bookID int64) (title, authorN
 	return b.Title, b.AuthorName, nil
 }
 
-// SearchAndGrab searches for a book and grabs the best result.
+// SearchAndGrab searches for a book across all sources and grabs the best quality result.
+// Searches libraries and indexers in parallel, applies unified quality scoring, and tries
+// the best result first with automatic fallback to alternatives on failure.
 func (s *Service) SearchAndGrab(ctx context.Context, bookID int64) (*GrabResult, error) {
 	// Get book details
 	b, err := s.bookService.FindByID(ctx, bookID)
@@ -87,56 +89,82 @@ func (s *Service) SearchAndGrab(ctx context.Context, bookID int64) (*GrabResult,
 		return nil, fmt.Errorf("book already has an active download in queue")
 	}
 
-	slog.Info("Searching for book", "id", bookID, "title", b.Title)
+	slog.Info("Searching for book across all sources", "id", bookID, "title", b.Title)
 
-	// Build search queries: ISBN-first for more precise results, then title+author fallback
+	// Build search query: prioritize ISBN for precision, fall back to title+author
 	isbn := b.ISBN13
 	if isbn == "" {
 		isbn = b.ISBN
 	}
 
-	titleAuthorQuery := b.Title
-	if b.AuthorName != "" {
-		titleAuthorQuery = fmt.Sprintf("%s %s", b.Title, b.AuthorName)
+	query := isbn
+	if query == "" {
+		query = b.Title
+		if b.AuthorName != "" {
+			query = fmt.Sprintf("%s %s", b.Title, b.AuthorName)
+		}
+	} else {
+		slog.Info("Using ISBN for search precision", "isbn", query, "book", b.Title)
 	}
 
-	// Phase 1: ISBN search (most precise) — if ISBN is available
-	if isbn != "" {
-		slog.Info("Trying ISBN-first search", "isbn", isbn, "book", b.Title)
+	// Search all sources in parallel
+	allResults, err := s.searchAllSources(ctx, b, query)
+	if err != nil {
+		return nil, fmt.Errorf("search failed: %w", err)
+	}
 
-		result, err := s.searchDigitalLibraries(ctx, b, isbn)
-		if err == nil && result != nil {
-			slog.Info("Found via ISBN in digital libraries", "book", b.Title)
-			return result, nil
+	if len(allResults) == 0 {
+		// If ISBN search failed, retry with title+author
+		if isbn != "" {
+			slog.Info("ISBN search returned no results, retrying with title+author", "book", b.Title)
+			titleQuery := b.Title
+			if b.AuthorName != "" {
+				titleQuery = fmt.Sprintf("%s %s", b.Title, b.AuthorName)
+			}
+			allResults, err = s.searchAllSources(ctx, b, titleQuery)
+			if err != nil {
+				return nil, fmt.Errorf("fallback search failed: %w", err)
+			}
 		}
 
-		result, err = s.searchIndexers(ctx, b, isbn)
-		if err == nil && result != nil {
-			slog.Info("Found via ISBN in indexers", "book", b.Title)
-			return result, nil
+		if len(allResults) == 0 {
+			return nil, fmt.Errorf("no suitable download found for %q", b.Title)
 		}
-
-		slog.Debug("ISBN search returned no results, falling back to title+author", "isbn", isbn)
 	}
 
-	// Phase 2: Title + author search (broader)
-	result, err := s.searchDigitalLibraries(ctx, b, titleAuthorQuery)
-	if err == nil && result != nil {
-		return result, nil
-	}
-	if err != nil {
-		slog.Warn("Digital library search failed", "error", err)
+	// Get quality profile (use default if none configured)
+	profile := s.getQualityProfile(ctx, b)
+
+	// Filter by quality profile
+	allResults = filterByQualityProfile(allResults, profile)
+	if len(allResults) == 0 {
+		return nil, fmt.Errorf("no results match quality profile for %q", b.Title)
 	}
 
-	result, err = s.searchIndexers(ctx, b, titleAuthorQuery)
-	if err == nil && result != nil {
-		return result, nil
-	}
-	if err != nil {
-		slog.Warn("Indexer search failed", "error", err)
+	// Score and sort results by quality
+	allResults = scoreResults(allResults, profile)
+
+	// Log top results for visibility
+	slog.Info("Found download sources", "book", b.Title, "count", len(allResults))
+	for i, r := range allResults {
+		if i >= 5 {
+			break // Log top 5
+		}
+		slog.Debug("Candidate", "rank", i+1, "result", r.String())
 	}
 
-	return nil, fmt.Errorf("no suitable download found for %q", b.Title)
+	// Clear previous search results for this book
+	if _, err := s.db.ExecContext(ctx, `DELETE FROM search_results WHERE book_id = ?`, b.ID); err != nil {
+		slog.Warn("failed to clear search results", "bookId", b.ID, "error", err)
+	}
+
+	// Save all results as fallbacks
+	if err := s.saveSearchResults(ctx, b.ID, allResults); err != nil {
+		slog.Warn("failed to save search results", "error", err)
+	}
+
+	// Try to grab the best result
+	return s.tryGrabBestResult(ctx, b, allResults)
 }
 
 // GetWantedBooks returns all monitored books without files.

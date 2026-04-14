@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"sync"
 
 	"github.com/woliveiras/bookaneer/internal/core/book"
+	"github.com/woliveiras/bookaneer/internal/core/qualityprofile"
 	"github.com/woliveiras/bookaneer/internal/library"
 	"github.com/woliveiras/bookaneer/internal/search"
 )
@@ -19,6 +21,175 @@ const (
 	searchResultFailed  = "failed"
 	searchResultSuccess = "success"
 )
+
+// searchAllSources searches both libraries and indexers in parallel and returns unified results.
+func (s *Service) searchAllSources(ctx context.Context, b *book.Book, query string) ([]*unifiedResult, error) {
+	var (
+		libraryResults []*unifiedResult
+		indexerResults []*unifiedResult
+		libraryErr     error
+		indexerErr     error
+		wg             sync.WaitGroup
+	)
+
+	// Search libraries in parallel
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if s.libraryService == nil {
+			return
+		}
+		results, err := s.libraryService.Search(ctx, query)
+		if err != nil {
+			libraryErr = err
+			return
+		}
+		// Convert to unified results
+		for i := range results {
+			if isValidLibraryResult(&results[i]) {
+				libraryResults = append(libraryResults, newLibraryResult(&results[i]))
+			}
+		}
+	}()
+
+	// Search indexers in parallel
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if s.searchService == nil {
+			return
+		}
+		results, err := s.searchService.Search(ctx, search.SearchQuery{Query: query})
+		if err != nil {
+			indexerErr = err
+			return
+		}
+		// Convert to unified results (filter for ebook formats)
+		for i := range results {
+			if isEbookFormat(results[i].Title) {
+				indexerResults = append(indexerResults, newIndexerResult(&results[i]))
+			}
+		}
+	}()
+
+	wg.Wait()
+
+	// Log any errors but don't fail if at least one source worked
+	if libraryErr != nil {
+		slog.Warn("Library search failed", "error", libraryErr)
+	}
+	if indexerErr != nil {
+		slog.Warn("Indexer search failed", "error", indexerErr)
+	}
+
+	// Combine results
+	allResults := append(libraryResults, indexerResults...)
+
+	slog.Info("Search completed",
+		"query", query,
+		"libraryResults", len(libraryResults),
+		"indexerResults", len(indexerResults),
+		"total", len(allResults))
+
+	return allResults, nil
+}
+
+// isValidLibraryResult checks if a library result is usable.
+func isValidLibraryResult(r *library.SearchResult) bool {
+	if r.DownloadURL == "" {
+		return false
+	}
+	format := strings.ToLower(r.Format)
+	return format == "epub" || format == "pdf" || format == "mobi" || format == "azw" || format == "azw3"
+}
+
+// getQualityProfile retrieves the quality profile for a book (uses default if not configured).
+func (s *Service) getQualityProfile(ctx context.Context, b *book.Book) *qualityprofile.QualityProfile {
+	// For now, always return the default profile
+	// TODO: Wire up author → root_folder → quality_profile_id relationship
+	return qualityprofile.DefaultProfile()
+}
+
+// saveSearchResults saves all unified results to the search_results table for fallback.
+func (s *Service) saveSearchResults(ctx context.Context, bookID int64, results []*unifiedResult) error {
+	for i, r := range results {
+		_, err := s.db.ExecContext(ctx, `
+			INSERT INTO search_results (book_id, provider, title, download_url, format, size, score, priority, status)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		`, bookID, r.sourceName, r.title, r.downloadURL, r.format, r.size, r.score, i, searchResultPending)
+		if err != nil {
+			return fmt.Errorf("save result %d: %w", i, err)
+		}
+	}
+	return nil
+}
+
+// tryGrabBestResult attempts to grab the best result, falling back to alternatives on failure.
+func (s *Service) tryGrabBestResult(ctx context.Context, b *book.Book, results []*unifiedResult) (*GrabResult, error) {
+	if len(results) == 0 {
+		return nil, fmt.Errorf("no results available")
+	}
+
+	// Try the best result first
+	best := results[0]
+	slog.Info("Attempting to grab best result", "book", b.Title, "source", best.sourceName, "format", best.format)
+
+	var grabResult *GrabResult
+	var err error
+
+	if best.isLibrary {
+		grabResult, err = s.grabFromLibrary(ctx, b, best.libraryResult)
+	} else if best.isIndexer {
+		grabResult, err = s.grabFromIndexer(ctx, b, best.indexerResult)
+	}
+
+	if err == nil {
+		// Mark as success in search_results
+		_, _ = s.db.ExecContext(ctx, `
+			UPDATE search_results 
+			SET status = ?, tried_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+			WHERE book_id = ? AND priority = 0
+		`, searchResultSuccess, b.ID)
+		return grabResult, nil
+	}
+
+	// First grab failed, mark it and try fallbacks
+	slog.Warn("Failed to grab best result, trying fallbacks", "error", err)
+	_, _ = s.db.ExecContext(ctx, `
+		UPDATE search_results 
+		SET status = ?, error_message = ?, tried_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+		WHERE book_id = ? AND priority = 0
+	`, searchResultFailed, err.Error(), b.ID)
+
+	// Try remaining results
+	for i := 1; i < len(results) && i < 5; i++ { // Try up to top 5 results
+		r := results[i]
+		slog.Info("Trying fallback option", "rank", i+1, "source", r.sourceName, "format", r.format)
+
+		if r.isLibrary {
+			grabResult, err = s.grabFromLibrary(ctx, b, r.libraryResult)
+		} else if r.isIndexer {
+			grabResult, err = s.grabFromIndexer(ctx, b, r.indexerResult)
+		}
+
+		if err == nil {
+			_, _ = s.db.ExecContext(ctx, `
+				UPDATE search_results 
+				SET status = ?, tried_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+				WHERE book_id = ? AND priority = ?
+			`, searchResultSuccess, b.ID, i)
+			return grabResult, nil
+		}
+
+		_, _ = s.db.ExecContext(ctx, `
+			UPDATE search_results 
+			SET status = ?, error_message = ?, tried_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+			WHERE book_id = ? AND priority = ?
+		`, searchResultFailed, err.Error(), b.ID, i)
+	}
+
+	return nil, fmt.Errorf("all grab attempts failed for %q", b.Title)
+}
 
 // searchDigitalLibraries searches digital libraries and saves all results for fallback.
 func (s *Service) searchDigitalLibraries(ctx context.Context, b *book.Book, query string) (*GrabResult, error) {
