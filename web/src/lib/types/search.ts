@@ -115,3 +115,31 @@ export interface ColumnConfig {
   gridTemplate: string
   supportedFilters?: string[]
 }
+
+// Unified release type matching both digital library and indexer results
+export type ReleaseSourceType = "library" | "indexer"
+
+export interface UnifiedRelease {
+  id: string
+  title: string
+  authors?: string[]
+  format?: string
+  size: number
+  downloadUrl: string
+  infoUrl?: string
+  provider: string
+  sourceType: ReleaseSourceType
+  // library-specific
+  language?: string
+  year?: number
+  isbn?: string
+  coverUrl?: string
+  score?: number
+  // indexer-specific
+  seeders?: number
+  leechers?: number
+  grabs?: number
+  indexerId?: number
+  indexerName?: string
+  quality?: string
+}

@@ -56,6 +56,8 @@ export type {
   MetadataBook,
   MetadataBookResult,
   MetadataSearchResponse,
+  ReleaseSourceType,
+  UnifiedRelease,
 } from "./search"
 export type {
   NamingPreview,
