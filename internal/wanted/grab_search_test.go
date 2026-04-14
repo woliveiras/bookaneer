@@ -10,12 +10,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/woliveiras/bookaneer/internal/core/book"
+	"github.com/woliveiras/bookaneer/internal/core/naming"
 	"github.com/woliveiras/bookaneer/internal/download"
 	_ "github.com/woliveiras/bookaneer/internal/download/direct" // register embedded downloader factory
 	"github.com/woliveiras/bookaneer/internal/library"
 	"github.com/woliveiras/bookaneer/internal/search"
 	"github.com/woliveiras/bookaneer/internal/testutil"
-	"github.com/woliveiras/bookaneer/internal/core/naming"
 	"github.com/woliveiras/bookaneer/internal/wanted"
 )
 
@@ -535,18 +535,18 @@ func TestSearchAndGrab_IndexerReturnsNonEbookResults(t *testing.T) {
 // mockDownloadClient is a test-only download.Client that always succeeds.
 type mockDownloadClient struct{}
 
-func (m *mockDownloadClient) Name() string { return "mock" }
-func (m *mockDownloadClient) Type() string { return "qbittorrent" }
+func (m *mockDownloadClient) Name() string                 { return "mock" }
+func (m *mockDownloadClient) Type() string                 { return "qbittorrent" }
 func (m *mockDownloadClient) Test(_ context.Context) error { return nil }
 func (m *mockDownloadClient) Add(_ context.Context, _ download.AddItem) (string, error) {
-return "mock-dl-id", nil
+	return "mock-dl-id", nil
 }
 func (m *mockDownloadClient) Remove(_ context.Context, _ string, _ bool) error { return nil }
 func (m *mockDownloadClient) GetStatus(_ context.Context, _ string) (*download.ItemStatus, error) {
-return nil, nil
+	return nil, nil
 }
 func (m *mockDownloadClient) GetQueue(_ context.Context) ([]download.ItemStatus, error) {
-return nil, nil
+	return nil, nil
 }
 
 // TestSearchAndGrab_IndexerGrabSuccess exercises the full grabFromIndexer happy
@@ -554,34 +554,34 @@ return nil, nil
 // 'qbittorrent' client accepts the download, and the function records the grab
 // in both download_queue and history.
 func TestSearchAndGrab_IndexerGrabSuccess(t *testing.T) {
-const indexerType = "newznab"
-const clientType = "qbittorrent"
+	const indexerType = "newznab"
+	const clientType = "qbittorrent"
 
-// Register mock indexer factory (returns seeded ebook result).
-search.RegisterFactory(indexerType, func(cfg search.IndexerConfig) (search.Indexer, error) {
-return &mockIndexer{results: []search.Result{
-{
-Title:       "The Hobbit EPUB",
-DownloadURL: "http://127.0.0.1:1/hobbit.epub",
-IndexerID:   1,
-IndexerName: "mock",
-Size:        2048,
-Seeders:     5,
-},
-}}, nil
-})
+	// Register mock indexer factory (returns seeded ebook result).
+	search.RegisterFactory(indexerType, func(cfg search.IndexerConfig) (search.Indexer, error) {
+		return &mockIndexer{results: []search.Result{
+			{
+				Title:       "The Hobbit EPUB",
+				DownloadURL: "http://127.0.0.1:1/hobbit.epub",
+				IndexerID:   1,
+				IndexerName: "mock",
+				Size:        2048,
+				Seeders:     5,
+			},
+		}}, nil
+	})
 
-// Register mock download client factory that always succeeds.
-download.RegisterFactory(clientType, func(cfg download.ClientConfig) (download.Client, error) {
-return &mockDownloadClient{}, nil
-})
+	// Register mock download client factory that always succeeds.
+	download.RegisterFactory(clientType, func(cfg download.ClientConfig) (download.Client, error) {
+		return &mockDownloadClient{}, nil
+	})
 
-db := testutil.OpenTestDB(t)
-authorID := testutil.SeedAuthor(t, db, "Tolkien")
-bookID := testutil.SeedBook(t, db, authorID, "The Hobbit")
+	db := testutil.OpenTestDB(t)
+	authorID := testutil.SeedAuthor(t, db, "Tolkien")
+	bookID := testutil.SeedBook(t, db, authorID, "The Hobbit")
 
-// Seed the indexer row.
-_, err := db.Exec(`
+	// Seed the indexer row.
+	_, err := db.Exec(`
 INSERT INTO indexers
   (name, type, base_url, api_path, api_key, categories, priority,
    enabled, enable_rss, enable_automatic_search, enable_interactive_search,
@@ -589,124 +589,124 @@ INSERT INTO indexers
 VALUES ('MockIndexer', ?, 'http://localhost', '/api', 'k', '7030', 5,
         1, 0, 1, 1, '', 0)
 `, indexerType)
-require.NoError(t, err)
+	require.NoError(t, err)
 
-// Seed the download client row with a non-zero ID (autoincrement ensures it).
-_, err = db.Exec(`
+	// Seed the download client row with a non-zero ID (autoincrement ensures it).
+	_, err = db.Exec(`
 INSERT INTO download_clients (name, type, host, port, enabled, priority)
 VALUES ('MockQBit', ?, '127.0.0.1', 8080, 1, 0)
 `, clientType)
-require.NoError(t, err)
+	require.NoError(t, err)
 
-searchSvc := search.NewService(db)
-require.NoError(t, searchSvc.LoadIndexers(context.Background()))
+	searchSvc := search.NewService(db)
+	require.NoError(t, searchSvc.LoadIndexers(context.Background()))
 
-bookSvc := book.New(db)
-downloadSvc := download.NewService(db)
-// libraryService is nil → falls through to searchIndexers.
-svc := wanted.New(db, bookSvc, nil, searchSvc, downloadSvc, naming.New(db), nil, nil)
-ctx := context.Background()
+	bookSvc := book.New(db)
+	downloadSvc := download.NewService(db)
+	// libraryService is nil → falls through to searchIndexers.
+	svc := wanted.New(db, bookSvc, nil, searchSvc, downloadSvc, naming.New(db), nil, nil)
+	ctx := context.Background()
 
-result, err := svc.SearchAndGrab(ctx, bookID)
-require.NoError(t, err)
-require.NotNil(t, result)
-assert.Equal(t, bookID, result.BookID)
-assert.Equal(t, "indexer", result.Source)
-assert.Equal(t, "mock-dl-id", result.DownloadID)
-assert.Equal(t, "MockQBit", result.ClientName)
+	result, err := svc.SearchAndGrab(ctx, bookID)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, bookID, result.BookID)
+	assert.Equal(t, "indexer", result.Source)
+	assert.Equal(t, "mock-dl-id", result.DownloadID)
+	assert.Equal(t, "MockQBit", result.ClientName)
 
-// recordDownload must have written to download_queue.
-queue, err := svc.GetDownloadQueue(ctx)
-require.NoError(t, err)
-assert.Len(t, queue, 1)
-assert.Equal(t, "The Hobbit EPUB", queue[0].Title)
+	// recordDownload must have written to download_queue.
+	queue, err := svc.GetDownloadQueue(ctx)
+	require.NoError(t, err)
+	assert.Len(t, queue, 1)
+	assert.Equal(t, "The Hobbit EPUB", queue[0].Title)
 
-// recordHistory must have written a 'grabbed' event.
-history, err := svc.GetHistory(ctx, 10, "grabbed")
-require.NoError(t, err)
-assert.Len(t, history, 1)
+	// recordHistory must have written a 'grabbed' event.
+	history, err := svc.GetHistory(ctx, 10, "grabbed")
+	require.NoError(t, err)
+	assert.Len(t, history, 1)
 }
 
 // TestGrabRelease_ConfiguredDirectClient covers the `cfg.ID != 0` branch in
 // GrabRelease when a real 'direct' download client is configured in the DB
 // (rather than using the embedded client with ID==0).
 func TestGrabRelease_ConfiguredDirectClient(t *testing.T) {
-dlDir := t.TempDir()
+	dlDir := t.TempDir()
 
-db := testutil.OpenTestDB(t)
-// No root_folder needed: GetDirectClient finds the DB-configured client first.
-authorID := testutil.SeedAuthor(t, db, "Tolkien")
-bookID := testutil.SeedBook(t, db, authorID, "The Hobbit")
+	db := testutil.OpenTestDB(t)
+	// No root_folder needed: GetDirectClient finds the DB-configured client first.
+	authorID := testutil.SeedAuthor(t, db, "Tolkien")
+	bookID := testutil.SeedBook(t, db, authorID, "The Hobbit")
 
-// Insert a 'direct' client with a non-zero ID (autoincrement).
-_, err := db.Exec(`
+	// Insert a 'direct' client with a non-zero ID (autoincrement).
+	_, err := db.Exec(`
 INSERT INTO download_clients (name, type, host, port, enabled, priority, download_dir)
 VALUES ('DirectClient', 'direct', '', 0, 1, 0, ?)
 `, dlDir)
-require.NoError(t, err)
+	require.NoError(t, err)
 
-bookSvc := book.New(db)
-downloadSvc := download.NewService(db)
-svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
-ctx := context.Background()
+	bookSvc := book.New(db)
+	downloadSvc := download.NewService(db)
+	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
+	ctx := context.Background()
 
-// Port 1 → the goroutine fails fast without writing to dlDir.
-result, err := svc.GrabRelease(ctx, bookID, "http://127.0.0.1:1/test.epub", "Test.epub", 1024)
-require.NoError(t, err)
-require.NotNil(t, result)
-assert.Equal(t, "manual", result.Source)
-assert.Equal(t, "DirectClient", result.ClientName)
+	// Port 1 → the goroutine fails fast without writing to dlDir.
+	result, err := svc.GrabRelease(ctx, bookID, "http://127.0.0.1:1/test.epub", "Test.epub", 1024)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, "manual", result.Source)
+	assert.Equal(t, "DirectClient", result.ClientName)
 
-// The download_queue entry should reference the configured client (ID != 0).
-queue, err := svc.GetDownloadQueue(ctx)
-require.NoError(t, err)
-require.Len(t, queue, 1)
-assert.NotNil(t, queue[0].DownloadClientID, "expected non-nil client ID from configured client")
+	// The download_queue entry should reference the configured client (ID != 0).
+	queue, err := svc.GetDownloadQueue(ctx)
+	require.NoError(t, err)
+	require.Len(t, queue, 1)
+	assert.NotNil(t, queue[0].DownloadClientID, "expected non-nil client ID from configured client")
 }
 
 // TestSearchAndGrab_LibraryConfiguredDirectClient covers the `cfg.ID != 0`
 // branch in grabFromLibrary when a direct download client is configured in DB.
 func TestSearchAndGrab_LibraryConfiguredDirectClient(t *testing.T) {
-dlDir := t.TempDir()
+	dlDir := t.TempDir()
 
-db := testutil.OpenTestDB(t)
-authorID := testutil.SeedAuthor(t, db, "Tolkien")
-bookID := testutil.SeedBook(t, db, authorID, "The Hobbit")
+	db := testutil.OpenTestDB(t)
+	authorID := testutil.SeedAuthor(t, db, "Tolkien")
+	bookID := testutil.SeedBook(t, db, authorID, "The Hobbit")
 
-_, err := db.Exec(`
+	_, err := db.Exec(`
 INSERT INTO download_clients (name, type, host, port, enabled, priority, download_dir)
 VALUES ('DirectDB', 'direct', '', 0, 1, 0, ?)
 `, dlDir)
-require.NoError(t, err)
+	require.NoError(t, err)
 
-mock := &mockLibraryProvider{
-results: []library.SearchResult{
-{
-Provider:    "mock",
-Title:       "The Hobbit",
-DownloadURL: "http://127.0.0.1:1/hobbit.epub",
-Format:      "epub",
-Size:        1024,
-},
-},
-}
-agg := library.NewAggregator(mock)
+	mock := &mockLibraryProvider{
+		results: []library.SearchResult{
+			{
+				Provider:    "mock",
+				Title:       "The Hobbit",
+				DownloadURL: "http://127.0.0.1:1/hobbit.epub",
+				Format:      "epub",
+				Size:        1024,
+			},
+		},
+	}
+	agg := library.NewAggregator(mock)
 
-bookSvc := book.New(db)
-downloadSvc := download.NewService(db)
-svc := wanted.New(db, bookSvc, agg, nil, downloadSvc, naming.New(db), nil, nil)
-ctx := context.Background()
+	bookSvc := book.New(db)
+	downloadSvc := download.NewService(db)
+	svc := wanted.New(db, bookSvc, agg, nil, downloadSvc, naming.New(db), nil, nil)
+	ctx := context.Background()
 
-result, err := svc.SearchAndGrab(ctx, bookID)
-require.NoError(t, err)
-require.NotNil(t, result)
-assert.Equal(t, "library", result.Source)
-assert.Equal(t, "DirectDB", result.ClientName)
+	result, err := svc.SearchAndGrab(ctx, bookID)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, "library", result.Source)
+	assert.Equal(t, "DirectDB", result.ClientName)
 
-queue, err := svc.GetDownloadQueue(ctx)
-require.NoError(t, err)
-require.Len(t, queue, 1)
-assert.NotNil(t, queue[0].DownloadClientID, "grabFromLibrary should set client ID when cfg.ID != 0")
+	queue, err := svc.GetDownloadQueue(ctx)
+	require.NoError(t, err)
+	require.Len(t, queue, 1)
+	assert.NotNil(t, queue[0].DownloadClientID, "grabFromLibrary should set client ID when cfg.ID != 0")
 }
 
 // TestProcessDownloads_ImportFailsNoRootFolder covers the
