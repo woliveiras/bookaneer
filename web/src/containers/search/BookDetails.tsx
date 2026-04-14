@@ -167,10 +167,13 @@ export function BookDetails({ book, autoSearch = false, existingBookId }: BookDe
     }
   }
 
-  // Build search queries
-  const librarySearchQuery = book.title
-  const indexerSearchQuery = [book.title, ...(book.authors || [])].join(" ")
-  const searchParams: SearchParams = { q: indexerSearchQuery }
+  // Build search queries — ISBN-first for more precise results
+  const isbn = book.isbn13 || book.isbn10 || ""
+  const librarySearchQuery = isbn || book.title
+  const indexerSearchQuery = isbn || [book.title, ...(book.authors || [])].join(" ")
+  const searchParams: SearchParams = isbn
+    ? { isbn, q: [book.title, ...(book.authors || [])].join(" ") }
+    : { q: [book.title, ...(book.authors || [])].join(" ") }
 
   // Search queries - only enabled when searchStarted is true
   const indexerSearch = useSearch(searchStarted ? searchParams : { q: "" }, searchStarted)

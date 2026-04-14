@@ -89,14 +89,38 @@ func (s *Service) SearchAndGrab(ctx context.Context, bookID int64) (*GrabResult,
 
 	slog.Info("Searching for book", "id", bookID, "title", b.Title)
 
-	// Build search query
-	query := b.Title
-	if b.AuthorName != "" {
-		query = fmt.Sprintf("%s %s", b.Title, b.AuthorName)
+	// Build search queries: ISBN-first for more precise results, then title+author fallback
+	isbn := b.ISBN13
+	if isbn == "" {
+		isbn = b.ISBN
 	}
 
-	// Try digital libraries first (free, direct download)
-	result, err := s.searchDigitalLibraries(ctx, b, query)
+	titleAuthorQuery := b.Title
+	if b.AuthorName != "" {
+		titleAuthorQuery = fmt.Sprintf("%s %s", b.Title, b.AuthorName)
+	}
+
+	// Phase 1: ISBN search (most precise) — if ISBN is available
+	if isbn != "" {
+		slog.Info("Trying ISBN-first search", "isbn", isbn, "book", b.Title)
+
+		result, err := s.searchDigitalLibraries(ctx, b, isbn)
+		if err == nil && result != nil {
+			slog.Info("Found via ISBN in digital libraries", "book", b.Title)
+			return result, nil
+		}
+
+		result, err = s.searchIndexers(ctx, b, isbn)
+		if err == nil && result != nil {
+			slog.Info("Found via ISBN in indexers", "book", b.Title)
+			return result, nil
+		}
+
+		slog.Debug("ISBN search returned no results, falling back to title+author", "isbn", isbn)
+	}
+
+	// Phase 2: Title + author search (broader)
+	result, err := s.searchDigitalLibraries(ctx, b, titleAuthorQuery)
 	if err == nil && result != nil {
 		return result, nil
 	}
@@ -104,8 +128,7 @@ func (s *Service) SearchAndGrab(ctx context.Context, bookID int64) (*GrabResult,
 		slog.Warn("Digital library search failed", "error", err)
 	}
 
-	// Fall back to indexers (torrent/usenet)
-	result, err = s.searchIndexers(ctx, b, query)
+	result, err = s.searchIndexers(ctx, b, titleAuthorQuery)
 	if err == nil && result != nil {
 		return result, nil
 	}
