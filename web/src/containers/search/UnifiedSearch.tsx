@@ -4,6 +4,7 @@ import { Bookmark, BookmarkCheck, Download, Library } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { Badge, Button, Card, CardContent, Input } from "../../components/ui"
 import { useMetadataSearchBooks } from "../../hooks/useMetadata"
+import { useWishlist } from "../../hooks/useWishlist"
 import type { MetadataBookResult } from "../../lib/api"
 import { bookApi } from "../../lib/api"
 
@@ -95,6 +96,18 @@ function BookCard({
 export function UnifiedSearch() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { data: wishlistData } = useWishlist()
+
+  // Build a lookup set from the persisted wishlist (by foreignId and isbn13)
+  const persistedWishlistKeys = new Set<string>(
+    (wishlistData?.records ?? []).flatMap((b) => {
+      const keys: string[] = []
+      if (b.foreignId) keys.push(`fid:${b.foreignId}`)
+      if (b.isbn13) keys.push(`isbn:${b.isbn13}`)
+      return keys
+    }),
+  )
+
   const addToWishlist = useMutation({
     mutationFn: (book: MetadataBookResult) =>
       bookApi.addToWishlist({
@@ -155,6 +168,14 @@ export function UnifiedSearch() {
     },
     [addToWishlist],
   )
+
+  function isWishlisted(book: MetadataBookResult): boolean {
+    const sessionKey = `${book.provider}-${book.foreignId}`
+    if (wishlistedKeys.has(sessionKey)) return true
+    if (book.foreignId && persistedWishlistKeys.has(`fid:${book.foreignId}`)) return true
+    if (book.isbn13 && persistedWishlistKeys.has(`isbn:${book.isbn13}`)) return true
+    return false
+  }
 
   // Update URL when search is submitted
   const handleSearch = useCallback(() => {
@@ -258,7 +279,7 @@ export function UnifiedSearch() {
                   isGetting={gettingBookId === bookKey}
                   onWishlist={handleWishlist}
                   isWishlisting={wishlistingBookId === bookKey}
-                  wishlisted={wishlistedKeys.has(bookKey)}
+                  wishlisted={isWishlisted(book)}
                 />
               )
             })}
