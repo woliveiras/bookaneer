@@ -109,6 +109,15 @@ func (s *Service) RemoveFromQueue(ctx context.Context, id int64) error {
 	return nil
 }
 
+// RetryDownload re-submits a failed or cancelled download to the download client.
+func (s *Service) RetryDownload(ctx context.Context, id int64) error {
+	client, _, err := s.downloadService.GetDirectClient(ctx)
+	if err != nil || client == nil {
+		return fmt.Errorf("get download client: %w", err)
+	}
+	return s.restartDownload(ctx, id, client)
+}
+
 // recordDownload adds an entry to the download_queue table.
 // clientID can be nil for embedded client (no database entry).
 func (s *Service) recordDownload(ctx context.Context, bookID int64, clientID *int64, indexerID *int64, title string, size int64, format, downloadURL, externalID, savePath string) error {

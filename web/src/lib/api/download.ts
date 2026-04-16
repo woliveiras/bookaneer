@@ -57,6 +57,11 @@ export const queueApi = {
     }).then((res) => {
       if (!res.ok) throw new Error("Failed to remove from queue")
     }),
+
+  retry: (id: number) =>
+    fetchAPI<void>(`/queue/${id}/retry`, {
+      method: "POST",
+    }),
 }
 
 export const grabApi = {

@@ -79,6 +79,16 @@ export function useRemoveFromQueue() {
   })
 }
 
+export function useRetryDownload() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: queueApi.retry,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["queue"] })
+    },
+  })
+}
+
 // History hooks
 export function useHistory(params?: { limit?: number; eventType?: HistoryEventType }) {
   return useQuery({

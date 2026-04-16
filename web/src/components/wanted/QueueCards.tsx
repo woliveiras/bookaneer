@@ -119,10 +119,12 @@ export function SearchCommandCard({ command, onDismiss, canDismiss }: SearchComm
 interface QueueItemCardProps {
   item: QueueItem
   onRemove: () => void
+  onRetry?: () => void
   isRemoving: boolean
+  isRetrying?: boolean
 }
 
-export function QueueItemCard({ item, onRemove, isRemoving }: QueueItemCardProps) {
+export function QueueItemCard({ item, onRemove, onRetry, isRemoving, isRetrying }: QueueItemCardProps) {
   const statusColors: Record<string, string> = {
     queued: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
     downloading: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
@@ -239,9 +241,6 @@ export function QueueItemCard({ item, onRemove, isRemoving }: QueueItemCardProps
                   <p className="text-xs text-destructive">
                     Download failed - this file requires login or is unavailable
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Go to the book page to search for alternative download sources
-                  </p>
                 </div>
               )}
 
@@ -251,9 +250,20 @@ export function QueueItemCard({ item, onRemove, isRemoving }: QueueItemCardProps
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
+            {item.status === "failed" && onRetry && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRetry}
+                disabled={isRetrying}
+                title="Retry this download"
+              >
+                {isRetrying ? "Retrying..." : "Retry"}
+              </Button>
+            )}
             {item.status === "failed" && (
               <Link to="/book/$bookId" params={{ bookId: String(item.bookId) }}>
-                <Button variant="outline" size="sm" title="Open book page to search alternatives">
+                <Button variant="outline" size="sm" title="Search for alternative sources">
                   Search Again
                 </Button>
               </Link>

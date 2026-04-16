@@ -9,6 +9,7 @@ import {
   useDownloadQueue,
   useRecentCommands,
   useRemoveFromQueue,
+  useRetryDownload,
 } from "../../hooks/useWanted"
 import { queueApi } from "../../lib/api"
 import type { QueueItem } from "../../lib/api"
@@ -18,6 +19,7 @@ export function QueueList() {
   const { data: activeCommands } = useActiveCommands()
   const { data: recentCommands } = useRecentCommands(50)
   const removeMutation = useRemoveFromQueue()
+  const retryMutation = useRetryDownload()
   const queryClient = useQueryClient()
   const [itemToRemove, setItemToRemove] = useState<QueueItem | null>(null)
   const [dismissedCommands, setDismissedCommands] = useState<Set<string>>(getDismissedCommands)
@@ -72,13 +74,13 @@ export function QueueList() {
   // Filter book-related commands that aren't dismissed
   const bookCommands = (recentCommands || []).filter(
     (cmd) =>
-      ["AutomaticSearch", "BookSearch", "MissingBookSearch", "DownloadGrab"].includes(cmd.name) &&
+      ["DownloadGrab"].includes(cmd.name) &&
       !dismissedCommands.has(cmd.id),
   )
 
   // Active commands (still running)
   const activeBookCommands = (activeCommands || []).filter((cmd) =>
-    ["AutomaticSearch", "BookSearch", "MissingBookSearch", "DownloadGrab"].includes(cmd.name),
+    ["DownloadGrab"].includes(cmd.name),
   )
 
   // Completed/failed commands — auto-dismiss "Found" if the book already has a completed download
@@ -201,7 +203,9 @@ export function QueueList() {
               key={item.id}
               item={item}
               onRemove={() => handleRemove(item)}
+              onRetry={item.status === "failed" ? () => retryMutation.mutate(item.id) : undefined}
               isRemoving={removeMutation.isPending}
+              isRetrying={retryMutation.isPending}
             />
           ))}
         </div>

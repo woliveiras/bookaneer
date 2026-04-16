@@ -209,7 +209,11 @@ func (s *Scheduler) executeCommand(ctx context.Context, cmd *Command) {
 		return
 	}
 
-	slog.Info("Executing command", "id", cmd.ID, "name", cmd.Name)
+	if cmd.Trigger == TriggerScheduled {
+		slog.Debug("Executing command", "id", cmd.ID, "name", cmd.Name)
+	} else {
+		slog.Info("Executing command", "id", cmd.ID, "name", cmd.Name)
+	}
 
 	// Get handler
 	s.mu.RLock()
@@ -235,7 +239,11 @@ func (s *Scheduler) executeCommand(ctx context.Context, cmd *Command) {
 			slog.Error("Failed to update command status", "id", cmd.ID, "error", uerr)
 		}
 	} else {
-		slog.Info("Command completed", "id", cmd.ID, "name", cmd.Name)
+		if cmd.Trigger == TriggerScheduled {
+			slog.Debug("Command completed", "id", cmd.ID, "name", cmd.Name)
+		} else {
+			slog.Info("Command completed", "id", cmd.ID, "name", cmd.Name)
+		}
 		if uerr := s.updateCommandStatus(ctx, cmd.ID, StatusCompleted, cmd.Result); uerr != nil {
 			slog.Error("Failed to update command status", "id", cmd.ID, "error", uerr)
 		}

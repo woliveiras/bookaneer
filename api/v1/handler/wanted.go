@@ -35,6 +35,7 @@ func (h *WantedHandler) Register(g *echo.Group) {
 	// Download queue
 	g.GET("/queue", h.GetQueue)
 	g.DELETE("/queue/:id", h.RemoveFromQueue)
+	g.POST("/queue/:id/retry", h.RetryDownload)
 
 	// History
 	g.GET("/history", h.GetHistory)
@@ -193,7 +194,7 @@ type ManualGrabRequest struct {
 	Quality      string `json:"quality"`
 }
 
-// ManualGrab manually grabs a release.
+// ManualGrab immediately grabs a release and starts the download.
 func (h *WantedHandler) ManualGrab(c *echo.Context) error {
 	var req ManualGrabRequest
 	if err := c.Bind(&req); err != nil {
@@ -207,24 +208,30 @@ func (h *WantedHandler) ManualGrab(c *echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "downloadUrl is required")
 	}
 
-	// Queue a DownloadGrab command
 	ctx := c.Request().Context()
-	commandID, err := h.schedulerService.QueueCommand(ctx, scheduler.CommandDownloadGrab, scheduler.TriggerManual, map[string]any{
-		"bookId":       req.BookID,
-		"indexerId":    req.IndexerID,
-		"downloadUrl":  req.DownloadURL,
-		"releaseTitle": req.ReleaseTitle,
-		"size":         req.Size,
-		"quality":      req.Quality,
-	})
+	result, err := h.wantedService.GrabRelease(ctx, req.BookID, req.DownloadURL, req.ReleaseTitle, req.Size)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to queue grab command")
+		slog.Error("grab failed", "bookId", req.BookID, "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to start download")
 	}
 
-	return c.JSON(http.StatusAccepted, map[string]any{
-		"commandId": commandID,
-		"message":   "Grab has been queued",
-	})
+	return c.JSON(http.StatusOK, result)
+}
+
+// RetryDownload retries a failed or cancelled download queue item.
+func (h *WantedHandler) RetryDownload(c *echo.Context) error {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid queue item id")
+	}
+
+	ctx := c.Request().Context()
+	if err := h.wantedService.RetryDownload(ctx, id); err != nil {
+		slog.Error("retry failed", "queueId", id, "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to retry download")
+	}
+
+	return c.NoContent(http.StatusNoContent)
 }
 
 // GetHistory returns history events.

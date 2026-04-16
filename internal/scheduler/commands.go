@@ -30,7 +30,11 @@ func (s *Scheduler) QueueCommand(ctx context.Context, name CommandName, trigger 
 		return "", fmt.Errorf("insert command: %w", err)
 	}
 
-	slog.Info("Command queued", "id", id, "name", name, "trigger", trigger)
+	if trigger == TriggerScheduled {
+		slog.Debug("Command queued", "id", id, "name", name, "trigger", trigger)
+	} else {
+		slog.Info("Command queued", "id", id, "name", name, "trigger", trigger)
+	}
 	return id, nil
 }
 
