@@ -64,6 +64,28 @@ export function useBookRelease(book: MetadataBookResult | null, existingBookId?:
     !indexerSearch.isLoading && !!indexerSearch.error && !indexerSearch.data?.results?.length
   const someSourcesFailed = (libraryFailed || indexerFailed) && !(libraryFailed && indexerFailed)
 
+  // Track which result IDs came exclusively from the expanded search
+  const expandedIndexerGuids = useMemo(() => {
+    const primaryGuids = new Set((indexerSearch.data?.results ?? []).map((r) => r.guid))
+    const set = new Set<string>()
+    for (const r of expandedIndexerSearch.data?.results ?? []) {
+      if (!primaryGuids.has(r.guid)) set.add(r.guid)
+    }
+    return set
+  }, [indexerSearch.data, expandedIndexerSearch.data])
+
+  const expandedLibraryKeys = useMemo(() => {
+    const primaryKeys = new Set(
+      (librarySearch.data?.results ?? []).map((r) => `${r.provider}-${r.id}`),
+    )
+    const set = new Set<string>()
+    for (const r of expandedLibrarySearch.data?.results ?? []) {
+      const key = `${r.provider}-${r.id}`
+      if (!primaryKeys.has(key)) set.add(key)
+    }
+    return set
+  }, [librarySearch.data, expandedLibrarySearch.data])
+
   const indexerResults = useMemo(() => {
     const primary = indexerSearch.data?.results ?? []
     const expanded = expandedIndexerSearch.data?.results ?? []
@@ -288,7 +310,10 @@ export function useBookRelease(book: MetadataBookResult | null, existingBookId?:
     grabSuccess,
     grabError,
     handleGrab,
+    expandedLibraryKeys,
+    expandedIndexerGuids,
     handleExpandSearch: () => setExpandedSearch(true),
+    isExpanded: expandedSearch,
     // Filters
     formatFilter,
     setFormatFilter,

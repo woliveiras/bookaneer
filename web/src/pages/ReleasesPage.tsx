@@ -135,10 +135,12 @@ export function ReleasesPage({ book, autoSearch = true, existingBookId }: Releas
           onGrab={release.handleGrab}
           onResetFilters={release.resetFilters}
           onExpandSearch={release.handleExpandSearch}
-          isExpanded={false}
+          isExpanded={release.isExpanded}
           isExpandSearching={release.isExpandSearching}
           libraryColumnConfig={release.libraryColumnConfig}
           indexerColumnConfig={release.indexerColumnConfig}
+          expandedLibraryKeys={release.expandedLibraryKeys}
+          expandedIndexerGuids={release.expandedIndexerGuids}
         />
       </div>
     </AuthLayout>

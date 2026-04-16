@@ -10,9 +10,10 @@ interface DownloadResultProps {
   onGrab: (url: string, title: string, size: number) => Promise<void>
   isGrabbing: boolean
   columnConfig?: ColumnConfig
+  fromExpanded?: boolean
 }
 
-export function DownloadResult({ result, onGrab, isGrabbing, columnConfig }: DownloadResultProps) {
+export function DownloadResult({ result, onGrab, isGrabbing, columnConfig, fromExpanded }: DownloadResultProps) {
   const [grabbing, setGrabbing] = useState(false)
 
   const handleGrab = async () => {
@@ -35,6 +36,11 @@ export function DownloadResult({ result, onGrab, isGrabbing, columnConfig }: Dow
                 {columnConfig.columns.map((col) => (
                   <DynamicCell key={col.key} column={col} row={result as unknown as Record<string, unknown>} />
                 ))}
+                {fromExpanded && (
+                  <Badge variant="outline" className="text-xs border-violet-400 text-violet-500">
+                    Expanded Search
+                  </Badge>
+                )}
               </div>
             ) : (
               <div className="flex flex-wrap gap-1 mt-1">
@@ -47,6 +53,11 @@ export function DownloadResult({ result, onGrab, isGrabbing, columnConfig }: Dow
                 {result.seeders !== undefined && result.seeders > 0 && (
                   <Badge variant="default" className="bg-green-600 text-xs">
                     {result.seeders} seeds
+                  </Badge>
+                )}
+                {fromExpanded && (
+                  <Badge variant="outline" className="text-xs border-violet-400 text-violet-500">
+                    Expanded Search
                   </Badge>
                 )}
               </div>
@@ -66,9 +77,10 @@ interface LibraryResultProps {
   onGrab: (url: string, title: string, size: number) => Promise<void>
   isGrabbing: boolean
   columnConfig?: ColumnConfig
+  fromExpanded?: boolean
 }
 
-export function LibraryResult({ result, onGrab, isGrabbing, columnConfig }: LibraryResultProps) {
+export function LibraryResult({ result, onGrab, isGrabbing, columnConfig, fromExpanded }: LibraryResultProps) {
   const [grabbing, setGrabbing] = useState(false)
 
   const handleGrab = async () => {
@@ -97,6 +109,11 @@ export function LibraryResult({ result, onGrab, isGrabbing, columnConfig }: Libr
                 {columnConfig.columns.map((col) => (
                   <DynamicCell key={col.key} column={col} row={result as unknown as Record<string, unknown>} />
                 ))}
+                {fromExpanded && (
+                  <Badge variant="outline" className="text-xs border-violet-400 text-violet-500">
+                    Expanded Search
+                  </Badge>
+                )}
               </div>
             ) : (
               <div className="flex flex-wrap gap-1 mt-1">
@@ -119,6 +136,11 @@ export function LibraryResult({ result, onGrab, isGrabbing, columnConfig }: Libr
                 {result.score && (
                   <Badge variant="default" className="text-xs bg-primary">
                     Score: {result.score}
+                  </Badge>
+                )}
+                {fromExpanded && (
+                  <Badge variant="outline" className="text-xs border-violet-400 text-violet-500">
+                    Expanded Search
                   </Badge>
                 )}
               </div>

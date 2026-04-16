@@ -27,6 +27,8 @@ interface SearchResultsProps {
   isExpandSearching?: boolean
   libraryColumnConfig?: ColumnConfig
   indexerColumnConfig?: ColumnConfig
+  expandedLibraryKeys?: Set<string>
+  expandedIndexerGuids?: Set<string>
 }
 
 export function SearchResults({
@@ -49,11 +51,28 @@ export function SearchResults({
   isExpandSearching = false,
   libraryColumnConfig,
   indexerColumnConfig,
+  expandedLibraryKeys,
+  expandedIndexerGuids,
 }: SearchResultsProps) {
   const [activeTab, setActiveTab] = useState<SourceTab>("all")
 
   const showLibrary = activeTab === "all" || activeTab === "library"
   const showIndexer = activeTab === "all" || activeTab === "indexer"
+
+  // Split results into primary (from initial search) and expanded-only
+  const primaryLibraryResults = filteredLibraryResults.filter(
+    (r) => !expandedLibraryKeys?.has(`${r.provider}-${r.id}`),
+  )
+  const expandedOnlyLibraryResults = filteredLibraryResults.filter((r) =>
+    expandedLibraryKeys?.has(`${r.provider}-${r.id}`),
+  )
+
+  const primaryIndexerResults = filteredIndexerResults.filter(
+    (r) => !expandedIndexerGuids?.has(r.guid),
+  )
+  const expandedOnlyIndexerResults = filteredIndexerResults.filter((r) =>
+    expandedIndexerGuids?.has(r.guid),
+  )
 
   return (
     <div className="space-y-4">
@@ -95,7 +114,7 @@ export function SearchResults({
             </h3>
           )}
           <div className="grid gap-2">
-            {filteredLibraryResults.map((result) => (
+            {primaryLibraryResults.map((result) => (
               <LibraryResult
                 key={`${result.provider}-${result.id}`}
                 result={result}
@@ -105,6 +124,30 @@ export function SearchResults({
               />
             ))}
           </div>
+
+          {expandedOnlyLibraryResults.length > 0 && (
+            <>
+              <div className="flex items-center gap-2 mt-4 mb-2">
+                <div className="flex-1 border-t" />
+                <span className="text-xs text-muted-foreground font-medium px-2 whitespace-nowrap">
+                  Found by Expand Search
+                </span>
+                <div className="flex-1 border-t" />
+              </div>
+              <div className="grid gap-2">
+                {expandedOnlyLibraryResults.map((result) => (
+                  <LibraryResult
+                    key={`${result.provider}-${result.id}`}
+                    result={result}
+                    onGrab={onGrab}
+                    isGrabbing={isGrabbing}
+                    columnConfig={libraryColumnConfig}
+                    fromExpanded
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -128,7 +171,7 @@ export function SearchResults({
             </h3>
           )}
           <div className="grid gap-2">
-            {filteredIndexerResults.map((result) => (
+            {primaryIndexerResults.map((result) => (
               <DownloadResult
                 key={result.guid}
                 result={result}
@@ -138,6 +181,30 @@ export function SearchResults({
               />
             ))}
           </div>
+
+          {expandedOnlyIndexerResults.length > 0 && (
+            <>
+              <div className="flex items-center gap-2 mt-4 mb-2">
+                <div className="flex-1 border-t" />
+                <span className="text-xs text-muted-foreground font-medium px-2 whitespace-nowrap">
+                  Found by Expand Search
+                </span>
+                <div className="flex-1 border-t" />
+              </div>
+              <div className="grid gap-2">
+                {expandedOnlyIndexerResults.map((result) => (
+                  <DownloadResult
+                    key={result.guid}
+                    result={result}
+                    onGrab={onGrab}
+                    isGrabbing={isGrabbing}
+                    columnConfig={indexerColumnConfig}
+                    fromExpanded
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -171,6 +238,12 @@ export function SearchResults({
               {isExpandSearching ? "Searching…" : "Expand search"}
             </Button>
           )}
+          {isExpanded && isExpandSearching && (
+            <p className="flex items-center justify-center gap-3 mt-4">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              Searching for more results…
+            </p>
+          )}
         </div>
       )}
 
@@ -182,6 +255,12 @@ export function SearchResults({
             <Button variant="ghost" size="sm" onClick={onExpandSearch} disabled={isExpandSearching}>
               {isExpandSearching ? "Searching…" : "Expand search"}
             </Button>
+          )}
+          {isExpanded && isExpandSearching && (
+            <p className="flex items-center justify-center gap-3 pt-2">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              Searching for more results…
+            </p>
           )}
         </div>
       )}
