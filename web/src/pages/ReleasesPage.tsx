@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router"
 import { AlertTriangle, ArrowLeft, Library } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { toast } from "sonner"
 import { AuthLayout } from "../components/layout/AppLayout"
 import { SearchFilters } from "../components/search/SearchFilters"
 import { SearchResults } from "../components/search/SearchResults"
@@ -22,6 +23,22 @@ export function ReleasesPage({ book, autoSearch = true, existingBookId }: Releas
     setAutoStarted(true)
     release.startSearch()
   }
+
+  useEffect(() => {
+    if (release.grabSuccess) {
+      toast.success(
+        release.grabResult?.clientName
+          ? `Sent to download!`
+          : "Release grabbed! Check the Activity tab.",
+      )
+    }
+  }, [release.grabSuccess, release.grabResult])
+
+  useEffect(() => {
+    if (release.grabError) {
+      toast.error(release.grabError)
+    }
+  }, [release.grabError])
 
   return (
     <AuthLayout>
@@ -69,23 +86,6 @@ export function ReleasesPage({ book, autoSearch = true, existingBookId }: Releas
             </div>
           </div>
         </div>
-
-        {/* Grab notifications */}
-        {release.grabSuccess && (
-          <div className="rounded-md border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950 p-3">
-            <p className="text-green-700 dark:text-green-300 text-sm flex items-center gap-2">
-              <span>✓</span>{" "}
-              {release.grabResult?.clientName
-                ? `Sent to download!`
-                : "Release grabbed! Check the Activity tab."}
-            </p>
-          </div>
-        )}
-        {release.grabError && (
-          <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3">
-            <p className="text-destructive text-sm">{release.grabError}</p>
-          </div>
-        )}
 
         {/* Partial failure warning */}
         {release.someSourcesFailed && (

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import { Link, Outlet } from "@tanstack/react-router"
 import { Activity, BookOpen, Library, Menu, Search, Settings, Star, Users, X } from "lucide-react"
 import { type ReactNode, useState } from "react"
+import { Toaster } from "sonner"
 import { AuthProvider, useAuth } from "../../contexts/AuthContext"
 import { LoginPage } from "../../pages/LoginPage"
 import { RootFolderWarning } from "../common"
@@ -76,6 +77,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
 
       {/* Mobile bottom navigation — visible only below sm breakpoint */}
       <MobileBottomNav />
+      <Toaster richColors position="bottom-right" />
     </div>
   )
 }
