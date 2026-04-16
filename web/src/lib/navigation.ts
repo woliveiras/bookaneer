@@ -7,7 +7,7 @@ import type { Book } from "./types/book"
  */
 export function navigateToBookSearch(navigate: NavigateFn, book: Book): void {
   navigate({
-    to: "/search/book",
+    to: "/search/releases",
     search: {
       title: book.title,
       authors: book.authorName,
