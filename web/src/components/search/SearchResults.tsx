@@ -4,6 +4,7 @@ import type { ColumnConfig } from "../../lib/types"
 import { Library, Search } from "lucide-react"
 import { Badge, Button } from "../ui"
 import { DownloadResult, LibraryResult } from "./SearchResultCards"
+import { SearchLoadingAnimation } from "./SearchLoadingAnimation"
 
 type SourceTab = "all" | "library" | "indexer"
 
@@ -104,6 +105,11 @@ export function SearchResults({
         </div>
       )}
 
+      {/* Unified loading — boat sailing the seven seas while no results yet */}
+      {(isLibraryLoading || isIndexerLoading) && totalResults === 0 && searchActive && (
+        <SearchLoadingAnimation />
+      )}
+
       {/* Digital Library Results */}
       {showLibrary && filteredLibraryResults.length > 0 && (
         <div>
@@ -152,9 +158,6 @@ export function SearchResults({
       )}
 
       {/* Library loading / empty in tab view */}
-      {showLibrary && isLibraryLoading && (
-        <p className="text-center text-muted-foreground py-6 text-sm">Searching digital libraries…</p>
-      )}
       {showLibrary && !isLibraryLoading && filteredLibraryResults.length === 0 && activeTab === "library" && (
         <p className="text-center text-muted-foreground py-6 text-sm">
           {libraryError ? "Digital libraries could not be reached" : "No library results found"}
@@ -209,9 +212,6 @@ export function SearchResults({
       )}
 
       {/* Indexer loading / empty in tab view */}
-      {showIndexer && isIndexerLoading && (
-        <p className="text-center text-muted-foreground py-6 text-sm">Searching indexers…</p>
-      )}
       {showIndexer && !isIndexerLoading && filteredIndexerResults.length === 0 && activeTab === "indexer" && (
         <p className="text-center text-muted-foreground py-6 text-sm">
           {indexerError ? "Torrent/Usenet indexers could not be reached" : "No indexer results found"}
@@ -233,16 +233,12 @@ export function SearchResults({
         <div className="text-center text-muted-foreground py-8">
           <p className="text-lg mb-2">No downloads found</p>
           <p className="text-sm mb-4">Could not find "{bookTitle}" in any available source.</p>
-          {onExpandSearch && !isExpanded && (
+          {onExpandSearch && !isExpanded && activeTab !== "indexer" && (
             <Button variant="outline" onClick={onExpandSearch} disabled={isExpandSearching}>
               {isExpandSearching ? "Searching…" : "Expand search"}
-            </Button>
-          )}
-          {isExpanded && isExpandSearching && (
-            <p className="flex items-center justify-center gap-3 mt-4">
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
               Searching for more results…
-            </p>
+            </Button>
           )}
         </div>
       )}
@@ -251,16 +247,12 @@ export function SearchResults({
       {totalResults > 0 && (
         <div className="text-sm text-muted-foreground text-center pt-4 border-t space-y-2">
           <p>{totalResults} download {totalResults === 1 ? "option" : "options"} found</p>
-          {onExpandSearch && !isExpanded && (
+          {onExpandSearch && !isExpanded && activeTab !== "indexer" && (
             <Button variant="ghost" size="sm" onClick={onExpandSearch} disabled={isExpandSearching}>
               {isExpandSearching ? "Searching…" : "Expand search"}
-            </Button>
-          )}
-          {isExpanded && isExpandSearching && (
-            <p className="flex items-center justify-center gap-3 pt-2">
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
               Searching for more results…
-            </p>
+            </Button>
           )}
         </div>
       )}

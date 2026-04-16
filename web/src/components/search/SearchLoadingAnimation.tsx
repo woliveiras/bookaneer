@@ -51,7 +51,7 @@ export const searchAnimationStyles = `
 
 export function SearchLoadingAnimation() {
   return (
-    <div className="py-6">
+    <div className="py-8">
       <div className="relative h-24 mx-auto max-w-sm overflow-hidden rounded-lg">
         <div className="absolute bottom-4 left-2" title="Library">
           <Library className="w-6 h-6" />
