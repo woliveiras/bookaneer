@@ -7,6 +7,7 @@ import { AuthorsPage } from "./pages/AuthorsPage"
 import { LibraryBookDetailPage } from "./pages/LibraryBookDetailPage"
 import { ReaderPage } from "./pages/ReaderPage"
 import { BookSearchPage } from "./pages/BookSearchPage"
+import { ReleasesPage } from "./pages/ReleasesPage"
 import { BooksPage } from "./pages/BooksPage"
 import { LibraryPage } from "./pages/LibraryPage"
 import { SearchPage } from "./pages/SearchPage"
@@ -133,6 +134,44 @@ const bookDetailsRoute = createRoute({
   },
 })
 
+// Releases route — dedicated page for release search results
+const releasesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/search/releases",
+  validateSearch: (search: Record<string, unknown>): BookDetailsSearch => ({
+    title: (search.title as string) || "",
+    authors: search.authors as string | undefined,
+    provider: search.provider as string | undefined,
+    foreignId: search.foreignId as string | undefined,
+    publishedYear: search.publishedYear as string | undefined,
+    coverUrl: search.coverUrl as string | undefined,
+    isbn13: search.isbn13 as string | undefined,
+    autoSearch: (search.autoSearch as string) ?? "true",
+    bookId: search.bookId as string | undefined,
+  }),
+  component: function ReleasesPageRoute() {
+    const search = releasesRoute.useSearch()
+
+    const book: MetadataBookResult = {
+      title: search.title,
+      authors: search.authors ? search.authors.split("|||") : undefined,
+      provider: search.provider || "unknown",
+      foreignId: search.foreignId || "",
+      publishedYear: search.publishedYear ? parseInt(search.publishedYear, 10) : undefined,
+      coverUrl: search.coverUrl,
+      isbn13: search.isbn13,
+    }
+
+    return (
+      <ReleasesPage
+        book={book}
+        autoSearch={search.autoSearch !== "false"}
+        existingBookId={search.bookId ? parseInt(search.bookId, 10) : undefined}
+      />
+    )
+  },
+})
+
 // Settings route
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -172,6 +211,7 @@ const routeTree = rootRoute.addChildren([
   activityRoute,
   searchRoute,
   bookDetailsRoute,
+  releasesRoute,
   settingsRoute,
   systemRoute,
   readerRoute,

@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from "react"
+import { useNavigate } from "@tanstack/react-router"
 import { Library, Download } from "lucide-react"
 import { Badge, Button, Card, CardContent, Input } from "../../components/ui"
-import { SearchModal } from "../../components/search/SearchModal"
-import { useBookRelease } from "../../hooks/useBookRelease"
 import { useMetadataSearchBooks } from "../../hooks/useMetadata"
 import type { MetadataBookResult } from "../../lib/api"
 
@@ -72,10 +71,8 @@ function BookCard({ book, onGet, isGetting }: BookCardProps) {
 }
 
 export function UnifiedSearch() {
-  const [activeBook, setActiveBook] = useState<MetadataBookResult | null>(null)
+  const navigate = useNavigate()
   const [gettingBookId, setGettingBookId] = useState<string | null>(null)
-
-  const release = useBookRelease(activeBook)
 
   // Read initial query from URL
   const [query, setQuery] = useState(() => {
@@ -87,26 +84,26 @@ export function UnifiedSearch() {
     return params.get("q") || ""
   })
 
-  const handleGet = useCallback((book: MetadataBookResult) => {
-    const bookKey = `${book.provider}-${book.foreignId}`
-    setGettingBookId(bookKey)
-    setActiveBook(book)
-  }, [])
-
-  // Start the release search once activeBook is set
-  const releaseStartSearch = release.startSearch
-  useEffect(() => {
-    if (activeBook) {
-      releaseStartSearch()
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeBook])
-
-  const handleCloseModal = useCallback(() => {
-    release.closeSearch()
-    setGettingBookId(null)
-    setActiveBook(null)
-  }, [release])
+  const handleGet = useCallback(
+    (book: MetadataBookResult) => {
+      const bookKey = `${book.provider}-${book.foreignId}`
+      setGettingBookId(bookKey)
+      void navigate({
+        to: "/search/releases",
+        search: {
+          title: book.title,
+          authors: book.authors?.join("|||"),
+          provider: book.provider,
+          foreignId: book.foreignId,
+          publishedYear: book.publishedYear?.toString(),
+          coverUrl: book.coverUrl,
+          isbn13: book.isbn13,
+          autoSearch: "true",
+        },
+      })
+    },
+    [navigate],
+  )
 
   // Update URL when search is submitted
   const handleSearch = useCallback(() => {
@@ -130,6 +127,11 @@ export function UnifiedSearch() {
     window.addEventListener("popstate", handlePopState)
     return () => window.removeEventListener("popstate", handlePopState)
   }, [])
+
+  // Reset the "getting" spinner when the user navigates back
+  useEffect(() => {
+    setGettingBookId(null)
+  }, [submittedQuery])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -223,45 +225,6 @@ export function UnifiedSearch() {
             </p>
           </CardContent>
         </Card>
-      )}
-
-      {/* Release picker modal */}
-      {activeBook && (
-        <SearchModal
-          open={release.searchStarted}
-          onClose={handleCloseModal}
-          bookTitle={activeBook.title}
-          filteredLibraryResults={release.filteredLibraryResults}
-          filteredIndexerResults={release.filteredIndexerResults}
-          totalResults={release.totalResults}
-          rawLibraryCount={release.rawLibraryCount}
-          rawIndexerCount={release.rawIndexerCount}
-          isLibraryLoading={release.isLibraryLoading}
-          isIndexerLoading={release.isIndexerLoading}
-          libraryFailed={release.libraryFailed}
-          indexerFailed={release.indexerFailed}
-          someSourcesFailed={release.someSourcesFailed}
-          isGrabbing={release.isGrabbing}
-          grabSuccess={release.grabSuccess}
-          grabError={release.grabError}
-          onGrab={release.handleGrab}
-          searchInResults={release.searchInResults}
-          formatFilter={release.formatFilter}
-          languageFilter={release.languageFilter}
-          providerFilter={release.providerFilter}
-          sortBy={release.sortBy}
-          onSearchChange={release.setSearchInResults}
-          onFormatChange={release.setFormatFilter}
-          onLanguageChange={release.setLanguageFilter}
-          onProviderChange={release.setProviderFilter}
-          onSortChange={release.setSortBy}
-          onResetFilters={release.resetFilters}
-          onExpandSearch={release.handleExpandSearch}
-          isExpanded={false}
-          isExpandSearching={release.isExpandSearching}
-          libraryColumnConfig={release.libraryColumnConfig}
-          indexerColumnConfig={release.indexerColumnConfig}
-        />
       )}
     </div>
   )
