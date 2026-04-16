@@ -7,17 +7,19 @@ import (
 
 	"github.com/labstack/echo/v5"
 
+	"github.com/woliveiras/bookaneer/internal/core/author"
 	"github.com/woliveiras/bookaneer/internal/core/book"
 )
 
 // BookHandler handles book-related HTTP requests.
 type BookHandler struct {
-	svc *book.Service
+	svc       *book.Service
+	authorSvc *author.Service
 }
 
 // NewBookHandler creates a new book handler.
-func NewBookHandler(svc *book.Service) *BookHandler {
-	return &BookHandler{svc: svc}
+func NewBookHandler(svc *book.Service, authorSvc *author.Service) *BookHandler {
+	return &BookHandler{svc: svc, authorSvc: authorSvc}
 }
 
 // Register registers the book routes.
@@ -27,6 +29,9 @@ func (h *BookHandler) Register(g *echo.Group) {
 	g.POST("/book", h.Create)
 	g.PUT("/book/:id", h.Update)
 	g.DELETE("/book/:id", h.Delete)
+
+	// Wishlist
+	g.POST("/wishlist", h.AddToWishlist)
 
 	// Editions
 	g.POST("/book/:id/edition", h.CreateEdition)
@@ -206,4 +211,65 @@ func (h *BookHandler) DeleteEdition(c *echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusNoContent)
+}
+
+// wishlistRequest is the payload for POST /wishlist.
+type wishlistRequest struct {
+	Title     string   `json:"title"`
+	Authors   []string `json:"authors"`
+	ForeignID string   `json:"foreignId"`
+	ISBN13    string   `json:"isbn13"`
+	ImageURL  string   `json:"imageUrl"`
+}
+
+// AddToWishlist finds-or-creates the author by name and creates the book with in_wishlist=true.
+func (h *BookHandler) AddToWishlist(c *echo.Context) error {
+	var req wishlistRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+	if req.Title == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "title is required")
+	}
+
+	ctx := c.Request().Context()
+
+	// Determine author name (use first author or "Unknown")
+	authorName := "Unknown"
+	if len(req.Authors) > 0 && req.Authors[0] != "" {
+		authorName = req.Authors[0]
+	}
+
+	// Find or create author
+	a, err := h.authorSvc.FindByName(ctx, authorName)
+	if err != nil {
+		// Author not found — create a minimal one
+		created, createErr := h.authorSvc.Create(ctx, author.CreateAuthorInput{
+			Name:      authorName,
+			SortName:  authorName,
+			Monitored: false,
+		})
+		if createErr != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to find or create author")
+		}
+		a = created
+	}
+
+	b, err := h.svc.Create(ctx, book.CreateBookInput{
+		AuthorID:   a.ID,
+		Title:      req.Title,
+		ForeignID:  req.ForeignID,
+		ISBN13:     req.ISBN13,
+		ImageURL:   req.ImageURL,
+		InWishlist: true,
+		Monitored:  false,
+	})
+	if err != nil {
+		if errors.Is(err, book.ErrDuplicate) {
+			return echo.NewHTTPError(http.StatusConflict, "book already exists")
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to add to wishlist")
+	}
+
+	return c.JSON(http.StatusCreated, b)
 }

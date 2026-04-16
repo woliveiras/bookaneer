@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Bookmark, BookmarkCheck, Library, Download } from "lucide-react"
 import { Badge, Button, Card, CardContent, Input } from "../../components/ui"
 import { useMetadataSearchBooks } from "../../hooks/useMetadata"
-import { useCreateBook } from "../../hooks/useBooks"
+import { bookApi } from "../../lib/api"
 import type { MetadataBookResult } from "../../lib/api"
 
 interface BookCardProps {
@@ -55,7 +56,7 @@ function BookCard({ book, onGet, isGetting, onWishlist, isWishlisting, wishliste
         <Button
           className="flex-1"
           onClick={() => onGet(book)}
-          disabled={isGetting || wishlisted}
+          disabled={isGetting}
         >
           {isGetting ? (
             <>
@@ -90,7 +91,21 @@ function BookCard({ book, onGet, isGetting, onWishlist, isWishlisting, wishliste
 
 export function UnifiedSearch() {
   const navigate = useNavigate()
-  const createBook = useCreateBook()
+  const queryClient = useQueryClient()
+  const addToWishlist = useMutation({
+    mutationFn: (book: MetadataBookResult) =>
+      bookApi.addToWishlist({
+        title: book.title,
+        authors: book.authors ?? [],
+        foreignId: book.foreignId,
+        isbn13: book.isbn13,
+        imageUrl: book.coverUrl,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["books"] })
+      queryClient.invalidateQueries({ queryKey: ["wanted"] })
+    },
+  })
   const [gettingBookId, setGettingBookId] = useState<string | null>(null)
   const [wishlistingBookId, setWishlistingBookId] = useState<string | null>(null)
   const [wishlistedKeys, setWishlistedKeys] = useState<Set<string>>(new Set())
@@ -130,23 +145,12 @@ export function UnifiedSearch() {
     (book: MetadataBookResult) => {
       const bookKey = `${book.provider}-${book.foreignId}`
       setWishlistingBookId(bookKey)
-      createBook.mutate(
-        {
-          title: book.title,
-          authorId: 0,
-          foreignId: book.foreignId,
-          isbn13: book.isbn13,
-          imageUrl: book.coverUrl,
-          inWishlist: true,
-          monitored: false,
-        },
-        {
-          onSettled: () => setWishlistingBookId(null),
-          onSuccess: () => setWishlistedKeys((prev) => new Set(prev).add(bookKey)),
-        },
-      )
+      addToWishlist.mutate(book, {
+        onSettled: () => setWishlistingBookId(null),
+        onSuccess: () => setWishlistedKeys((prev) => new Set(prev).add(bookKey)),
+      })
     },
-    [createBook],
+    [addToWishlist],
   )
 
   // Update URL when search is submitted

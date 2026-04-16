@@ -13,7 +13,7 @@ export const bookApi = {
     if (params?.authorId) searchParams.set("authorId", String(params.authorId))
     if (params?.monitored !== undefined) searchParams.set("monitored", String(params.monitored))
     if (params?.missing) searchParams.set("missing", "true")
-    if (params?.inWishlist) searchParams.set("inWishlist", "true")
+    if (params?.inWishlist) searchParams.set("in_wishlist", "true")
     if (params?.search) searchParams.set("search", params.search)
     if (params?.sortBy) searchParams.set("sortBy", params.sortBy)
     if (params?.sortDir) searchParams.set("sortDir", params.sortDir)
@@ -40,5 +40,11 @@ export const bookApi = {
   delete: (id: number) =>
     fetchAPI<void>(`/book/${id}`, {
       method: "DELETE",
+    }),
+
+  addToWishlist: (data: { title: string; authors: string[]; foreignId?: string; isbn13?: string; imageUrl?: string }) =>
+    fetchAPI<Book>("/wishlist", {
+      method: "POST",
+      body: JSON.stringify(data),
     }),
 }

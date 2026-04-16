@@ -2,15 +2,14 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { Button, Card, CardContent } from "../../components/ui"
-import { useUpdateBook } from "../../hooks/useBooks"
-import { useWantedMissing } from "../../hooks/useWanted"
+import { useBooks, useUpdateBook } from "../../hooks/useBooks"
 import { BookOpen, PartyPopper } from "lucide-react"
 import type { Book } from "../../lib/api"
 
 export function WantedList() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { data, isLoading, error, refetch } = useWantedMissing()
+  const { data, isLoading, error, refetch } = useBooks({ inWishlist: true, limit: 500 })
   const updateBookMutation = useUpdateBook()
   const [removingBooks, setRemovingBooks] = useState<Set<number>>(new Set())
   const [bookToRemove, setBookToRemove] = useState<Book | null>(null)
@@ -39,11 +38,11 @@ export function WantedList() {
     const bookId = bookToRemove.id
     setRemovingBooks((prev) => new Set(prev).add(bookId))
     try {
-      await updateBookMutation.mutateAsync({ id: bookId, data: { monitored: false } })
-      queryClient.invalidateQueries({ queryKey: ["wanted"] })
+      await updateBookMutation.mutateAsync({ id: bookId, data: { inWishlist: false } })
+      queryClient.invalidateQueries({ queryKey: ["books"] })
       setBookToRemove(null)
     } catch (err) {
-      console.error("Failed to remove from wanted:", err)
+      console.error("Failed to remove from wishlist:", err)
     } finally {
       setRemovingBooks((prev) => {
         const next = new Set(prev)
@@ -82,7 +81,7 @@ export function WantedList() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-muted-foreground">
-            {books.length} monitored {books.length === 1 ? "book" : "books"} missing from library
+          {books.length} {books.length === 1 ? "book" : "books"} in your wishlist
           </p>
         </div>
         <div className="flex gap-2">
@@ -99,7 +98,7 @@ export function WantedList() {
             <div className="flex justify-center mb-4"><PartyPopper className="w-8 h-8 text-muted-foreground" /></div>
             <h3 className="text-lg font-semibold mb-2">All caught up!</h3>
             <p className="text-muted-foreground">
-              No monitored books are missing from your library.
+              Your wishlist is empty. Search for books and click the bookmark icon to add them.
             </p>
           </CardContent>
         </Card>
