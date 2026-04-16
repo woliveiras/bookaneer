@@ -57,16 +57,7 @@ export function BookList({ authorId }: BookListProps) {
               onChange={(e) => handleSearch(e.target.value)}
             />
           </div>
-          <Button
-            variant={showMissing ? "default" : "outline"}
-            size="sm"
-            onClick={() => setShowMissing(!showMissing)}
-            aria-pressed={showMissing}
-          >
-            Missing Only
-          </Button>
         </div>
-        <Button>Add Book</Button>
       </div>
 
       {isLoading ? (

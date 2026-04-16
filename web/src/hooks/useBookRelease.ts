@@ -4,8 +4,23 @@ import { useCreateBook } from "./useBooks"
 import { type SearchParams, useSearch } from "./useIndexers"
 import { useDigitalLibrarySearch } from "./useMetadata"
 import { useRootFolders } from "./useRootFolders"
-import { useManualGrab } from "./useWanted"
+import { useIndexerGrab, useManualGrab } from "./useWanted"
+import type { GrabResult } from "../lib/types"
 import type { MetadataBookResult } from "../lib/api"
+
+export interface IndexerGrabMeta {
+  sourceType: "indexer"
+  guid?: string
+  seeders?: number
+  indexerId?: number
+  indexerName?: string
+}
+
+export interface LibraryGrabMeta {
+  sourceType: "library"
+}
+
+export type GrabMeta = IndexerGrabMeta | LibraryGrabMeta
 
 export function useBookRelease(book: MetadataBookResult | null, existingBookId?: number) {
   const [searchStarted, setSearchStarted] = useState(false)
@@ -19,6 +34,7 @@ export function useBookRelease(book: MetadataBookResult | null, existingBookId?:
   const [isGrabbing, setIsGrabbing] = useState(false)
   const [grabSuccess, setGrabSuccess] = useState(false)
   const [grabError, setGrabError] = useState<string | null>(null)
+  const [grabResult, setGrabResult] = useState<GrabResult | null>(null)
 
   const [formatFilter, setFormatFilter] = useState<string>("all")
   const [providerFilter, setProviderFilter] = useState<string>("all")
@@ -29,6 +45,7 @@ export function useBookRelease(book: MetadataBookResult | null, existingBookId?:
   const createBook = useCreateBook()
   const createAuthor = useCreateAuthor()
   const manualGrab = useManualGrab()
+  const indexerGrab = useIndexerGrab()
   const { data: rootFolders } = useRootFolders()
   const authorName = book?.authors?.[0] ?? "Unknown Author"
   const { data: existingAuthors } = useAuthors({ search: authorName, limit: 1 })
@@ -244,14 +261,37 @@ export function useBookRelease(book: MetadataBookResult | null, existingBookId?:
     }
   }
 
-  const handleGrab = async (downloadUrl: string, releaseTitle: string, size: number) => {
+  const handleGrab = async (
+    downloadUrl: string,
+    releaseTitle: string,
+    size: number,
+    meta?: GrabMeta,
+  ) => {
     setIsGrabbing(true)
     setGrabError(null)
     setGrabSuccess(false)
+    setGrabResult(null)
 
     try {
       const bookId = await ensureBookInLibrary()
-      await manualGrab.mutateAsync({ bookId, downloadUrl, releaseTitle, size })
+      let result: GrabResult
+
+      if (meta?.sourceType === "indexer") {
+        result = await indexerGrab.mutateAsync({
+          bookId,
+          downloadUrl,
+          releaseTitle,
+          size,
+          guid: meta.guid,
+          seeders: meta.seeders,
+          indexerId: meta.indexerId,
+          indexerName: meta.indexerName,
+        })
+      } else {
+        result = await manualGrab.mutateAsync({ bookId, downloadUrl, releaseTitle, size })
+      }
+
+      setGrabResult(result)
       setGrabSuccess(true)
     } catch (err) {
       setGrabError(err instanceof Error ? err.message : "Failed to grab release")
@@ -309,6 +349,7 @@ export function useBookRelease(book: MetadataBookResult | null, existingBookId?:
     isGrabbing,
     grabSuccess,
     grabError,
+    grabResult,
     handleGrab,
     expandedLibraryKeys,
     expandedIndexerGuids,

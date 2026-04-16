@@ -2,6 +2,7 @@ import type {
   ActiveCommand,
   BlocklistItem,
   BookSearchResponse,
+  GrabResult,
   HistoryEventType,
   HistoryItem,
   SearchCommandResponse,
@@ -24,7 +25,22 @@ export const wantedApi = {
     size?: number
     quality?: string
   }) =>
-    fetchAPI<SearchCommandResponse>("/release", {
+    fetchAPI<GrabResult>("/release", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  indexerGrab: (data: {
+    bookId: number
+    guid?: string
+    downloadUrl: string
+    releaseTitle?: string
+    size?: number
+    seeders?: number
+    indexerId?: number
+    indexerName?: string
+  }) =>
+    fetchAPI<GrabResult>("/indexer-release", {
       method: "POST",
       body: JSON.stringify(data),
     }),

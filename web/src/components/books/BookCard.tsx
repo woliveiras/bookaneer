@@ -51,9 +51,6 @@ export function BookCard({ book, onClick, selected }: BookCardProps) {
               <p className="text-sm text-muted-foreground truncate">by {book.authorName}</p>
             )}
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <Badge variant={book.monitored ? "success" : "secondary"}>
-                {book.monitored ? "Monitored" : "Not Monitored"}
-              </Badge>
               {book.hasFile ? (
                 <Badge variant="default">Has File</Badge>
               ) : (

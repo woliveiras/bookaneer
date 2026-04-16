@@ -28,6 +28,17 @@ export function useManualGrab() {
   })
 }
 
+export function useIndexerGrab() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: wantedApi.indexerGrab,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["queue"] })
+      queryClient.invalidateQueries({ queryKey: ["wanted"] })
+    },
+  })
+}
+
 // Download queue hooks
 export function useDownloadQueue() {
   const queryClient = useQueryClient()

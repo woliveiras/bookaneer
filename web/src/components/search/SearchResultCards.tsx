@@ -1,5 +1,6 @@
 import { useState } from "react"
 import type { DigitalLibraryResult, SearchResult } from "../../lib/api"
+import type { GrabMeta } from "../../hooks/useBookRelease"
 import type { ColumnConfig } from "../../lib/types"
 import { formatBytes } from "../../lib/format"
 import { Badge, Button, Card, CardContent } from "../ui"
@@ -7,7 +8,7 @@ import { DynamicCell } from "./DynamicColumns"
 
 interface DownloadResultProps {
   result: SearchResult
-  onGrab: (url: string, title: string, size: number) => Promise<void>
+  onGrab: (url: string, title: string, size: number, meta?: GrabMeta) => Promise<void>
   isGrabbing: boolean
   columnConfig?: ColumnConfig
   fromExpanded?: boolean
@@ -19,7 +20,13 @@ export function DownloadResult({ result, onGrab, isGrabbing, columnConfig, fromE
   const handleGrab = async () => {
     setGrabbing(true)
     try {
-      await onGrab(result.downloadUrl, result.title, result.size)
+      await onGrab(result.downloadUrl, result.title, result.size, {
+        sourceType: "indexer",
+        guid: result.guid,
+        seeders: result.seeders,
+        indexerId: result.indexerId,
+        indexerName: result.indexerName,
+      })
     } finally {
       setGrabbing(false)
     }
@@ -74,7 +81,7 @@ export function DownloadResult({ result, onGrab, isGrabbing, columnConfig, fromE
 
 interface LibraryResultProps {
   result: DigitalLibraryResult
-  onGrab: (url: string, title: string, size: number) => Promise<void>
+  onGrab: (url: string, title: string, size: number, meta?: GrabMeta) => Promise<void>
   isGrabbing: boolean
   columnConfig?: ColumnConfig
   fromExpanded?: boolean

@@ -78,7 +78,10 @@ export function ReleasesPage({ book, autoSearch = true, existingBookId }: Releas
         {release.grabSuccess && (
           <div className="rounded-md border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950 p-3">
             <p className="text-green-700 dark:text-green-300 text-sm flex items-center gap-2">
-              <span>✓</span> Release grabbed! Check the Activity tab.
+              <span>✓</span>{" "}
+              {release.grabResult?.clientName
+                ? `Sent to download!`
+                : "Release grabbed! Check the Activity tab."}
             </p>
           </div>
         )}

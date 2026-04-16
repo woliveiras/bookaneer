@@ -53,6 +53,7 @@ func (h *WantedHandler) Register(g *echo.Group) {
 	g.POST("/book/:id/search", h.SearchBook)
 	g.POST("/book/:id/wrong-content", h.ReportWrongContent)
 	g.POST("/release", h.ManualGrab)
+	g.POST("/indexer-release", h.GrabIndexerRelease)
 }
 
 // GetMissingBooks returns all monitored books without files.
@@ -194,6 +195,18 @@ type ManualGrabRequest struct {
 	Quality      string `json:"quality"`
 }
 
+// IndexerGrabRequest represents an indexer grab request.
+type IndexerGrabRequest struct {
+	BookID       int64  `json:"bookId"`
+	GUID         string `json:"guid"`
+	DownloadURL  string `json:"downloadUrl"`
+	ReleaseTitle string `json:"releaseTitle"`
+	Size         int64  `json:"size"`
+	Seeders      int    `json:"seeders"`
+	IndexerID    int64  `json:"indexerId"`
+	IndexerName  string `json:"indexerName"`
+}
+
 // ManualGrab immediately grabs a release and starts the download.
 func (h *WantedHandler) ManualGrab(c *echo.Context) error {
 	var req ManualGrabRequest
@@ -212,6 +225,38 @@ func (h *WantedHandler) ManualGrab(c *echo.Context) error {
 	result, err := h.wantedService.GrabRelease(ctx, req.BookID, req.DownloadURL, req.ReleaseTitle, req.Size)
 	if err != nil {
 		slog.Error("grab failed", "bookId", req.BookID, "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to start download")
+	}
+
+	return c.JSON(http.StatusOK, result)
+}
+
+// GrabIndexerRelease grabs an indexer result and routes it to the appropriate torrent or usenet client.
+func (h *WantedHandler) GrabIndexerRelease(c *echo.Context) error {
+	var req IndexerGrabRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+
+	if req.BookID == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "bookId is required")
+	}
+	if req.DownloadURL == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "downloadUrl is required")
+	}
+
+	ctx := c.Request().Context()
+	result, err := h.wantedService.GrabIndexerRelease(ctx, req.BookID, wanted.GrabIndexerRequest{
+		GUID:         req.GUID,
+		ReleaseTitle: req.ReleaseTitle,
+		DownloadURL:  req.DownloadURL,
+		Size:         req.Size,
+		Seeders:      req.Seeders,
+		IndexerID:    req.IndexerID,
+		IndexerName:  req.IndexerName,
+	})
+	if err != nil {
+		slog.Error("indexer grab failed", "bookId", req.BookID, "error", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to start download")
 	}
 

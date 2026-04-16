@@ -144,6 +144,37 @@ func (s *Service) grabFromIndexer(ctx context.Context, b *book.Book, r *search.R
 	}, nil
 }
 
+// GrabIndexerRequest holds the data needed to grab an indexer result.
+type GrabIndexerRequest struct {
+	GUID         string `json:"guid"`
+	ReleaseTitle string `json:"releaseTitle"`
+	DownloadURL  string `json:"downloadUrl"`
+	Size         int64  `json:"size"`
+	Seeders      int    `json:"seeders"`
+	IndexerID    int64  `json:"indexerId"`
+	IndexerName  string `json:"indexerName"`
+}
+
+// GrabIndexerRelease grabs an indexer result, routing to the appropriate torrent or usenet client.
+func (s *Service) GrabIndexerRelease(ctx context.Context, bookID int64, req GrabIndexerRequest) (*GrabResult, error) {
+	b, err := s.bookService.FindByID(ctx, bookID)
+	if err != nil {
+		return nil, fmt.Errorf("find book: %w", err)
+	}
+
+	r := &search.Result{
+		GUID:        req.GUID,
+		Title:       req.ReleaseTitle,
+		Size:        req.Size,
+		DownloadURL: req.DownloadURL,
+		Seeders:     req.Seeders,
+		IndexerID:   req.IndexerID,
+		IndexerName: req.IndexerName,
+	}
+
+	return s.grabFromIndexer(ctx, b, r)
+}
+
 // GrabRelease manually grabs a release by URL and sends it to a download client.
 func (s *Service) GrabRelease(ctx context.Context, bookID int64, downloadURL, releaseTitle string, size int64) (*GrabResult, error) {
 	b, err := s.bookService.FindByID(ctx, bookID)

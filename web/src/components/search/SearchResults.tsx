@@ -1,5 +1,6 @@
 import { useState } from "react"
 import type { DigitalLibraryResult, SearchResult } from "../../lib/api"
+import type { GrabMeta } from "../../hooks/useBookRelease"
 import type { ColumnConfig } from "../../lib/types"
 import { Library, Search } from "lucide-react"
 import { Badge, Button } from "../ui"
@@ -21,7 +22,7 @@ interface SearchResultsProps {
   libraryError?: boolean
   indexerError?: boolean
   searchActive?: boolean
-  onGrab: (downloadUrl: string, releaseTitle: string, size: number) => Promise<void>
+  onGrab: (downloadUrl: string, releaseTitle: string, size: number, meta?: GrabMeta) => Promise<void>
   onResetFilters: () => void
   onExpandSearch?: () => void
   isExpanded?: boolean

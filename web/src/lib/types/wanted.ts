@@ -29,6 +29,17 @@ export interface SearchCommandResponse {
   message: string
 }
 
+export interface GrabResult {
+  bookId: number
+  title: string
+  source: string
+  providerName: string
+  format: string
+  size: number
+  downloadId: string
+  clientName: string
+}
+
 export interface BookSearchResult {
   title: string
   source: string

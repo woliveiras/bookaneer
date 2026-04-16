@@ -85,5 +85,6 @@ export type {
   BookSearchResult,
   BookSearchResponse,
   SearchCommandResponse,
+  GrabResult,
   WantedResponse,
 } from "./wanted"
