@@ -103,7 +103,7 @@ export function WishlistList() {
 
       {/* Books list */}
       {books.length > 0 && (
-        <div className="grid gap-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {books.map((book) => (
             <WishlistBookCard
               key={book.id}
@@ -152,45 +152,43 @@ interface WishlistBookCardProps {
 
 function WishlistBookCard({ book, onSearch, onRemove, isRemoving }: WishlistBookCardProps) {
   return (
-    <Card>
-      <div className="flex items-start gap-4 p-4">
-        {/* Cover image */}
-        <div className="shrink-0 w-16 h-24 bg-muted rounded overflow-hidden">
-          {book.imageUrl ? (
-            <img src={book.imageUrl} alt={book.title} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <BookOpen className="w-6 h-6 text-muted-foreground" />
-            </div>
-          )}
+    <Card className="flex flex-col overflow-hidden">
+      {/* Cover image */}
+      <div className="w-full h-40 bg-muted overflow-hidden shrink-0">
+        {book.imageUrl ? (
+          <img src={book.imageUrl} alt={book.title} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <BookOpen className="w-10 h-10 text-muted-foreground" />
+          </div>
+        )}
+      </div>
+
+      {/* Book info + actions */}
+      <div className="flex flex-col flex-1 gap-3 p-4">
+        <div className="flex-1 min-w-0 space-y-1">
+          <h3 className="font-semibold line-clamp-2 leading-snug">{book.title}</h3>
+          {book.authorName && <p className="text-sm text-muted-foreground">{book.authorName}</p>}
+          <div className="flex flex-wrap gap-1 mt-2">
+            {book.releaseDate && (
+              <span className="text-xs bg-muted px-2 py-1 rounded">
+                {new Date(book.releaseDate).getFullYear()}
+              </span>
+            )}
+            {book.isbn13 && (
+              <span className="text-xs bg-muted px-2 py-1 rounded">ISBN: {book.isbn13}</span>
+            )}
+          </div>
         </div>
 
-        {/* Book info + actions */}
-        <div className="flex-1 min-w-0 space-y-3">
-          <div>
-            <h3 className="font-semibold truncate">{book.title}</h3>
-            {book.authorName && <p className="text-sm text-muted-foreground">{book.authorName}</p>}
-            <div className="flex flex-wrap gap-2 mt-2">
-              {book.releaseDate && (
-                <span className="text-xs bg-muted px-2 py-1 rounded">
-                  {new Date(book.releaseDate).getFullYear()}
-                </span>
-              )}
-              {book.isbn13 && (
-                <span className="text-xs bg-muted px-2 py-1 rounded">ISBN: {book.isbn13}</span>
-              )}
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-2">
-            <Button size="sm" onClick={onSearch} disabled={isRemoving}>
-              Search
-            </Button>
-            <Button size="sm" variant="outline" onClick={onRemove} disabled={isRemoving}>
-              {isRemoving ? "Removing..." : "Remove"}
-            </Button>
-          </div>
+        {/* Actions */}
+        <div className="flex gap-2">
+          <Button size="sm" onClick={onSearch} disabled={isRemoving}>
+            Search
+          </Button>
+          <Button size="sm" variant="outline" onClick={onRemove} disabled={isRemoving}>
+            {isRemoving ? "Removing..." : "Remove"}
+          </Button>
         </div>
       </div>
     </Card>
