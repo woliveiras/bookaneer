@@ -66,7 +66,6 @@ func (h *SearchHandler) IndexerSchema(c *echo.Context) error {
 			"configContract":          "NewznabSettings",
 			"infoLink":                "https://wiki.servarr.com/readarr/supported#newznab",
 			"enableRss":               true,
-			"enableAutomaticSearch":   true,
 			"enableInteractiveSearch": true,
 			"supportsRss":             true,
 			"supportsSearch":          true,
@@ -88,7 +87,6 @@ func (h *SearchHandler) IndexerSchema(c *echo.Context) error {
 			"configContract":          "TorznabSettings",
 			"infoLink":                "https://wiki.servarr.com/readarr/supported#torznab",
 			"enableRss":               true,
-			"enableAutomaticSearch":   true,
 			"enableInteractiveSearch": true,
 			"supportsRss":             true,
 			"supportsSearch":          true,
@@ -148,7 +146,6 @@ type CreateIndexerRequest struct {
 	Priority                int      `json:"priority"`
 	Enabled                 bool     `json:"enabled"`
 	EnableRSS               bool     `json:"enableRss"`
-	EnableAutomaticSearch   bool     `json:"enableAutomaticSearch"`
 	EnableInteractiveSearch bool     `json:"enableInteractiveSearch"`
 	AdditionalParameters    string   `json:"additionalParameters"`
 	MinimumSeeders          int      `json:"minimumSeeders"`
@@ -241,7 +238,6 @@ func (h *SearchHandler) CreateIndexer(c *echo.Context) error {
 		Priority:                req.Priority,
 		Enabled:                 req.Enabled,
 		EnableRSS:               req.EnableRSS,
-		EnableAutomaticSearch:   req.EnableAutomaticSearch,
 		EnableInteractiveSearch: req.EnableInteractiveSearch,
 		AdditionalParameters:    req.AdditionalParameters,
 		MinimumSeeders:          req.MinimumSeeders,
@@ -288,7 +284,6 @@ func (h *SearchHandler) UpdateIndexer(c *echo.Context) error {
 		Priority:                req.Priority,
 		Enabled:                 req.Enabled,
 		EnableRSS:               req.EnableRSS,
-		EnableAutomaticSearch:   req.EnableAutomaticSearch,
 		EnableInteractiveSearch: req.EnableInteractiveSearch,
 		AdditionalParameters:    req.AdditionalParameters,
 		MinimumSeeders:          req.MinimumSeeders,

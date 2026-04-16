@@ -11,25 +11,9 @@ export function useWantedMissing() {
   })
 }
 
-export function useSearchAllMissing() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: wantedApi.searchAllMissing,
-    onSuccess: () => {
-      // Invalidate queue after starting search
-      queryClient.invalidateQueries({ queryKey: ["queue"] })
-    },
-  })
-}
-
 export function useSearchBook() {
-  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: wantedApi.searchBook,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["queue"] })
-      queryClient.invalidateQueries({ queryKey: ["wanted"] })
-    },
   })
 }
 

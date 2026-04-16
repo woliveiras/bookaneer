@@ -1,6 +1,7 @@
 import type {
   ActiveCommand,
   BlocklistItem,
+  BookSearchResponse,
   HistoryEventType,
   HistoryItem,
   SearchCommandResponse,
@@ -11,13 +12,8 @@ import { fetchAPI } from "./client"
 export const wantedApi = {
   getMissing: () => fetchAPI<WantedResponse>("/wanted/missing"),
 
-  searchAllMissing: () =>
-    fetchAPI<SearchCommandResponse>("/wanted/missing/search", {
-      method: "POST",
-    }),
-
   searchBook: (bookId: number) =>
-    fetchAPI<SearchCommandResponse>(`/book/${bookId}/search`, {
+    fetchAPI<BookSearchResponse>(`/book/${bookId}/search`, {
       method: "POST",
     }),
 

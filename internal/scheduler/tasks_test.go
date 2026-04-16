@@ -15,17 +15,17 @@ func TestGetScheduledTasks_DefaultSeeds(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	s := scheduler.New(db, 3)
 
-	// The migration seeds 6 default scheduled tasks.
+	// The migration seeds 4 default scheduled tasks (RssSync and MissingBookSearch removed).
 	tasks, err := s.GetScheduledTasks(context.Background())
 	require.NoError(t, err)
-	assert.Len(t, tasks, 6)
+	assert.Len(t, tasks, 4)
 
 	names := make([]string, len(tasks))
 	for i, task := range tasks {
 		names[i] = task.Name
 	}
 	assert.Contains(t, names, "LibraryScan")
-	assert.Contains(t, names, "RssSync")
+	assert.Contains(t, names, "DownloadMonitor")
 }
 
 func TestGetScheduledTasks_AfterDelete(t *testing.T) {

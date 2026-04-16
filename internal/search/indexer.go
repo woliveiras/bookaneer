@@ -74,7 +74,6 @@ type IndexerConfig struct {
 	Priority                int      `json:"priority"`
 	Enabled                 bool     `json:"enabled"`
 	EnableRSS               bool     `json:"enableRss"`
-	EnableAutomaticSearch   bool     `json:"enableAutomaticSearch"`
 	EnableInteractiveSearch bool     `json:"enableInteractiveSearch"`
 	AdditionalParameters    string   `json:"additionalParameters"`
 	MinimumSeeders          int      `json:"minimumSeeders"`      // Torznab only

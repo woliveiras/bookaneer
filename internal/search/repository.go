@@ -10,7 +10,7 @@ import (
 func (s *Service) ListIndexers(ctx context.Context) ([]IndexerConfig, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, name, type, base_url, api_path, api_key, categories, priority, enabled,
-		       enable_rss, enable_automatic_search, enable_interactive_search,
+		       enable_rss, enable_interactive_search,
 		       additional_parameters, minimum_seeders, seed_ratio, seed_time,
 		       created_at, updated_at
 		FROM indexers ORDER BY priority ASC
@@ -35,7 +35,7 @@ func (s *Service) ListIndexers(ctx context.Context) ([]IndexerConfig, error) {
 func (s *Service) GetIndexer(ctx context.Context, id int64) (*IndexerConfig, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, name, type, base_url, api_path, api_key, categories, priority, enabled,
-		       enable_rss, enable_automatic_search, enable_interactive_search,
+		       enable_rss, enable_interactive_search,
 		       additional_parameters, minimum_seeders, seed_ratio, seed_time,
 		       created_at, updated_at
 		FROM indexers WHERE id = ?
@@ -60,12 +60,12 @@ func (s *Service) CreateIndexer(ctx context.Context, cfg IndexerConfig) (int64, 
 	now := time.Now().UTC().Format(time.RFC3339)
 	result, err := s.db.ExecContext(ctx, `
 		INSERT INTO indexers (name, type, base_url, api_path, api_key, categories, priority, enabled,
-		    enable_rss, enable_automatic_search, enable_interactive_search,
+		    enable_rss, enable_interactive_search,
 		    additional_parameters, minimum_seeders, seed_ratio, seed_time,
 		    created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, cfg.Name, cfg.Type, cfg.BaseURL, cfg.APIPath, cfg.APIKey, cfg.Categories, cfg.Priority, cfg.Enabled,
-		cfg.EnableRSS, cfg.EnableAutomaticSearch, cfg.EnableInteractiveSearch,
+		cfg.EnableRSS, cfg.EnableInteractiveSearch,
 		cfg.AdditionalParameters, cfg.MinimumSeeders, cfg.SeedRatio, cfg.SeedTime,
 		now, now)
 	if err != nil {
@@ -88,11 +88,11 @@ func (s *Service) UpdateIndexer(ctx context.Context, cfg IndexerConfig) error {
 	result, err := s.db.ExecContext(ctx, `
 		UPDATE indexers SET name = ?, type = ?, base_url = ?, api_path = ?, api_key = ?, 
 		categories = ?, priority = ?, enabled = ?,
-		enable_rss = ?, enable_automatic_search = ?, enable_interactive_search = ?,
+		enable_rss = ?, enable_interactive_search = ?,
 		additional_parameters = ?, minimum_seeders = ?, seed_ratio = ?, seed_time = ?,
 		updated_at = ? WHERE id = ?
 	`, cfg.Name, cfg.Type, cfg.BaseURL, cfg.APIPath, cfg.APIKey, cfg.Categories, cfg.Priority, cfg.Enabled,
-		cfg.EnableRSS, cfg.EnableAutomaticSearch, cfg.EnableInteractiveSearch,
+		cfg.EnableRSS, cfg.EnableInteractiveSearch,
 		cfg.AdditionalParameters, cfg.MinimumSeeders, cfg.SeedRatio, cfg.SeedTime,
 		now, cfg.ID)
 	if err != nil {

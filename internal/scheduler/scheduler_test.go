@@ -15,14 +15,14 @@ func TestQueueCommand(t *testing.T) {
 	s := New(db, 3)
 	ctx := context.Background()
 
-	id, err := s.QueueCommand(ctx, CommandBookSearch, TriggerManual, map[string]any{"bookId": 42})
+	id, err := s.QueueCommand(ctx, CommandDownloadGrab, TriggerManual, map[string]any{"bookId": 42})
 	require.NoError(t, err)
 	assert.NotEmpty(t, id)
 
 	cmd, err := s.GetCommand(ctx, id)
 	require.NoError(t, err)
 	assert.Equal(t, id, cmd.ID)
-	assert.Equal(t, CommandBookSearch, cmd.Name)
+	assert.Equal(t, CommandDownloadGrab, cmd.Name)
 	assert.Equal(t, StatusQueued, cmd.Status)
 	assert.Equal(t, TriggerManual, cmd.Trigger)
 	assert.Equal(t, float64(42), cmd.Payload["bookId"])
@@ -33,13 +33,13 @@ func TestQueueCommand_NilPayload(t *testing.T) {
 	s := New(db, 3)
 	ctx := context.Background()
 
-	id, err := s.QueueCommand(ctx, CommandRssSync, TriggerScheduled, nil)
+	id, err := s.QueueCommand(ctx, CommandDownloadMonitor, TriggerScheduled, nil)
 	require.NoError(t, err)
 	assert.NotEmpty(t, id)
 
 	cmd, err := s.GetCommand(ctx, id)
 	require.NoError(t, err)
-	assert.Equal(t, CommandRssSync, cmd.Name)
+	assert.Equal(t, CommandDownloadMonitor, cmd.Name)
 	assert.Equal(t, TriggerScheduled, cmd.Trigger)
 }
 
@@ -59,7 +59,7 @@ func TestListCommands(t *testing.T) {
 	ctx := context.Background()
 
 	for i := 0; i < 5; i++ {
-		_, err := s.QueueCommand(ctx, CommandBookSearch, TriggerManual, nil)
+		_, err := s.QueueCommand(ctx, CommandDownloadGrab, TriggerManual, nil)
 		require.NoError(t, err)
 	}
 
@@ -73,7 +73,7 @@ func TestListCommands_DefaultLimit(t *testing.T) {
 	s := New(db, 3)
 	ctx := context.Background()
 
-	_, err := s.QueueCommand(ctx, CommandBookSearch, TriggerManual, nil)
+	_, err := s.QueueCommand(ctx, CommandDownloadGrab, TriggerManual, nil)
 	require.NoError(t, err)
 
 	cmds, err := s.ListCommands(ctx, 0)
@@ -86,7 +86,7 @@ func TestGetActiveCommands(t *testing.T) {
 	s := New(db, 3)
 	ctx := context.Background()
 
-	id, err := s.QueueCommand(ctx, CommandBookSearch, TriggerManual, nil)
+	id, err := s.QueueCommand(ctx, CommandDownloadGrab, TriggerManual, nil)
 	require.NoError(t, err)
 
 	active, err := s.GetActiveCommands(ctx)
@@ -101,7 +101,7 @@ func TestGetActiveCommands_ExcludesCompleted(t *testing.T) {
 	s := New(db, 3)
 	ctx := context.Background()
 
-	id, err := s.QueueCommand(ctx, CommandBookSearch, TriggerManual, nil)
+	id, err := s.QueueCommand(ctx, CommandDownloadGrab, TriggerManual, nil)
 	require.NoError(t, err)
 
 	err = s.updateCommandStatus(ctx, id, StatusCompleted, nil)
@@ -117,7 +117,7 @@ func TestCancelCommand(t *testing.T) {
 	s := New(db, 3)
 	ctx := context.Background()
 
-	id, err := s.QueueCommand(ctx, CommandBookSearch, TriggerManual, nil)
+	id, err := s.QueueCommand(ctx, CommandDownloadGrab, TriggerManual, nil)
 	require.NoError(t, err)
 
 	err = s.CancelCommand(ctx, id)
@@ -134,7 +134,7 @@ func TestUpdateCommandStatus_Running(t *testing.T) {
 	s := New(db, 3)
 	ctx := context.Background()
 
-	id, err := s.QueueCommand(ctx, CommandBookSearch, TriggerManual, nil)
+	id, err := s.QueueCommand(ctx, CommandDownloadGrab, TriggerManual, nil)
 	require.NoError(t, err)
 
 	err = s.updateCommandStatus(ctx, id, StatusRunning, nil)
@@ -152,7 +152,7 @@ func TestUpdateCommandStatus_Failed(t *testing.T) {
 	s := New(db, 3)
 	ctx := context.Background()
 
-	id, err := s.QueueCommand(ctx, CommandBookSearch, TriggerManual, nil)
+	id, err := s.QueueCommand(ctx, CommandDownloadGrab, TriggerManual, nil)
 	require.NoError(t, err)
 
 	err = s.updateCommandStatus(ctx, id, StatusFailed, map[string]any{"error": "timeout"})
@@ -170,7 +170,7 @@ func TestRecoverOrphanedCommands(t *testing.T) {
 	s := New(db, 3)
 	ctx := context.Background()
 
-	id, err := s.QueueCommand(ctx, CommandBookSearch, TriggerManual, nil)
+	id, err := s.QueueCommand(ctx, CommandDownloadGrab, TriggerManual, nil)
 	require.NoError(t, err)
 	err = s.updateCommandStatus(ctx, id, StatusRunning, nil)
 	require.NoError(t, err)
@@ -187,9 +187,9 @@ func TestGetNextQueuedCommand_PriorityOrder(t *testing.T) {
 	s := New(db, 3)
 	ctx := context.Background()
 
-	_, err := s.QueueCommand(ctx, CommandRssSync, TriggerScheduled, nil)
+	_, err := s.QueueCommand(ctx, CommandDownloadMonitor, TriggerScheduled, nil)
 	require.NoError(t, err)
-	id2, err := s.QueueCommand(ctx, CommandBookSearch, TriggerManual, nil)
+	id2, err := s.QueueCommand(ctx, CommandDownloadGrab, TriggerManual, nil)
 	require.NoError(t, err)
 
 	_, err = db.ExecContext(ctx, "UPDATE commands SET priority = 10 WHERE id = ?", id2)
@@ -205,13 +205,13 @@ func TestRegisterHandler(t *testing.T) {
 	s := New(db, 3)
 
 	called := false
-	s.RegisterHandler(CommandBookSearch, func(_ context.Context, _ *Command) error {
+	s.RegisterHandler(CommandDownloadGrab, func(_ context.Context, _ *Command) error {
 		called = true
 		return nil
 	})
 
 	s.mu.RLock()
-	_, ok := s.handlers[CommandBookSearch]
+	_, ok := s.handlers[CommandDownloadGrab]
 	s.mu.RUnlock()
 
 	assert.True(t, ok, "handler should be registered")
@@ -278,11 +278,11 @@ func TestExecuteCommand_HandlerFails(t *testing.T) {
 	s := New(db, 3)
 	ctx := context.Background()
 
-	s.RegisterHandler(CommandBookSearch, func(_ context.Context, _ *Command) error {
+	s.RegisterHandler(CommandDownloadGrab, func(_ context.Context, _ *Command) error {
 		return assert.AnError
 	})
 
-	id, err := s.QueueCommand(ctx, CommandBookSearch, TriggerManual, nil)
+	id, err := s.QueueCommand(ctx, CommandDownloadGrab, TriggerManual, nil)
 	require.NoError(t, err)
 
 	cmd, err := s.GetCommand(ctx, id)
@@ -302,12 +302,12 @@ func TestExecuteCommand_HandlerSucceeds(t *testing.T) {
 	s := New(db, 3)
 	ctx := context.Background()
 
-	s.RegisterHandler(CommandBookSearch, func(_ context.Context, cmd *Command) error {
+	s.RegisterHandler(CommandDownloadGrab, func(_ context.Context, cmd *Command) error {
 		cmd.Result = map[string]any{"found": 5}
 		return nil
 	})
 
-	id, err := s.QueueCommand(ctx, CommandBookSearch, TriggerManual, nil)
+	id, err := s.QueueCommand(ctx, CommandDownloadGrab, TriggerManual, nil)
 	require.NoError(t, err)
 
 	cmd, err := s.GetCommand(ctx, id)
@@ -433,35 +433,8 @@ func TestCheckScheduledTasks_NoDueTasks(t *testing.T) {
 	assert.Empty(t, cmds)
 }
 
-// TestMakeBookSearchHandler_MissingBookId tests the handler's validation path when the
-// bookId key is absent from the payload (covers 0% makeBookSearchHandler lines).
-func TestMakeBookSearchHandler_MissingBookId(t *testing.T) {
-	handler := makeBookSearchHandler(nil) // nil is safe: SearchAndGrab is never reached
-	cmd := &Command{
-		ID:      "test-missing",
-		Payload: map[string]any{},
-	}
-	err := handler(context.Background(), cmd)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "bookId")
-}
-
-// TestMakeBookSearchHandler_InvalidBookIdType covers the type-assertion failure path.
-func TestMakeBookSearchHandler_InvalidBookIdType(t *testing.T) {
-	handler := makeBookSearchHandler(nil)
-	cmd := &Command{
-		ID:      "test-invalid-type",
-		Payload: map[string]any{"bookId": "not-a-number"},
-	}
-	err := handler(context.Background(), cmd)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "bookId")
-}
-
-// TestRegisterWantedHandlers_RegistersAllHandlers verifies that all six command handlers
-// are registered after calling RegisterWantedHandlers (covers 0% RegisterWantedHandlers).
-// A nil *wanted.Service is safe here because the handlers are only stored in closures
-// during registration – they are never invoked.
+// TestRegisterWantedHandlers_RegistersAllHandlers verifies that the two command handlers
+// are registered after calling RegisterWantedHandlers.
 func TestRegisterWantedHandlers_RegistersAllHandlers(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	s := New(db, 3)
@@ -472,11 +445,7 @@ func TestRegisterWantedHandlers_RegistersAllHandlers(t *testing.T) {
 	defer s.mu.RUnlock()
 
 	for _, name := range []CommandName{
-		CommandBookSearch,
-		CommandAutomaticSearch,
-		CommandMissingBookSearch,
 		CommandDownloadGrab,
-		CommandRssSync,
 		CommandDownloadMonitor,
 	} {
 		assert.NotNil(t, s.handlers[name], "handler for %s should be registered", name)
@@ -501,7 +470,7 @@ func TestCancelCommand_AlreadyCompleted(t *testing.T) {
 	s := New(db, 3)
 	ctx := context.Background()
 
-	id, err := s.QueueCommand(ctx, CommandBookSearch, TriggerManual, nil)
+	id, err := s.QueueCommand(ctx, CommandDownloadGrab, TriggerManual, nil)
 	require.NoError(t, err)
 	require.NoError(t, s.updateCommandStatus(ctx, id, StatusCompleted, nil))
 
@@ -518,12 +487,12 @@ func TestDispatchPendingCommands_WithQueuedCommand(t *testing.T) {
 	ctx := context.Background()
 
 	done := make(chan struct{})
-	s.RegisterHandler(CommandRssSync, func(_ context.Context, _ *Command) error {
+	s.RegisterHandler(CommandDownloadMonitor, func(_ context.Context, _ *Command) error {
 		close(done)
 		return nil
 	})
 
-	id, err := s.QueueCommand(ctx, CommandRssSync, TriggerManual, nil)
+	id, err := s.QueueCommand(ctx, CommandDownloadMonitor, TriggerManual, nil)
 	require.NoError(t, err)
 
 	s.dispatchPendingCommands(ctx)
@@ -550,7 +519,7 @@ func TestDispatchPendingCommands_WorkersFull(t *testing.T) {
 	// Occupy the only worker slot so no new work can be dispatched.
 	s.workerSem <- struct{}{}
 
-	_, err := s.QueueCommand(ctx, CommandBookSearch, TriggerManual, nil)
+	_, err := s.QueueCommand(ctx, CommandDownloadGrab, TriggerManual, nil)
 	require.NoError(t, err)
 
 	s.dispatchPendingCommands(ctx)
@@ -573,12 +542,12 @@ func TestCheckScheduledTasks_UpdatesNextRunTime(t *testing.T) {
 
 	// Force one task to be due right now.
 	_, err := db.ExecContext(ctx,
-		`UPDATE scheduled_tasks SET next_run_at = datetime('now', '-1 minute') WHERE name = 'RssSync'`)
+		`UPDATE scheduled_tasks SET next_run_at = datetime('now', '-1 minute') WHERE name = 'DownloadMonitor'`)
 	require.NoError(t, err)
 
 	// Set all other tasks far in the future to keep the test focused.
 	_, err = db.ExecContext(ctx,
-		`UPDATE scheduled_tasks SET next_run_at = datetime('now', '+1 year') WHERE name != 'RssSync'`)
+		`UPDATE scheduled_tasks SET next_run_at = datetime('now', '+1 year') WHERE name != 'DownloadMonitor'`)
 	require.NoError(t, err)
 
 	s.checkScheduledTasks(ctx)
@@ -586,7 +555,7 @@ func TestCheckScheduledTasks_UpdatesNextRunTime(t *testing.T) {
 	// next_run_at should now be in the future.
 	var nextRunAt string
 	require.NoError(t, db.QueryRowContext(ctx,
-		`SELECT next_run_at FROM scheduled_tasks WHERE name = 'RssSync'`).Scan(&nextRunAt))
+		`SELECT next_run_at FROM scheduled_tasks WHERE name = 'DownloadMonitor'`).Scan(&nextRunAt))
 
 	assert.NotEmpty(t, nextRunAt)
 	assert.Greater(t, nextRunAt, time.Now().UTC().Add(-5*time.Second).Format(time.RFC3339))

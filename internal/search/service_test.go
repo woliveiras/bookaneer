@@ -20,8 +20,8 @@ type mockIndexer struct {
 	testErr     error
 }
 
-func (m *mockIndexer) Name() string                                           { return m.indexerName }
-func (m *mockIndexer) Type() string                                           { return "mock" }
+func (m *mockIndexer) Name() string { return m.indexerName }
+func (m *mockIndexer) Type() string { return "mock" }
 func (m *mockIndexer) Search(_ context.Context, _ SearchQuery) ([]Result, error) {
 	return m.results, m.searchErr
 }
@@ -39,7 +39,6 @@ func newTestIndexerConfig(name string) IndexerConfig {
 		Priority:                1,
 		Enabled:                 true,
 		EnableRSS:               true,
-		EnableAutomaticSearch:   true,
 		EnableInteractiveSearch: true,
 	}
 }
@@ -433,4 +432,3 @@ func TestDeleteIndexer_DBError(t *testing.T) {
 	require.Error(t, err)
 	assert.NotErrorIs(t, err, ErrIndexerNotFound)
 }
-

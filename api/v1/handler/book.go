@@ -8,18 +8,16 @@ import (
 	"github.com/labstack/echo/v5"
 
 	"github.com/woliveiras/bookaneer/internal/core/book"
-	"github.com/woliveiras/bookaneer/internal/scheduler"
 )
 
 // BookHandler handles book-related HTTP requests.
 type BookHandler struct {
-	svc       *book.Service
-	scheduler *scheduler.Scheduler
+	svc *book.Service
 }
 
 // NewBookHandler creates a new book handler.
-func NewBookHandler(svc *book.Service, scheduler *scheduler.Scheduler) *BookHandler {
-	return &BookHandler{svc: svc, scheduler: scheduler}
+func NewBookHandler(svc *book.Service) *BookHandler {
+	return &BookHandler{svc: svc}
 }
 
 // Register registers the book routes.
@@ -112,15 +110,6 @@ func (h *BookHandler) Create(c *echo.Context) error {
 			return echo.NewHTTPError(http.StatusConflict, "book already exists")
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create book")
-	}
-
-	// Trigger automatic search for monitored books
-	if b.Monitored && h.scheduler != nil {
-		_, _ = h.scheduler.QueueCommand(c.Request().Context(), scheduler.CommandAutomaticSearch, scheduler.TriggerAutomatic, map[string]any{
-			"bookId":     float64(b.ID),
-			"bookTitle":  b.Title,
-			"authorName": b.AuthorName,
-		})
 	}
 
 	return c.JSON(http.StatusCreated, b)

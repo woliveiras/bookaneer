@@ -31,11 +31,11 @@ type scanner = database.Scanner
 // scanIndexer scans a row into IndexerConfig
 func scanIndexer(s scanner) (IndexerConfig, error) {
 	var cfg IndexerConfig
-	var enabled, enableRSS, enableAutoSearch, enableInteractiveSearch int
+	var enabled, enableRSS, enableInteractiveSearch int
 	err := s.Scan(
 		&cfg.ID, &cfg.Name, &cfg.Type, &cfg.BaseURL, &cfg.APIPath, &cfg.APIKey,
 		&cfg.Categories, &cfg.Priority, &enabled,
-		&enableRSS, &enableAutoSearch, &enableInteractiveSearch,
+		&enableRSS, &enableInteractiveSearch,
 		&cfg.AdditionalParameters, &cfg.MinimumSeeders, &cfg.SeedRatio, &cfg.SeedTime,
 		&cfg.CreatedAt, &cfg.UpdatedAt,
 	)
@@ -44,7 +44,6 @@ func scanIndexer(s scanner) (IndexerConfig, error) {
 	}
 	cfg.Enabled = enabled == 1
 	cfg.EnableRSS = enableRSS == 1
-	cfg.EnableAutomaticSearch = enableAutoSearch == 1
 	cfg.EnableInteractiveSearch = enableInteractiveSearch == 1
 	return cfg, nil
 }
@@ -53,7 +52,7 @@ func scanIndexer(s scanner) (IndexerConfig, error) {
 func (s *Service) LoadIndexers(ctx context.Context) error {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, name, type, base_url, api_path, api_key, categories, priority, enabled,
-		       enable_rss, enable_automatic_search, enable_interactive_search,
+		       enable_rss, enable_interactive_search,
 		       additional_parameters, minimum_seeders, seed_ratio, seed_time,
 		       created_at, updated_at
 		FROM indexers WHERE enabled = 1

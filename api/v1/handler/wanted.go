@@ -29,7 +29,6 @@ func NewWantedHandler(wantedSvc *wanted.Service, schedulerSvc *scheduler.Schedul
 func (h *WantedHandler) Register(g *echo.Group) {
 	// Wanted books
 	g.GET("/wanted/missing", h.GetMissingBooks)
-	g.POST("/wanted/missing/search", h.SearchAllMissing)
 	g.POST("/wanted/cutoff", h.GetCutoffUnmet)
 	g.POST("/wanted/cutoff/search", h.SearchCutoffUnmet)
 
@@ -69,22 +68,6 @@ func (h *WantedHandler) GetMissingBooks(c *echo.Context) error {
 		"sortKey":       "addedAt",
 		"sortDirection": "descending",
 		"records":       books,
-	})
-}
-
-// SearchAllMissing triggers a search for all missing books.
-func (h *WantedHandler) SearchAllMissing(c *echo.Context) error {
-	ctx := c.Request().Context()
-
-	// Queue a MissingBookSearch command
-	commandID, err := h.schedulerService.QueueCommand(ctx, scheduler.CommandMissingBookSearch, scheduler.TriggerManual, nil)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to queue search command")
-	}
-
-	return c.JSON(http.StatusAccepted, map[string]any{
-		"commandId": commandID,
-		"message":   "Search for all missing books has been queued",
 	})
 }
 
@@ -173,12 +156,10 @@ func (h *WantedHandler) GetRecentCommands(c *echo.Context) error {
 	return c.JSON(http.StatusOK, commands)
 }
 
-// SearchBookRequest represents a manual book search request.
-type SearchBookRequest struct {
-	BookID int64 `json:"bookId"`
-}
-
-// SearchBook triggers a search for a specific book.
+// SearchBook searches for releases for a specific book and returns the results.
+// Results are sorted by file size (largest first). If no results are found, the
+// empty results list is returned with noResults=true so the client can offer to
+// add the book to the wanted list.
 func (h *WantedHandler) SearchBook(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -187,25 +168,18 @@ func (h *WantedHandler) SearchBook(c *echo.Context) error {
 
 	ctx := c.Request().Context()
 
-	// Get book info for display purposes
-	bookTitle, authorName, err := h.wantedService.GetBookInfo(ctx, id)
+	results, err := h.wantedService.Search(ctx, id)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "book not found")
+		if err.Error() == "find book: not found" {
+			return echo.NewHTTPError(http.StatusNotFound, "book not found")
+		}
+		slog.Error("search failed", "bookId", id, "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "search failed")
 	}
 
-	// Queue a BookSearch command with book details for UI display
-	commandID, err := h.schedulerService.QueueCommand(ctx, scheduler.CommandBookSearch, scheduler.TriggerManual, map[string]any{
-		"bookId":     id,
-		"bookTitle":  bookTitle,
-		"authorName": authorName,
-	})
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to queue search command")
-	}
-
-	return c.JSON(http.StatusAccepted, map[string]any{
-		"commandId": commandID,
-		"message":   "Search has been queued",
+	return c.JSON(http.StatusOK, map[string]any{
+		"results":   results,
+		"noResults": len(results) == 0,
 	})
 }
 

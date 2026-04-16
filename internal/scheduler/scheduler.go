@@ -17,10 +17,7 @@ type CommandName string
 
 const (
 	// Book-related commands.
-	CommandBookSearch        CommandName = "BookSearch"
-	CommandMissingBookSearch CommandName = "MissingBookSearch"
-	CommandRefreshBook       CommandName = "RefreshBook"
-	CommandAutomaticSearch   CommandName = "AutomaticSearch"
+	CommandRefreshBook CommandName = "RefreshBook"
 
 	// Library commands.
 	CommandLibraryScan  CommandName = "LibraryScan"
@@ -33,7 +30,6 @@ const (
 	CommandDownloadMonitor CommandName = "DownloadMonitor"
 
 	// System commands.
-	CommandRssSync      CommandName = "RssSync"
 	CommandBackup       CommandName = "Backup"
 	CommandHousekeeping CommandName = "Housekeeping"
 )
@@ -55,7 +51,6 @@ type CommandTrigger string
 const (
 	TriggerManual    CommandTrigger = "manual"
 	TriggerScheduled CommandTrigger = "scheduled"
-	TriggerAutomatic CommandTrigger = "automatic"
 )
 
 // Command represents a queued command.

@@ -115,16 +115,10 @@ func (s *Service) ProcessDownloads(ctx context.Context) (*ProcessDownloadsResult
 						"contentMismatch", mismatch,
 					)
 					result.Imported++
-
-					// If content mismatch detected and alternative sources exist, try next source
 					if mismatch {
-						slog.Warn("Content mismatch — trying next download source",
+						slog.Warn("Content mismatch detected — user should verify file",
 							"queueId", d.ID,
 						)
-						s.tryNextSourceForMismatch(ctx, d.ID)
-					} else {
-						// Clean up search results after successful import with verified content
-						s.cleanupSearchResults(ctx, d.ID)
 					}
 				}
 			}
@@ -134,11 +128,6 @@ func (s *Service) ProcessDownloads(ctx context.Context) (*ProcessDownloadsResult
 				"queueId", d.ID,
 				"error", status.ErrorMessage,
 			)
-
-			// Try next available source automatically
-			if retried := s.tryNextSource(ctx, d.ID, status.ErrorMessage); retried {
-				slog.Info("Automatically trying next download source", "queueId", d.ID)
-			}
 		}
 	}
 

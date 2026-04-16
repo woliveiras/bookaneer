@@ -7,7 +7,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"github.com/woliveiras/bookaneer/internal/core/book"
 	corelibrary "github.com/woliveiras/bookaneer/internal/core/library"
@@ -17,6 +16,17 @@ import (
 	"github.com/woliveiras/bookaneer/internal/library"
 	"github.com/woliveiras/bookaneer/internal/search"
 )
+
+// SearchBookResult represents a single search result shown to the user.
+type SearchBookResult struct {
+	Title       string `json:"title"`
+	Source      string `json:"source"`   // "library" or "indexer"
+	Provider    string `json:"provider"` // provider/indexer name
+	Format      string `json:"format"`
+	Size        int64  `json:"size"`
+	DownloadURL string `json:"downloadUrl"`
+	Seeders     int    `json:"seeders,omitempty"`
+}
 
 // Service handles searching and grabbing wanted books.
 type Service struct {
@@ -62,36 +72,14 @@ func (s *Service) GetBookInfo(ctx context.Context, bookID int64) (title, authorN
 	return b.Title, b.AuthorName, nil
 }
 
-// SearchAndGrab searches for a book across all sources and grabs the best quality result.
-// Searches libraries and indexers in parallel, applies unified quality scoring, and tries
-// the best result first with automatic fallback to alternatives on failure.
-func (s *Service) SearchAndGrab(ctx context.Context, bookID int64) (*GrabResult, error) {
-	// Get book details
+// Search searches for a book across all sources and returns results sorted by file size (largest first).
+// An empty slice is returned when no results are found — the caller decides what to do next.
+func (s *Service) Search(ctx context.Context, bookID int64) ([]SearchBookResult, error) {
 	b, err := s.bookService.FindByID(ctx, bookID)
 	if err != nil {
 		return nil, fmt.Errorf("find book: %w", err)
 	}
 
-	if !b.Monitored {
-		return nil, fmt.Errorf("book %d is not monitored", bookID)
-	}
-
-	// Check if there's already an active download for this book
-	var activeCount int
-	err = s.db.QueryRowContext(ctx, `
-		SELECT COUNT(*) FROM download_queue 
-		WHERE book_id = ? AND status IN ('queued', 'downloading', 'paused', 'importing')
-	`, bookID).Scan(&activeCount)
-	if err != nil {
-		slog.Warn("Failed to check for active downloads", "error", err)
-	} else if activeCount > 0 {
-		slog.Info("Skipping search - book already has active download", "id", bookID, "title", b.Title)
-		return nil, fmt.Errorf("book already has an active download in queue")
-	}
-
-	slog.Info("Searching for book across all sources", "id", bookID, "title", b.Title)
-
-	// Build search query: prioritize ISBN for precision, fall back to title+author
 	isbn := b.ISBN13
 	if isbn == "" {
 		isbn = b.ISBN
@@ -107,64 +95,67 @@ func (s *Service) SearchAndGrab(ctx context.Context, bookID int64) (*GrabResult,
 		slog.Info("Using ISBN for search precision", "isbn", query, "book", b.Title)
 	}
 
-	// Search all sources in parallel
-	allResults, err := s.searchAllSources(ctx, b, query)
+	allResults, err := s.searchAllSources(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("search failed: %w", err)
 	}
 
-	if len(allResults) == 0 {
-		// If ISBN search failed, retry with title+author
-		if isbn != "" {
-			slog.Info("ISBN search returned no results, retrying with title+author", "book", b.Title)
-			titleQuery := b.Title
-			if b.AuthorName != "" {
-				titleQuery = fmt.Sprintf("%s %s", b.Title, b.AuthorName)
-			}
-			allResults, err = s.searchAllSources(ctx, b, titleQuery)
-			if err != nil {
-				return nil, fmt.Errorf("fallback search failed: %w", err)
-			}
+	// If ISBN search returned nothing, retry with title+author
+	if len(allResults) == 0 && isbn != "" {
+		slog.Info("ISBN search returned no results, retrying with title+author", "book", b.Title)
+		titleQuery := b.Title
+		if b.AuthorName != "" {
+			titleQuery = fmt.Sprintf("%s %s", b.Title, b.AuthorName)
 		}
-
-		if len(allResults) == 0 {
-			return nil, fmt.Errorf("no suitable download found for %q", b.Title)
+		allResults, err = s.searchAllSources(ctx, titleQuery)
+		if err != nil {
+			return nil, fmt.Errorf("fallback search failed: %w", err)
 		}
 	}
 
-	// Get quality profile (use default if none configured)
-	profile := s.getQualityProfile(ctx, b)
-
-	// Filter by quality profile
-	allResults = filterByQualityProfile(allResults, profile)
 	if len(allResults) == 0 {
-		return nil, fmt.Errorf("no results match quality profile for %q", b.Title)
+		slog.Info("No results found for book", "id", bookID, "title", b.Title)
+		return []SearchBookResult{}, nil
 	}
 
-	// Score and sort results by quality
-	allResults = scoreResults(allResults, profile)
+	// Sort by file size descending (largest = heaviest = shown first)
+	sortBySize(allResults)
 
-	// Log top results for visibility
 	slog.Info("Found download sources", "book", b.Title, "count", len(allResults))
 	for i, r := range allResults {
 		if i >= 5 {
-			break // Log top 5
+			break
 		}
 		slog.Debug("Candidate", "rank", i+1, "result", r.String())
 	}
 
-	// Clear previous search results for this book
+	// Persist results for audit trail and future grab reference
 	if _, err := s.db.ExecContext(ctx, `DELETE FROM search_results WHERE book_id = ?`, b.ID); err != nil {
 		slog.Warn("failed to clear search results", "bookId", b.ID, "error", err)
 	}
-
-	// Save all results as fallbacks
 	if err := s.saveSearchResults(ctx, b.ID, allResults); err != nil {
 		slog.Warn("failed to save search results", "error", err)
 	}
 
-	// Try to grab the best result
-	return s.tryGrabBestResult(ctx, b, allResults)
+	out := make([]SearchBookResult, 0, len(allResults))
+	for _, r := range allResults {
+		res := SearchBookResult{
+			Title:       r.title,
+			Source:      "indexer",
+			Provider:    r.sourceName,
+			Format:      r.format,
+			Size:        r.size,
+			DownloadURL: r.downloadURL,
+		}
+		if r.isLibrary {
+			res.Source = "library"
+		}
+		if r.isIndexer && r.indexerResult != nil {
+			res.Seeders = r.indexerResult.Seeders
+		}
+		out = append(out, res)
+	}
+	return out, nil
 }
 
 // GetWantedBooks returns all monitored books without files.
@@ -203,31 +194,4 @@ func (s *Service) GetWantedBooks(ctx context.Context) ([]book.Book, error) {
 	}
 
 	return books, rows.Err()
-}
-
-// SearchAllWanted searches for all wanted books.
-func (s *Service) SearchAllWanted(ctx context.Context) ([]GrabResult, error) {
-	books, err := s.GetWantedBooks(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("get wanted books: %w", err)
-	}
-
-	slog.Info("Searching for wanted books", "count", len(books))
-
-	var results []GrabResult
-	for _, b := range books {
-		result, err := s.SearchAndGrab(ctx, b.ID)
-		if err != nil {
-			slog.Warn("Failed to grab book", "id", b.ID, "title", b.Title, "error", err)
-			continue
-		}
-		if result != nil {
-			results = append(results, *result)
-		}
-
-		// Small delay between searches to be nice to providers
-		time.Sleep(500 * time.Millisecond)
-	}
-
-	return results, nil
 }

@@ -5,9 +5,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import type {
   ActiveCommand,
   BlocklistItem,
+  BookSearchResponse,
   HistoryItem,
   QueueItem,
-  SearchCommandResponse,
   WantedResponse,
 } from "../lib/api"
 import {
@@ -20,7 +20,6 @@ import {
   useRecentCommands,
   useRemoveFromBlocklist,
   useRemoveFromQueue,
-  useSearchAllMissing,
   useSearchBook,
   useWantedMissing,
 } from "./useWanted"
@@ -31,7 +30,6 @@ vi.mock("../lib/api", async () => {
     ...actual,
     wantedApi: {
       getMissing: vi.fn(),
-      searchAllMissing: vi.fn(),
       searchBook: vi.fn(),
       manualGrab: vi.fn(),
       getActiveCommands: vi.fn(),
@@ -89,23 +87,14 @@ describe("useWantedMissing", () => {
   })
 })
 
-describe("useSearchAllMissing", () => {
-  it("triggers search and resolves", async () => {
-    const response: SearchCommandResponse = { commandId: "cmd-1", message: "Search started" }
-    vi.mocked(wantedApi.searchAllMissing).mockResolvedValue(response)
-
-    const { result } = renderHook(() => useSearchAllMissing(), { wrapper: createWrapper() })
-
-    result.current.mutate()
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(wantedApi.searchAllMissing).toHaveBeenCalled()
-  })
-})
-
 describe("useSearchBook", () => {
-  it("triggers search for specific book", async () => {
-    const response: SearchCommandResponse = { commandId: "cmd-2", message: "Search started" }
+  it("returns search results for a specific book", async () => {
+    const response: BookSearchResponse = {
+      results: [
+        { title: "The Hobbit", source: "library", provider: "mock", format: "epub", size: 1024000, downloadUrl: "http://a.com/hobbit.epub" },
+      ],
+      noResults: false,
+    }
     vi.mocked(wantedApi.searchBook).mockResolvedValue(response)
 
     const { result } = renderHook(() => useSearchBook(), { wrapper: createWrapper() })
@@ -114,6 +103,20 @@ describe("useSearchBook", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(wantedApi.searchBook).toHaveBeenCalledWith(42, expect.anything())
+    expect(result.current.data?.noResults).toBe(false)
+    expect(result.current.data?.results).toHaveLength(1)
+  })
+
+  it("returns noResults true when nothing is found", async () => {
+    const response: BookSearchResponse = { results: [], noResults: true }
+    vi.mocked(wantedApi.searchBook).mockResolvedValue(response)
+
+    const { result } = renderHook(() => useSearchBook(), { wrapper: createWrapper() })
+
+    result.current.mutate(99)
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(result.current.data?.noResults).toBe(true)
   })
 })
 

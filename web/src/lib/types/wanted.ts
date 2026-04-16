@@ -29,6 +29,21 @@ export interface SearchCommandResponse {
   message: string
 }
 
+export interface BookSearchResult {
+  title: string
+  source: string
+  provider: string
+  format: string
+  size: number
+  downloadUrl: string
+  seeders?: number
+}
+
+export interface BookSearchResponse {
+  results: BookSearchResult[]
+  noResults: boolean
+}
+
 export type HistoryEventType =
   | "grabbed"
   | "downloadCompleted"

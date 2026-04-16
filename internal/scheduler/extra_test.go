@@ -49,7 +49,7 @@ func newTestWantedSvc(t *testing.T) (*wanted.Service, *sql.DB) {
 // TestQueueCommand_DBError covers the db.ExecContext error path in QueueCommand.
 func TestQueueCommand_DBError(t *testing.T) {
 	s := New(closedDB(), 3)
-	_, err := s.QueueCommand(context.Background(), CommandBookSearch, TriggerManual, nil)
+	_, err := s.QueueCommand(context.Background(), CommandDownloadGrab, TriggerManual, nil)
 	require.Error(t, err)
 }
 
@@ -80,7 +80,7 @@ func TestCancelCommand_WithRunningCommand(t *testing.T) {
 	s := New(db, 3)
 	ctx := context.Background()
 
-	id, err := s.QueueCommand(ctx, CommandBookSearch, TriggerManual, nil)
+	id, err := s.QueueCommand(ctx, CommandDownloadGrab, TriggerManual, nil)
 	require.NoError(t, err)
 
 	cancelCalled := false
@@ -157,42 +157,7 @@ func TestGetScheduledTasks_DBError(t *testing.T) {
 	require.Error(t, err)
 }
 
-// ── makeBookSearchHandler ─────────────────────────────────────────────────────
-
-// TestMakeBookSearchHandler_SearchAndGrabError covers lines 20-22 of handlers.go:
-// the handler receives a valid bookId but SearchAndGrab returns an error (book not
-// found in DB), so the handler propagates the error.
-func TestMakeBookSearchHandler_SearchAndGrabError(t *testing.T) {
-	wantedSvc, _ := newTestWantedSvc(t)
-	handler := makeBookSearchHandler(wantedSvc)
-
-	cmd := &Command{
-		ID:      "test-search-fail",
-		Payload: map[string]any{"bookId": float64(99999)}, // book does not exist
-	}
-	err := handler(context.Background(), cmd)
-	require.Error(t, err, "handler should propagate the SearchAndGrab error")
-}
-
 // ── RegisterWantedHandlers – inner handler bodies ─────────────────────────────
-
-// TestRegisterWantedHandlers_MissingBookSearch exercises the CommandMissingBookSearch
-// handler body: SearchAllWanted with an empty DB returns (nil, nil), so the handler
-// sets cmd.Result and returns nil without error.
-func TestRegisterWantedHandlers_MissingBookSearch(t *testing.T) {
-	wantedSvc, db := newTestWantedSvc(t)
-	s := New(db, 3)
-	s.RegisterWantedHandlers(wantedSvc)
-
-	s.mu.RLock()
-	handler := s.handlers[CommandMissingBookSearch]
-	s.mu.RUnlock()
-	require.NotNil(t, handler)
-
-	cmd := &Command{ID: "test-missing", Payload: map[string]any{}}
-	require.NoError(t, handler(context.Background(), cmd))
-	assert.Equal(t, 0, cmd.Result["grabbed"])
-}
 
 // TestRegisterWantedHandlers_DownloadGrab_MissingBookId covers the bookId validation
 // inside the CommandDownloadGrab handler (wantedService is never reached).
@@ -246,24 +211,6 @@ func TestRegisterWantedHandlers_DownloadGrab_EmptyURL(t *testing.T) {
 	assert.Contains(t, err.Error(), "downloadUrl")
 }
 
-// TestRegisterWantedHandlers_RssSync exercises the CommandRssSync handler body:
-// SearchAllWanted with empty DB succeeds and the handler sets cmd.Result.
-func TestRegisterWantedHandlers_RssSync(t *testing.T) {
-	wantedSvc, db := newTestWantedSvc(t)
-	s := New(db, 3)
-	s.RegisterWantedHandlers(wantedSvc)
-
-	s.mu.RLock()
-	handler := s.handlers[CommandRssSync]
-	s.mu.RUnlock()
-	require.NotNil(t, handler)
-
-	cmd := &Command{ID: "test-rss", Payload: map[string]any{}}
-	require.NoError(t, handler(context.Background(), cmd))
-	assert.Equal(t, true, cmd.Result["searched"])
-	assert.Equal(t, 0, cmd.Result["grabbed"])
-}
-
 // TestRegisterWantedHandlers_DownloadMonitor exercises the CommandDownloadMonitor
 // handler body: ProcessDownloads with empty DB returns a zero result struct.
 func TestRegisterWantedHandlers_DownloadMonitor(t *testing.T) {
@@ -307,41 +254,6 @@ func TestRegisterWantedHandlers_DownloadGrab_GrabError(t *testing.T) {
 	require.Error(t, err, "GrabRelease should fail for a non-existent book")
 }
 
-// TestRegisterWantedHandlers_MissingBookSearch_Error covers the error-return branch
-// in the CommandMissingBookSearch handler when SearchAllWanted returns an error
-// (triggered by closing the underlying DB after the handler is registered).
-func TestRegisterWantedHandlers_MissingBookSearch_Error(t *testing.T) {
-	wantedSvc, db := newTestWantedSvc(t)
-	s := New(db, 3)
-	s.RegisterWantedHandlers(wantedSvc)
-
-	s.mu.RLock()
-	handler := s.handlers[CommandMissingBookSearch]
-	s.mu.RUnlock()
-
-	_ = db.Close() // close DB so SearchAllWanted → GetWantedBooks fails
-	cmd := &Command{ID: "test-missing-err", Payload: map[string]any{}}
-	err := handler(context.Background(), cmd)
-	require.Error(t, err)
-}
-
-// TestRegisterWantedHandlers_RssSync_Error covers the error-return branch in the
-// CommandRssSync handler when SearchAllWanted returns an error.
-func TestRegisterWantedHandlers_RssSync_Error(t *testing.T) {
-	wantedSvc, db := newTestWantedSvc(t)
-	s := New(db, 3)
-	s.RegisterWantedHandlers(wantedSvc)
-
-	s.mu.RLock()
-	handler := s.handlers[CommandRssSync]
-	s.mu.RUnlock()
-
-	_ = db.Close() // close DB so SearchAllWanted fails
-	cmd := &Command{ID: "test-rss-err", Payload: map[string]any{}}
-	err := handler(context.Background(), cmd)
-	require.Error(t, err)
-}
-
 // TestRegisterWantedHandlers_DownloadMonitor_Error covers the error-return branch in
 // the CommandDownloadMonitor handler when ProcessDownloads returns an error.
 func TestRegisterWantedHandlers_DownloadMonitor_Error(t *testing.T) {
@@ -368,10 +280,10 @@ func TestCheckScheduledTasks_QueueCommandError(t *testing.T) {
 	ctx := context.Background()
 
 	// Make one task immediately due.
-	_, err := db.ExecContext(ctx, `UPDATE scheduled_tasks SET next_run_at = datetime('now', '-1 minute') WHERE name = 'RssSync'`)
+	_, err := db.ExecContext(ctx, `UPDATE scheduled_tasks SET next_run_at = datetime('now', '-1 minute') WHERE name = 'DownloadMonitor'`)
 	require.NoError(t, err)
 	// Set all other tasks to the future to keep the test focused.
-	_, err = db.ExecContext(ctx, `UPDATE scheduled_tasks SET next_run_at = datetime('now', '+1 year') WHERE name != 'RssSync'`)
+	_, err = db.ExecContext(ctx, `UPDATE scheduled_tasks SET next_run_at = datetime('now', '+1 year') WHERE name != 'DownloadMonitor'`)
 	require.NoError(t, err)
 
 	// Drop the commands table so QueueCommand fails while getDueScheduledTasks still works.

@@ -114,7 +114,7 @@ func (s *Service) RemoveFromBlocklist(ctx context.Context, id int64) error {
 }
 
 // ReportWrongContent handles when a user reports that a downloaded file has wrong content.
-// It removes the book file, blocklists the source, and tries the next available source.
+// It removes the book file and blocklists the source. The user can search manually again.
 func (s *Service) ReportWrongContent(ctx context.Context, bookID int64) error {
 	// Get and remove the book file
 	var fileID int64
@@ -155,21 +155,6 @@ func (s *Service) ReportWrongContent(ctx context.Context, bookID int64) error {
 		"path":        filePath,
 		"sourceTitle": sourceTitle,
 	})
-
-	// Try next available source
-	pending := s.GetPendingSourcesCount(ctx, bookID)
-	if pending > 0 {
-		grabResult, grabErr := s.grabNextSearchResult(ctx, b)
-		if grabErr != nil {
-			slog.Warn("Failed to grab next source after wrong content report", "book", b.Title, "error", grabErr)
-		} else {
-			slog.Info("Retrying download after wrong content report",
-				"book", b.Title,
-				"source", grabResult.ProviderName,
-				"remaining", pending-1,
-			)
-		}
-	}
 
 	return nil
 }

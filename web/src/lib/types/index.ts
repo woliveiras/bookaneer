@@ -82,6 +82,8 @@ export type {
   CommandStatus,
   HistoryEventType,
   HistoryItem,
+  BookSearchResult,
+  BookSearchResponse,
   SearchCommandResponse,
   WantedResponse,
 } from "./wanted"
