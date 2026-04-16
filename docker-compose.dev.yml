@@ -1,0 +1,52 @@
+# Development stack — Prowlarr + qBittorrent for testing search & download
+#
+# Usage:
+#   docker compose -f docker-compose.dev.yml up -d
+#
+# Bookaneer runs locally via `make dev` (not in Docker).
+# Prowlarr UI: http://localhost:9696
+# qBittorrent UI: http://localhost:8080 (admin / adminadmin)
+#
+# After starting, configure Prowlarr:
+#   1. Add indexers (e.g. Jackett, Newznab, etc.)
+#   2. Settings → Apps → Add → Readarr (Bookaneer is compatible)
+#      - Prowlarr Server: http://prowlarr:9696
+#      - Readarr Server: http://host.docker.internal:9090
+#      - API Key: (from Bookaneer startup log)
+#      - Sync Categories: 7000, 7010, 7020
+#   3. Click "Sync App Indexers"
+
+services:
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: bookaneer-prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    ports:
+      - "9696:9696"
+    volumes:
+      - prowlarr_config:/config
+    restart: unless-stopped
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: bookaneer-qbittorrent
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - WEBUI_PORT=8080
+    ports:
+      - "8080:8080"
+      - "6881:6881"
+      - "6881:6881/udp"
+    volumes:
+      - qbittorrent_config:/config
+      - ${LIBRARY_PATH:-./library}:/downloads
+    restart: unless-stopped
+
+volumes:
+  prowlarr_config:
+  qbittorrent_config:
