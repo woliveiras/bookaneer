@@ -246,7 +246,6 @@ export function useBookRelease(book: MetadataBookResult | null, existingBookId?:
         isbn13: book.isbn13 ?? "",
         releaseDate: book.publishedYear ? `${book.publishedYear}-01-01` : "",
         imageUrl: book.coverUrl ?? "",
-        monitored: true,
       })
 
       setCreatedBookId(newBook.id)
