@@ -5,33 +5,48 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/woliveiras/bookaneer/internal/library"
+	"github.com/woliveiras/bookaneer/internal/library/flaresolverr"
 )
 
-const (
-	defaultBaseURL = "https://annas-archive.gs"
-	userAgent      = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-)
+// mirrors lists Anna's Archive domains in preferred order.
+var mirrors = []string{
+	"https://annas-archive.gl",
+	"https://annas-archive.org",
+	"https://annas-archive.se",
+	"https://annas-archive.li",
+	"https://annas-archive.gs",
+}
+
+const userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 // Provider implements library.Provider for Anna's Archive.
 type Provider struct {
-	baseURL    string
 	httpClient *http.Client
+	flare      *flaresolverr.Client // optional; nil when not configured
 }
 
 // New creates a new Anna's Archive provider.
 func New() *Provider {
 	return &Provider{
-		baseURL: defaultBaseURL,
 		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: 8 * time.Second,
 		},
 	}
+}
+
+// NewWithFlareSolverr creates a provider that routes through FlareSolverr.
+func NewWithFlareSolverr(solverrURL string) *Provider {
+	p := New()
+	p.flare = flaresolverr.New(solverrURL)
+	return p
 }
 
 // Name returns the provider identifier.
@@ -39,10 +54,55 @@ func (p *Provider) Name() string {
 	return "annas-archive"
 }
 
-// Search searches Anna's Archive for ebooks.
+// Search searches Anna's Archive for ebooks, trying all mirrors in parallel and
+// returning the first non-empty result set.
 func (p *Provider) Search(ctx context.Context, query string) ([]library.SearchResult, error) {
-	searchURL := fmt.Sprintf("%s/search?index=&q=%s&ext=epub&ext=pdf&ext=mobi&sort=&lang=en",
-		p.baseURL, url.QueryEscape(query))
+	// Cap total search time across all mirrors
+	ctx, cancel := context.WithTimeout(ctx, 12*time.Second)
+	defer cancel()
+
+	type result struct {
+		results []library.SearchResult
+		err     error
+	}
+
+	resultCh := make(chan result, len(mirrors))
+	var wg sync.WaitGroup
+
+	for _, mirror := range mirrors {
+		wg.Add(1)
+		go func(m string) {
+			defer wg.Done()
+			res, err := p.searchMirror(ctx, m, query)
+			if err != nil {
+				slog.Debug("annas-archive mirror failed", "mirror", m, "error", err)
+			}
+			resultCh <- result{results: res, err: err}
+		}(mirror)
+	}
+
+	go func() {
+		wg.Wait()
+		close(resultCh)
+	}()
+
+	var best []library.SearchResult
+	for r := range resultCh {
+		if len(r.results) > len(best) {
+			best = r.results
+		}
+		// Return early if we already have good results
+		if len(best) >= 5 {
+			cancel()
+			return best, nil
+		}
+	}
+	return best, nil
+}
+
+func (p *Provider) searchMirror(ctx context.Context, baseURL, query string) ([]library.SearchResult, error) {
+	searchURL := fmt.Sprintf("%s/search?index=&q=%s&ext=epub&ext=pdf&ext=mobi&sort=&lang=",
+		baseURL, url.QueryEscape(query))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, searchURL, nil)
 	if err != nil {
@@ -51,6 +111,7 @@ func (p *Provider) Search(ctx context.Context, query string) ([]library.SearchRe
 
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
@@ -67,11 +128,20 @@ func (p *Provider) Search(ctx context.Context, query string) ([]library.SearchRe
 		return nil, fmt.Errorf("reading response: %w", err)
 	}
 
-	return p.parseSearchResults(string(body)), nil
+	// Detect bot/Cloudflare challenge pages — they won't contain our search anchors
+	bodyStr := string(body)
+	if strings.Contains(strings.ToLower(bodyStr), "just a moment") ||
+		strings.Contains(strings.ToLower(bodyStr), "verify you are human") ||
+		strings.Contains(strings.ToLower(bodyStr), "robot") {
+		return nil, fmt.Errorf("bot challenge page detected")
+	}
+
+	results := p.parseSearchResults(baseURL, bodyStr)
+	return results, nil
 }
 
 // parseSearchResults extracts results from HTML response.
-func (p *Provider) parseSearchResults(html string) []library.SearchResult {
+func (p *Provider) parseSearchResults(baseURL, html string) []library.SearchResult {
 	var results []library.SearchResult
 
 	entries := strings.Split(html, `href="/md5/`)
@@ -123,8 +193,8 @@ func (p *Provider) parseSearchResults(html string) []library.SearchResult {
 			ID:          md5,
 			Title:       cleanHTML(title),
 			Format:      format,
-			DownloadURL: fmt.Sprintf("%s/md5/%s", p.baseURL, md5),
-			InfoURL:     fmt.Sprintf("%s/md5/%s", p.baseURL, md5),
+			DownloadURL: fmt.Sprintf("%s/md5/%s", baseURL, md5),
+			InfoURL:     fmt.Sprintf("%s/md5/%s", baseURL, md5),
 			Provider:    "annas-archive",
 		}
 
@@ -158,7 +228,7 @@ func cleanHTML(s string) string {
 
 // GetDownloadLink returns a download link for the given MD5 hash.
 func (p *Provider) GetDownloadLink(ctx context.Context, id string) (string, error) {
-	return fmt.Sprintf("%s/md5/%s", p.baseURL, id), nil
+	return fmt.Sprintf("%s/md5/%s", mirrors[0], id), nil
 }
 
 var _ library.Provider = (*Provider)(nil)

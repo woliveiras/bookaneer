@@ -1,34 +1,30 @@
-import { useNavigate } from "@tanstack/react-router"
 import { useCallback, useEffect, useState } from "react"
-import { Library } from "lucide-react"
+import { Library, Download } from "lucide-react"
 import { Badge, Button, Card, CardContent, Input } from "../../components/ui"
+import { SearchModal } from "../../components/search/SearchModal"
+import { useBookRelease } from "../../hooks/useBookRelease"
 import { useMetadataSearchBooks } from "../../hooks/useMetadata"
 import type { MetadataBookResult } from "../../lib/api"
 
 interface BookCardProps {
   book: MetadataBookResult
-  onSelect: (book: MetadataBookResult) => void
-  isSelected: boolean
+  onGet: (book: MetadataBookResult) => void
+  isGetting: boolean
 }
 
-function BookCard({ book, onSelect, isSelected }: BookCardProps) {
+function BookCard({ book, onGet, isGetting }: BookCardProps) {
   return (
-    <Card
-      className={`cursor-pointer transition-colors ${
-        isSelected ? "border-primary ring-2 ring-primary" : "hover:border-primary"
-      }`}
-      onClick={() => onSelect(book)}
-    >
-      <CardContent className="p-4 flex gap-4">
+    <Card className="flex flex-col overflow-hidden">
+      <CardContent className="p-4 flex gap-4 flex-1">
         {book.coverUrl ? (
           <img
             src={book.coverUrl}
             alt={book.title}
-            className="w-16 h-24 object-cover rounded shadow-sm"
+            className="w-16 h-24 object-cover rounded shadow-sm shrink-0"
             loading="lazy"
           />
         ) : (
-          <div className="w-16 h-24 bg-muted rounded flex items-center justify-center">
+          <div className="w-16 h-24 bg-muted rounded flex items-center justify-center shrink-0">
             <Library className="w-6 h-6 text-muted-foreground" />
           </div>
         )}
@@ -52,12 +48,34 @@ function BookCard({ book, onSelect, isSelected }: BookCardProps) {
           </div>
         </div>
       </CardContent>
+      <div className="px-4 pb-4">
+        <Button
+          className="w-full"
+          onClick={() => onGet(book)}
+          disabled={isGetting}
+        >
+          {isGetting ? (
+            <>
+              <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              Loading...
+            </>
+          ) : (
+            <>
+              <Download className="mr-2 h-4 w-4" />
+              Get
+            </>
+          )}
+        </Button>
+      </div>
     </Card>
   )
 }
 
 export function UnifiedSearch() {
-  const navigate = useNavigate()
+  const [activeBook, setActiveBook] = useState<MetadataBookResult | null>(null)
+  const [gettingBookId, setGettingBookId] = useState<string | null>(null)
+
+  const release = useBookRelease(activeBook)
 
   // Read initial query from URL
   const [query, setQuery] = useState(() => {
@@ -69,31 +87,32 @@ export function UnifiedSearch() {
     return params.get("q") || ""
   })
 
-  // Navigate to book details page
-  const handleSelectBook = useCallback(
-    (book: MetadataBookResult) => {
-      navigate({
-        to: "/search/book",
-        search: {
-          title: book.title,
-          authors: book.authors?.join("|||"),
-          provider: book.provider,
-          foreignId: book.foreignId,
-          publishedYear: book.publishedYear?.toString(),
-          coverUrl: book.coverUrl,
-          isbn13: book.isbn13,
-        },
-      })
-    },
-    [navigate],
-  )
+  const handleGet = useCallback((book: MetadataBookResult) => {
+    const bookKey = `${book.provider}-${book.foreignId}`
+    setGettingBookId(bookKey)
+    setActiveBook(book)
+  }, [])
+
+  // Start the release search once activeBook is set
+  const releaseStartSearch = release.startSearch
+  useEffect(() => {
+    if (activeBook) {
+      releaseStartSearch()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeBook])
+
+  const handleCloseModal = useCallback(() => {
+    release.closeSearch()
+    setGettingBookId(null)
+    setActiveBook(null)
+  }, [release])
 
   // Update URL when search is submitted
   const handleSearch = useCallback(() => {
     if (query.trim().length >= 2) {
       const trimmedQuery = query.trim()
       setSubmittedQuery(trimmedQuery)
-      // Update URL without navigation
       const url = new URL(window.location.href)
       url.searchParams.set("q", trimmedQuery)
       window.history.replaceState({}, "", url.toString())
@@ -173,17 +192,20 @@ export function UnifiedSearch() {
       {bookSearch.data && bookSearch.data.results.length > 0 && (
         <div>
           <p className="text-sm text-muted-foreground mb-4">
-            {bookSearch.data.results.length} books found — click one for manual search
+            {bookSearch.data.results.length} books found — click Get to find download sources
           </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {bookSearch.data.results.map((book) => (
-              <BookCard
-                key={`${book.provider}-${book.foreignId}`}
-                book={book}
-                onSelect={handleSelectBook}
-                isSelected={false}
-              />
-            ))}
+            {bookSearch.data.results.map((book) => {
+              const bookKey = `${book.provider}-${book.foreignId}`
+              return (
+                <BookCard
+                  key={bookKey}
+                  book={book}
+                  onGet={handleGet}
+                  isGetting={gettingBookId === bookKey}
+                />
+              )
+            })}
           </div>
         </div>
       )}
@@ -192,13 +214,54 @@ export function UnifiedSearch() {
       {!submittedQuery && !bookSearch.isLoading && (
         <Card>
           <CardContent className="py-12 text-center">
-            <div className="flex justify-center mb-4"><Library className="w-8 h-8 text-muted-foreground" /></div>
+            <div className="flex justify-center mb-4">
+              <Library className="w-8 h-8 text-muted-foreground" />
+            </div>
             <p className="text-lg text-muted-foreground mb-2">Search for any book</p>
             <p className="text-sm text-muted-foreground">
               Enter a title, author name, or ISBN to find books and download them
             </p>
           </CardContent>
         </Card>
+      )}
+
+      {/* Release picker modal */}
+      {activeBook && (
+        <SearchModal
+          open={release.searchStarted}
+          onClose={handleCloseModal}
+          bookTitle={activeBook.title}
+          filteredLibraryResults={release.filteredLibraryResults}
+          filteredIndexerResults={release.filteredIndexerResults}
+          totalResults={release.totalResults}
+          rawLibraryCount={release.rawLibraryCount}
+          rawIndexerCount={release.rawIndexerCount}
+          isLibraryLoading={release.isLibraryLoading}
+          isIndexerLoading={release.isIndexerLoading}
+          libraryFailed={release.libraryFailed}
+          indexerFailed={release.indexerFailed}
+          someSourcesFailed={release.someSourcesFailed}
+          isGrabbing={release.isGrabbing}
+          grabSuccess={release.grabSuccess}
+          grabError={release.grabError}
+          onGrab={release.handleGrab}
+          searchInResults={release.searchInResults}
+          formatFilter={release.formatFilter}
+          languageFilter={release.languageFilter}
+          providerFilter={release.providerFilter}
+          sortBy={release.sortBy}
+          onSearchChange={release.setSearchInResults}
+          onFormatChange={release.setFormatFilter}
+          onLanguageChange={release.setLanguageFilter}
+          onProviderChange={release.setProviderFilter}
+          onSortChange={release.setSortBy}
+          onResetFilters={release.resetFilters}
+          onExpandSearch={release.handleExpandSearch}
+          isExpanded={false}
+          isExpandSearching={release.isExpandSearching}
+          libraryColumnConfig={release.libraryColumnConfig}
+          indexerColumnConfig={release.indexerColumnConfig}
+        />
       )}
     </div>
   )

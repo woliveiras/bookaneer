@@ -20,6 +20,9 @@ type Config struct {
 	AuthMethod            string                 `yaml:"authMethod"`
 	CustomProviders       []CustomProviderConfig `yaml:"customProviders"`
 	CustomProvidersEnable bool                   `yaml:"customProvidersEnabled"`
+	// FlareSolverr is an optional external service that solves Cloudflare challenges.
+	// When set, the Anna's Archive and LibGen providers route requests through it.
+	FlareSolverrURL string `yaml:"flareSolverrUrl"`
 }
 
 type CustomProviderConfig struct {
@@ -84,6 +87,9 @@ func Load(dataDir, configPath string) (*Config, error) {
 	}
 	if v := os.Getenv("BOOKANEER_LIBRARY_DIR"); v != "" {
 		cfg.LibraryDir = v
+	}
+	if v := os.Getenv("BOOKANEER_FLARESOLVERR_URL"); v != "" {
+		cfg.FlareSolverrURL = v
 	}
 
 	return cfg, nil

@@ -303,6 +303,14 @@ func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Confi
 	handler.NewSearchHandler(searchSvc).Register(protected)
 
 	// Digital library providers
+	var annasProvider digitallibrary.Provider
+	if cfg.FlareSolverrURL != "" {
+		slog.Info("using FlareSolverr for Anna's Archive", "url", cfg.FlareSolverrURL)
+		annasProvider = annas.NewWithFlareSolverr(cfg.FlareSolverrURL)
+	} else {
+		annasProvider = annas.New()
+	}
+
 	providers := []digitallibrary.Provider{
 		gutendex.New(),
 		wikisource.New(),
@@ -323,7 +331,7 @@ func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Confi
 		sitesearch.New("sacred-texts", "sacred-texts.com", "html"),
 		sitesearch.New("digital-comic-museum", "digitalcomicmuseum.com", "pdf"),
 		sitesearch.New("hathitrust", "hathitrust.org", "pdf"),
-		annas.New(),
+		annasProvider,
 		libgen.New(),
 	}
 
