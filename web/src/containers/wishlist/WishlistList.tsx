@@ -1,6 +1,7 @@
 import { useNavigate } from "@tanstack/react-router"
-import { BookOpen, PartyPopper } from "lucide-react"
+import { PartyPopper } from "lucide-react"
 import { useState } from "react"
+import { BookCard } from "../../components/books/BookCard"
 import { Button, Card, CardContent } from "../../components/ui"
 import { useRemoveFromWishlist, useWishlist } from "../../hooks/useWishlist"
 import type { Book } from "../../lib/api"
@@ -105,12 +106,28 @@ export function WishlistList() {
       {books.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {books.map((book) => (
-            <WishlistBookCard
+            <BookCard
               key={book.id}
               book={book}
-              onSearch={() => handleSearchBook(book)}
-              onRemove={() => setBookToRemove(book)}
-              isRemoving={removingBooks.has(book.id)}
+              actions={
+                <>
+                  <Button
+                    size="sm"
+                    onClick={() => handleSearchBook(book)}
+                    disabled={removingBooks.has(book.id)}
+                  >
+                    Search
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setBookToRemove(book)}
+                    disabled={removingBooks.has(book.id)}
+                  >
+                    {removingBooks.has(book.id) ? "Removing..." : "Remove"}
+                  </Button>
+                </>
+              }
             />
           ))}
         </div>
@@ -140,57 +157,5 @@ export function WishlistList() {
         </div>
       )}
     </div>
-  )
-}
-
-interface WishlistBookCardProps {
-  book: Book
-  onSearch: () => void
-  onRemove: () => void
-  isRemoving: boolean
-}
-
-function WishlistBookCard({ book, onSearch, onRemove, isRemoving }: WishlistBookCardProps) {
-  return (
-    <Card className="flex flex-col overflow-hidden">
-      {/* Cover image */}
-      <div className="w-full h-40 bg-muted overflow-hidden shrink-0">
-        {book.imageUrl ? (
-          <img src={book.imageUrl} alt={book.title} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <BookOpen className="w-10 h-10 text-muted-foreground" />
-          </div>
-        )}
-      </div>
-
-      {/* Book info + actions */}
-      <div className="flex flex-col flex-1 gap-3 p-4">
-        <div className="flex-1 min-w-0 space-y-1">
-          <h3 className="font-semibold line-clamp-2 leading-snug">{book.title}</h3>
-          {book.authorName && <p className="text-sm text-muted-foreground">{book.authorName}</p>}
-          <div className="flex flex-wrap gap-1 mt-2">
-            {book.releaseDate && (
-              <span className="text-xs bg-muted px-2 py-1 rounded">
-                {new Date(book.releaseDate).getFullYear()}
-              </span>
-            )}
-            {book.isbn13 && (
-              <span className="text-xs bg-muted px-2 py-1 rounded">ISBN: {book.isbn13}</span>
-            )}
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-2">
-          <Button size="sm" onClick={onSearch} disabled={isRemoving}>
-            Search
-          </Button>
-          <Button size="sm" variant="outline" onClick={onRemove} disabled={isRemoving}>
-            {isRemoving ? "Removing..." : "Remove"}
-          </Button>
-        </div>
-      </div>
-    </Card>
   )
 }
