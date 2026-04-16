@@ -96,7 +96,7 @@ const ALL_NAV_ITEMS = [
   { to: "/", label: "Library" },
   { to: "/authors", label: "Authors" },
   { to: "/books", label: "Books" },
-  { to: "/wanted", label: "Wanted" },
+  { to: "/wanted", label: "Wishlist" },
   { to: "/activity", label: "Activity" },
   { to: "/search", label: "Search" },
   { to: "/settings", label: "Settings" },
@@ -136,7 +136,7 @@ const PRIMARY_NAV = [
   { to: "/", label: "Library", icon: Library },
   { to: "/books", label: "Books", icon: BookOpen },
   { to: "/authors", label: "Authors", icon: Users },
-  { to: "/wanted", label: "Wanted", icon: Star },
+  { to: "/wanted", label: "Wishlist", icon: Star },
   { to: "/activity", label: "Activity", icon: Activity },
 ] as const
 

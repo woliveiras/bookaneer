@@ -97,7 +97,7 @@ export function LibraryPage() {
             value={booksOnDisk >= 0 ? booksOnDisk : 0}
             detail={totalBooks > 0 ? `${booksOnDisk} of ${totalBooks} books have files` : undefined}
           />
-          <StatCard label="Missing" value={missingBooks} detail="Wanted, not yet downloaded" />
+          <StatCard label="Missing" value={missingBooks} detail="In wishlist, not yet downloaded" />
         </div>
 
         {/* Disk usage */}

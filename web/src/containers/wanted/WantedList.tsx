@@ -65,7 +65,7 @@ export function WantedList() {
     return (
       <Card>
         <CardContent className="p-6">
-          <p className="text-destructive">Failed to load wanted books</p>
+          <p className="text-destructive">Failed to load wishlist</p>
           <Button variant="outline" onClick={() => refetch()} className="mt-4">
             Try Again
           </Button>
@@ -124,10 +124,10 @@ export function WantedList() {
       {bookToRemove && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4 border">
-            <h3 className="text-lg font-semibold mb-2">Remove from Wanted?</h3>
+            <h3 className="text-lg font-semibold mb-2">Remove from Wishlist?</h3>
             <p className="text-muted-foreground mb-4">
               Are you sure you want to stop monitoring "{bookToRemove.title}"? This will remove it
-              from the Wanted list.
+              from the Wishlist.
             </p>
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={() => setBookToRemove(null)}>
