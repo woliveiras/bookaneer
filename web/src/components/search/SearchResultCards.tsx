@@ -22,6 +22,7 @@ export function DownloadResult({
   fromExpanded,
 }: DownloadResultProps) {
   const [grabbing, setGrabbing] = useState(false)
+  const [grabbed, setGrabbed] = useState(false)
 
   const handleGrab = async () => {
     setGrabbing(true)
@@ -33,6 +34,7 @@ export function DownloadResult({
         indexerId: result.indexerId,
         indexerName: result.indexerName,
       })
+      setGrabbed(true)
     } finally {
       setGrabbing(false)
     }
@@ -80,8 +82,13 @@ export function DownloadResult({
               </div>
             )}
           </div>
-          <Button size="sm" onClick={handleGrab} disabled={grabbing || isGrabbing}>
-            {grabbing ? "Grabbing..." : "Grab"}
+          <Button
+            size="sm"
+            onClick={handleGrab}
+            disabled={grabbing || isGrabbing || grabbed}
+            variant={grabbed ? "secondary" : "default"}
+          >
+            {grabbing ? "Grabbing..." : grabbed ? "Grabbed" : "Grab"}
           </Button>
         </div>
       </CardContent>
@@ -105,6 +112,7 @@ export function LibraryResult({
   fromExpanded,
 }: LibraryResultProps) {
   const [grabbing, setGrabbing] = useState(false)
+  const [grabbed, setGrabbed] = useState(false)
 
   const handleGrab = async () => {
     const url = result.downloadUrl || result.infoUrl
@@ -113,6 +121,7 @@ export function LibraryResult({
     setGrabbing(true)
     try {
       await onGrab(url, result.title, result.size)
+      setGrabbed(true)
     } finally {
       setGrabbing(false)
     }
@@ -173,8 +182,13 @@ export function LibraryResult({
               </div>
             )}
           </div>
-          <Button size="sm" onClick={handleGrab} disabled={grabbing || isGrabbing}>
-            {grabbing ? "Grabbing..." : "Grab"}
+          <Button
+            size="sm"
+            onClick={handleGrab}
+            disabled={grabbing || isGrabbing || grabbed}
+            variant={grabbed ? "secondary" : "default"}
+          >
+            {grabbing ? "Grabbing..." : grabbed ? "Grabbed" : "Grab"}
           </Button>
         </div>
       </CardContent>
