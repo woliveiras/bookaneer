@@ -115,7 +115,7 @@ export function BookList({ authorId }: BookListProps) {
           </div>
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 list-none p-0 m-0">
             {data.records.map((book) => (
-              <li key={book.id}>
+              <li key={book.id} className="h-full">
                 <BookCard
                   book={book}
                   onClick={() =>

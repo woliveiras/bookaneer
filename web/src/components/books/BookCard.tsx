@@ -15,7 +15,7 @@ export function BookCard({ book, onClick, selected, actions }: BookCardProps) {
   return (
     <Card
       className={cn(
-        "flex flex-col overflow-hidden transition-colors",
+        "flex flex-col overflow-hidden transition-colors h-full",
         onClick && "cursor-pointer hover:bg-accent/50",
         selected && "ring-2 ring-primary",
       )}
