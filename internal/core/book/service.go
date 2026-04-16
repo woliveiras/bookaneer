@@ -22,21 +22,22 @@ func New(db *sql.DB) *Service {
 // FindByID returns a book by ID.
 func (s *Service) FindByID(ctx context.Context, id int64) (*Book, error) {
 	var b Book
-	var monitored int
-	var hasFile int
+	var monitored, hasFile, inWishlist int
+	var userRating sql.NullInt64
 	err := s.db.QueryRowContext(ctx, `
 		SELECT b.id, b.author_id, b.title, COALESCE(b.sort_title,''), COALESCE(b.foreign_id,''), COALESCE(b.isbn,''), COALESCE(b.isbn13,''),
 		       COALESCE(b.release_date,''), COALESCE(b.overview,''), COALESCE(b.image_url,''), b.page_count, b.monitored, b.added_at, b.updated_at,
 		       a.name,
 		       (SELECT COUNT(*) > 0 FROM book_files bf WHERE bf.book_id = b.id) as has_file,
-		       COALESCE((SELECT bf.format FROM book_files bf WHERE bf.book_id = b.id ORDER BY bf.added_at DESC LIMIT 1), '') as file_format
+		       COALESCE((SELECT bf.format FROM book_files bf WHERE bf.book_id = b.id ORDER BY bf.added_at DESC LIMIT 1), '') as file_format,
+		       COALESCE(b.user_rating, NULL), COALESCE(b.in_wishlist, 0)
 		FROM books b
 		JOIN authors a ON b.author_id = a.id
 		WHERE b.id = ?
 	`, id).Scan(
 		&b.ID, &b.AuthorID, &b.Title, &b.SortTitle, &b.ForeignID, &b.ISBN, &b.ISBN13,
 		&b.ReleaseDate, &b.Overview, &b.ImageURL, &b.PageCount, &monitored, &b.AddedAt, &b.UpdatedAt,
-		&b.AuthorName, &hasFile, &b.FileFormat,
+		&b.AuthorName, &hasFile, &b.FileFormat, &userRating, &inWishlist,
 	)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
@@ -46,6 +47,11 @@ func (s *Service) FindByID(ctx context.Context, id int64) (*Book, error) {
 	}
 	b.Monitored = monitored == 1
 	b.HasFile = hasFile == 1
+	b.InWishlist = inWishlist == 1
+	if userRating.Valid {
+		v := int(userRating.Int64)
+		b.UserRating = &v
+	}
 
 	return &b, nil
 }
@@ -95,6 +101,9 @@ func (s *Service) List(ctx context.Context, filter ListBooksFilter) ([]Book, int
 	if filter.Missing {
 		conditions = append(conditions, "NOT EXISTS (SELECT 1 FROM book_files bf WHERE bf.book_id = b.id)")
 	}
+	if filter.InWishlist {
+		conditions = append(conditions, "b.in_wishlist = 1")
+	}
 	if filter.Search != "" {
 		conditions = append(conditions, "(b.title LIKE ? OR b.sort_title LIKE ? OR b.isbn LIKE ? OR b.isbn13 LIKE ?)")
 		search := "%" + filter.Search + "%"
@@ -112,6 +121,7 @@ func (s *Service) List(ctx context.Context, filter ListBooksFilter) ([]Book, int
 
 	// Build ORDER BY
 	sortBy := "b.title"
+	sortDir := database.NormaliseSortDir(filter.SortDir)
 	if filter.SortBy != "" {
 		switch filter.SortBy {
 		case "sortTitle":
@@ -120,11 +130,15 @@ func (s *Service) List(ctx context.Context, filter ListBooksFilter) ([]Book, int
 			sortBy = "b.release_date"
 		case "addedAt":
 			sortBy = "b.added_at"
+		case "rating":
+			sortBy = "b.user_rating"
+			if filter.SortDir == "" {
+				sortDir = "DESC"
+			}
 		default:
 			sortBy = "b.title"
 		}
 	}
-	sortDir := database.NormaliseSortDir(filter.SortDir)
 	limit := database.ClampLimit(filter.Limit, 50, 500)
 	offset := filter.Offset
 
@@ -133,7 +147,8 @@ func (s *Service) List(ctx context.Context, filter ListBooksFilter) ([]Book, int
 		       COALESCE(b.release_date,''), COALESCE(b.overview,''), COALESCE(b.image_url,''), b.page_count, b.monitored, b.added_at, b.updated_at,
 		       a.name,
 		       EXISTS (SELECT 1 FROM book_files bf WHERE bf.book_id = b.id) as has_file,
-		       COALESCE((SELECT bf.format FROM book_files bf WHERE bf.book_id = b.id ORDER BY bf.added_at DESC LIMIT 1), '') as file_format
+		       COALESCE((SELECT bf.format FROM book_files bf WHERE bf.book_id = b.id ORDER BY bf.added_at DESC LIMIT 1), '') as file_format,
+		       COALESCE(b.user_rating, NULL), COALESCE(b.in_wishlist, 0)
 		FROM books b
 		JOIN authors a ON b.author_id = a.id
 		%s ORDER BY %s %s LIMIT ? OFFSET ?
@@ -149,16 +164,22 @@ func (s *Service) List(ctx context.Context, filter ListBooksFilter) ([]Book, int
 	var books []Book
 	for rows.Next() {
 		var b Book
-		var monitored, hasFile int
+		var monitored, hasFile, inWishlist int
+		var userRating sql.NullInt64
 		if err := rows.Scan(
 			&b.ID, &b.AuthorID, &b.Title, &b.SortTitle, &b.ForeignID, &b.ISBN, &b.ISBN13,
 			&b.ReleaseDate, &b.Overview, &b.ImageURL, &b.PageCount, &monitored, &b.AddedAt, &b.UpdatedAt,
-			&b.AuthorName, &hasFile, &b.FileFormat,
+			&b.AuthorName, &hasFile, &b.FileFormat, &userRating, &inWishlist,
 		); err != nil {
 			return nil, 0, fmt.Errorf("scan book: %w", err)
 		}
 		b.Monitored = monitored == 1
 		b.HasFile = hasFile == 1
+		b.InWishlist = inWishlist == 1
+		if userRating.Valid {
+			v := int(userRating.Int64)
+			b.UserRating = &v
+		}
 		books = append(books, b)
 	}
 	if err := rows.Err(); err != nil {
@@ -210,9 +231,9 @@ func (s *Service) Create(ctx context.Context, input CreateBookInput) (*Book, err
 	}
 
 	result, err := s.db.ExecContext(ctx, `
-		INSERT INTO books (author_id, title, sort_title, foreign_id, isbn, isbn13, release_date, overview, image_url, page_count, monitored)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, input.AuthorID, input.Title, input.SortTitle, input.ForeignID, input.ISBN, input.ISBN13, input.ReleaseDate, input.Overview, input.ImageURL, input.PageCount, monitored)
+		INSERT INTO books (author_id, title, sort_title, foreign_id, isbn, isbn13, release_date, overview, image_url, page_count, monitored, in_wishlist)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, input.AuthorID, input.Title, input.SortTitle, input.ForeignID, input.ISBN, input.ISBN13, input.ReleaseDate, input.Overview, input.ImageURL, input.PageCount, monitored, input.InWishlist)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 			return nil, ErrDuplicate
@@ -299,6 +320,22 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateBookInput) (
 				WHERE book_id = ? AND status IN ('queued', 'downloading', 'paused')
 			`, id)
 		}
+	}
+	if input.UserRating != nil {
+		if *input.UserRating == 0 {
+			sets = append(sets, "user_rating = NULL")
+		} else {
+			sets = append(sets, "user_rating = ?")
+			args = append(args, *input.UserRating)
+		}
+	}
+	if input.InWishlist != nil {
+		w := 0
+		if *input.InWishlist {
+			w = 1
+		}
+		sets = append(sets, "in_wishlist = ?")
+		args = append(args, w)
 	}
 
 	if len(sets) == 0 {

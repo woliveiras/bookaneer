@@ -11,6 +11,8 @@ export interface Book {
   imageUrl: string
   pageCount: number
   monitored: boolean
+  userRating?: number // 1-5, undefined = unrated
+  inWishlist: boolean
   addedAt: string
   updatedAt: string
   authorName?: string
@@ -64,12 +66,15 @@ export interface CreateBookInput {
   imageUrl?: string
   pageCount?: number
   monitored?: boolean
+  userRating?: number
+  inWishlist?: boolean
 }
 
 export interface ListBooksParams {
   authorId?: number
   monitored?: boolean
   missing?: boolean
+  inWishlist?: boolean
   search?: string
   sortBy?: string
   sortDir?: string

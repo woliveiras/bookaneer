@@ -44,6 +44,44 @@ export function useUpdateBook() {
   })
 }
 
+export function useRateBook() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, rating }: { id: number; rating: number }) =>
+      bookApi.update(id, { userRating: rating }),
+    onMutate: async ({ id, rating }) => {
+      await queryClient.cancelQueries({ queryKey: ["book", id] })
+      const previous = queryClient.getQueryData(["book", id])
+      queryClient.setQueryData(["book", id], (old: Record<string, unknown> | undefined) =>
+        old ? { ...old, userRating: rating === 0 ? undefined : rating } : old,
+      )
+      return { previous, id }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(["book", context.id], context.previous)
+      }
+    },
+    onSettled: (_data, _err, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["book", id] })
+      queryClient.invalidateQueries({ queryKey: ["books"] })
+    },
+  })
+}
+
+export function useToggleWishlist() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, inWishlist }: { id: number; inWishlist: boolean }) =>
+      bookApi.update(id, { inWishlist }),
+    onSuccess: (book) => {
+      queryClient.invalidateQueries({ queryKey: ["books"] })
+      queryClient.invalidateQueries({ queryKey: ["wanted"] })
+      queryClient.setQueryData(["book", book.id], book)
+    },
+  })
+}
+
 export function useDeleteBook() {
   const queryClient = useQueryClient()
 

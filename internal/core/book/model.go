@@ -14,6 +14,8 @@ type Book struct {
 	ImageURL    string `json:"imageUrl"`
 	PageCount   int    `json:"pageCount"`
 	Monitored   bool   `json:"monitored"`
+	UserRating  *int   `json:"userRating,omitempty"` // 1-5 stars, nil = unrated
+	InWishlist  bool   `json:"inWishlist"`
 	AddedAt     string `json:"addedAt"`
 	UpdatedAt   string `json:"updatedAt"`
 
@@ -67,6 +69,7 @@ type CreateBookInput struct {
 	ImageURL    string `json:"imageUrl"`
 	PageCount   int    `json:"pageCount"`
 	Monitored   bool   `json:"monitored"`
+	InWishlist  bool   `json:"inWishlist"`
 }
 
 // UpdateBookInput holds the data for updating an existing book.
@@ -82,6 +85,8 @@ type UpdateBookInput struct {
 	ImageURL    *string `json:"imageUrl,omitempty"`
 	PageCount   *int    `json:"pageCount,omitempty"`
 	Monitored   *bool   `json:"monitored,omitempty"`
+	UserRating  *int    `json:"userRating,omitempty"` // 1-5, or 0 to clear
+	InWishlist  *bool   `json:"inWishlist,omitempty"`
 }
 
 // CreateEditionInput holds the data needed to create a new edition.
@@ -101,14 +106,15 @@ type CreateEditionInput struct {
 
 // ListBooksFilter provides filtering options for listing books.
 type ListBooksFilter struct {
-	AuthorID  *int64
-	Monitored *bool
-	Missing   bool // Only books without files
-	Search    string
-	SortBy    string // title, sortTitle, releaseDate, addedAt
-	SortDir   string // asc, desc
-	Limit     int
-	Offset    int
+	AuthorID   *int64
+	Monitored  *bool
+	Missing    bool // Only books without files
+	InWishlist bool // Only books in wishlist
+	Search     string
+	SortBy     string // title, sortTitle, releaseDate, addedAt, rating
+	SortDir    string // asc, desc
+	Limit      int
+	Offset     int
 }
 
 // BookWithEditions represents a book with its editions.

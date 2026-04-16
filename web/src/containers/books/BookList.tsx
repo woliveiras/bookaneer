@@ -13,11 +13,14 @@ export function BookList({ authorId }: BookListProps) {
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [showMissing, setShowMissing] = useState(false)
+  const [sortBy, setSortBy] = useState("")
 
   const { data, isLoading, error } = useBooks({
     search: debouncedSearch || undefined,
     authorId,
     missing: showMissing || undefined,
+    sortBy: sortBy || undefined,
+    sortDir: sortBy === "rating" ? "desc" : undefined,
     limit: 50,
   })
 
@@ -56,6 +59,20 @@ export function BookList({ authorId }: BookListProps) {
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
             />
+          </div>
+          <div>
+            <label htmlFor="book-sort" className="sr-only">Sort by</label>
+            <select
+              id="book-sort"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="">Sort: Title</option>
+              <option value="addedAt">Sort: Added</option>
+              <option value="releaseDate">Sort: Release Date</option>
+              <option value="rating">Sort: Rating</option>
+            </select>
           </div>
         </div>
       </div>

@@ -1,17 +1,21 @@
 import { useCallback, useEffect, useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
-import { Library, Download } from "lucide-react"
+import { Bookmark, BookmarkCheck, Library, Download } from "lucide-react"
 import { Badge, Button, Card, CardContent, Input } from "../../components/ui"
 import { useMetadataSearchBooks } from "../../hooks/useMetadata"
+import { useCreateBook } from "../../hooks/useBooks"
 import type { MetadataBookResult } from "../../lib/api"
 
 interface BookCardProps {
   book: MetadataBookResult
   onGet: (book: MetadataBookResult) => void
   isGetting: boolean
+  onWishlist: (book: MetadataBookResult) => void
+  isWishlisting: boolean
+  wishlisted: boolean
 }
 
-function BookCard({ book, onGet, isGetting }: BookCardProps) {
+function BookCard({ book, onGet, isGetting, onWishlist, isWishlisting, wishlisted }: BookCardProps) {
   return (
     <Card className="flex flex-col overflow-hidden">
       <CardContent className="p-4 flex gap-4 flex-1">
@@ -47,11 +51,11 @@ function BookCard({ book, onGet, isGetting }: BookCardProps) {
           </div>
         </div>
       </CardContent>
-      <div className="px-4 pb-4">
+      <div className="px-4 pb-4 flex gap-2">
         <Button
-          className="w-full"
+          className="flex-1"
           onClick={() => onGet(book)}
-          disabled={isGetting}
+          disabled={isGetting || wishlisted}
         >
           {isGetting ? (
             <>
@@ -65,6 +69,20 @@ function BookCard({ book, onGet, isGetting }: BookCardProps) {
             </>
           )}
         </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => onWishlist(book)}
+          disabled={isWishlisting || wishlisted}
+          title={wishlisted ? "Added to Wishlist" : "Add to Wishlist"}
+          aria-label={wishlisted ? "Added to Wishlist" : "Add to Wishlist"}
+        >
+          {wishlisted ? (
+            <BookmarkCheck className="h-4 w-4 text-primary" />
+          ) : (
+            <Bookmark className="h-4 w-4" />
+          )}
+        </Button>
       </div>
     </Card>
   )
@@ -72,7 +90,10 @@ function BookCard({ book, onGet, isGetting }: BookCardProps) {
 
 export function UnifiedSearch() {
   const navigate = useNavigate()
+  const createBook = useCreateBook()
   const [gettingBookId, setGettingBookId] = useState<string | null>(null)
+  const [wishlistingBookId, setWishlistingBookId] = useState<string | null>(null)
+  const [wishlistedKeys, setWishlistedKeys] = useState<Set<string>>(new Set())
 
   // Read initial query from URL
   const [query, setQuery] = useState(() => {
@@ -103,6 +124,29 @@ export function UnifiedSearch() {
       })
     },
     [navigate],
+  )
+
+  const handleWishlist = useCallback(
+    (book: MetadataBookResult) => {
+      const bookKey = `${book.provider}-${book.foreignId}`
+      setWishlistingBookId(bookKey)
+      createBook.mutate(
+        {
+          title: book.title,
+          authorId: 0,
+          foreignId: book.foreignId,
+          isbn13: book.isbn13,
+          imageUrl: book.coverUrl,
+          inWishlist: true,
+          monitored: false,
+        },
+        {
+          onSettled: () => setWishlistingBookId(null),
+          onSuccess: () => setWishlistedKeys((prev) => new Set(prev).add(bookKey)),
+        },
+      )
+    },
+    [createBook],
   )
 
   // Update URL when search is submitted
@@ -205,6 +249,9 @@ export function UnifiedSearch() {
                   book={book}
                   onGet={handleGet}
                   isGetting={gettingBookId === bookKey}
+                  onWishlist={handleWishlist}
+                  isWishlisting={wishlistingBookId === bookKey}
+                  wishlisted={wishlistedKeys.has(bookKey)}
                 />
               )
             })}

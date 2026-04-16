@@ -7,6 +7,8 @@ import { Button } from "../components/ui"
 import { bookApi } from "../lib/api"
 import { navigateToBookSearch } from "../lib/navigation"
 import { useReportWrongContent } from "../hooks/useWanted"
+import { useRateBook } from "../hooks/useBooks"
+import { StarRating } from "../components/books/StarRating"
 import { AlertTriangle, BookOpen, Search, Trash2 } from "lucide-react"
 
 export function LibraryBookDetailPage() {
@@ -16,6 +18,7 @@ export function LibraryBookDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showWrongContentConfirm, setShowWrongContentConfirm] = useState(false)
   const wrongContentMutation = useReportWrongContent()
+  const rateBook = useRateBook()
 
   const {
     data: book,
@@ -94,11 +97,6 @@ export function LibraryBookDetailPage() {
 
             <div className="flex flex-wrap gap-2">
               <span
-                className={`px-2 py-1 rounded text-xs ${book.monitored ? "bg-green-500/20 text-green-500" : "bg-muted text-muted-foreground"}`}
-              >
-                {book.monitored ? "Monitored" : "Not Monitored"}
-              </span>
-              <span
                 className={`px-2 py-1 rounded text-xs ${hasFile ? "bg-blue-500/20 text-blue-500" : "bg-yellow-500/20 text-yellow-500"}`}
               >
                 {hasFile ? "Downloaded" : "Missing"}
@@ -121,6 +119,15 @@ export function LibraryBookDetailPage() {
             {book.overview && (
               <p className="text-sm text-muted-foreground line-clamp-4">{book.overview}</p>
             )}
+
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Your rating</p>
+              <StarRating
+                value={book.userRating}
+                onChange={(rating) => rateBook.mutate({ id: book.id, rating })}
+                disabled={rateBook.isPending}
+              />
+            </div>
 
             {/* Content mismatch warning */}
             {hasContentMismatch && (
@@ -145,7 +152,7 @@ export function LibraryBookDetailPage() {
                     })
                   }
                 >
-                  <BookOpen className="w-4 h-4" /> Read
+                  <BookOpen className="w-4 h-4" /> <span className="ml-2">Read</span>
                 </Button>
               )}
               {hasFile && (
@@ -154,21 +161,21 @@ export function LibraryBookDetailPage() {
                   className="text-amber-500 border-amber-500/50 hover:bg-amber-500/10"
                   onClick={() => setShowWrongContentConfirm(true)}
                 >
-                  <AlertTriangle className="w-4 h-4" /> Wrong Content
+                  <AlertTriangle className="w-4 h-4" /> <span className="ml-2">Wrong Content</span>
                 </Button>
               )}
               <Button
                 variant="outline"
                 onClick={() => navigateToBookSearch(navigate, book)}
               >
-                <Search className="w-4 h-4" /> Manual Search
+                <Search className="w-4 h-4" /> <span className="ml-2">{hasFile ? "Search Again" : "Search"}</span>
               </Button>
               <Button
                 variant="outline"
                 className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
                 onClick={() => setShowDeleteConfirm(true)}
               >
-                <Trash2 className="w-4 h-4" /> Delete
+                <Trash2 className="w-4 h-4" /> <span className="ml-2">Delete</span>
               </Button>
             </div>
 

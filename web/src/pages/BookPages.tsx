@@ -6,6 +6,8 @@ import { Button } from "../components/ui"
 import { Reader } from "../containers/reader/Reader"
 import { bookApi } from "../lib/api"
 import { navigateToBookSearch } from "../lib/navigation"
+import { useRateBook } from "../hooks/useBooks"
+import { StarRating } from "../components/books/StarRating"
 import { BookOpen, Search, Trash2 } from "lucide-react"
 
 export function ReaderPage() {
@@ -102,6 +104,7 @@ export function LibraryBookDetailPage() {
   }
 
   const hasFile = book.files && book.files.length > 0
+  const rateBook = useRateBook()
 
   return (
     <AuthLayout>
@@ -140,11 +143,6 @@ export function LibraryBookDetailPage() {
 
             <div className="flex flex-wrap gap-2">
               <span
-                className={`px-2 py-1 rounded text-xs ${book.monitored ? "bg-green-500/20 text-green-500" : "bg-muted text-muted-foreground"}`}
-              >
-                {book.monitored ? "Monitored" : "Not Monitored"}
-              </span>
-              <span
                 className={`px-2 py-1 rounded text-xs ${hasFile ? "bg-blue-500/20 text-blue-500" : "bg-yellow-500/20 text-yellow-500"}`}
               >
                 {hasFile ? "Downloaded" : "Missing"}
@@ -163,6 +161,15 @@ export function LibraryBookDetailPage() {
               <p className="text-sm text-muted-foreground line-clamp-4">{book.overview}</p>
             )}
 
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Your rating</p>
+              <StarRating
+                value={book.userRating}
+                onChange={(rating) => rateBook.mutate({ id: book.id, rating })}
+                disabled={rateBook.isPending}
+              />
+            </div>
+
             <div className="flex gap-2 pt-4">
               {hasFile && (
                 <Button
@@ -180,7 +187,7 @@ export function LibraryBookDetailPage() {
                 variant="outline"
                 onClick={() => navigateToBookSearch(navigate, book)}
               >
-                <Search className="w-4 h-4" /> Manual Search
+                <Search className="w-4 h-4" /> {hasFile ? "Search Again" : "Search"}
               </Button>
               <Button
                 variant="outline"
