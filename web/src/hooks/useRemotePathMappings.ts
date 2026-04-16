@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
-  remotePathMappingApi,
   type CreateRemotePathMappingInput,
+  remotePathMappingApi,
   type UpdateRemotePathMappingInput,
 } from "../lib/api"
 

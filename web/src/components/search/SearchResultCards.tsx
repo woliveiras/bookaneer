@@ -1,8 +1,8 @@
 import { useState } from "react"
-import type { DigitalLibraryResult, SearchResult } from "../../lib/api"
 import type { GrabMeta } from "../../hooks/useBookRelease"
-import type { ColumnConfig } from "../../lib/types"
+import type { DigitalLibraryResult, SearchResult } from "../../lib/api"
 import { formatBytes } from "../../lib/format"
+import type { ColumnConfig } from "../../lib/types"
 import { Badge, Button, Card, CardContent } from "../ui"
 import { DynamicCell } from "./DynamicColumns"
 
@@ -14,7 +14,13 @@ interface DownloadResultProps {
   fromExpanded?: boolean
 }
 
-export function DownloadResult({ result, onGrab, isGrabbing, columnConfig, fromExpanded }: DownloadResultProps) {
+export function DownloadResult({
+  result,
+  onGrab,
+  isGrabbing,
+  columnConfig,
+  fromExpanded,
+}: DownloadResultProps) {
   const [grabbing, setGrabbing] = useState(false)
 
   const handleGrab = async () => {
@@ -41,7 +47,11 @@ export function DownloadResult({ result, onGrab, isGrabbing, columnConfig, fromE
             {columnConfig ? (
               <div className="flex flex-wrap gap-1 mt-1">
                 {columnConfig.columns.map((col) => (
-                  <DynamicCell key={col.key} column={col} row={result as unknown as Record<string, unknown>} />
+                  <DynamicCell
+                    key={col.key}
+                    column={col}
+                    row={result as unknown as Record<string, unknown>}
+                  />
                 ))}
                 {fromExpanded && (
                   <Badge variant="outline" className="text-xs border-violet-400 text-violet-500">
@@ -87,7 +97,13 @@ interface LibraryResultProps {
   fromExpanded?: boolean
 }
 
-export function LibraryResult({ result, onGrab, isGrabbing, columnConfig, fromExpanded }: LibraryResultProps) {
+export function LibraryResult({
+  result,
+  onGrab,
+  isGrabbing,
+  columnConfig,
+  fromExpanded,
+}: LibraryResultProps) {
   const [grabbing, setGrabbing] = useState(false)
 
   const handleGrab = async () => {
@@ -114,7 +130,11 @@ export function LibraryResult({ result, onGrab, isGrabbing, columnConfig, fromEx
             {columnConfig ? (
               <div className="flex flex-wrap gap-1 mt-1">
                 {columnConfig.columns.map((col) => (
-                  <DynamicCell key={col.key} column={col} row={result as unknown as Record<string, unknown>} />
+                  <DynamicCell
+                    key={col.key}
+                    column={col}
+                    row={result as unknown as Record<string, unknown>}
+                  />
                 ))}
                 {fromExpanded && (
                   <Badge variant="outline" className="text-xs border-violet-400 text-violet-500">

@@ -1,16 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { Link, Outlet } from "@tanstack/react-router"
-import {
-  Activity,
-  BookOpen,
-  Library,
-  Menu,
-  Search,
-  Settings,
-  Star,
-  Users,
-  X,
-} from "lucide-react"
+import { Activity, BookOpen, Library, Menu, Search, Settings, Star, Users, X } from "lucide-react"
 import { type ReactNode, useState } from "react"
 import { AuthProvider, useAuth } from "../../contexts/AuthContext"
 import { LoginPage } from "../../pages/LoginPage"
@@ -96,7 +86,7 @@ const ALL_NAV_ITEMS = [
   { to: "/", label: "Library" },
   { to: "/authors", label: "Authors" },
   { to: "/books", label: "Books" },
-  { to: "/wanted", label: "Wishlist" },
+  { to: "/wishlist", label: "Wishlist" },
   { to: "/activity", label: "Activity" },
   { to: "/search", label: "Search" },
   { to: "/settings", label: "Settings" },
@@ -105,10 +95,7 @@ const ALL_NAV_ITEMS = [
 
 function DesktopNavigation() {
   return (
-    <nav
-      className="hidden sm:block container mx-auto px-4"
-      aria-label="Main navigation"
-    >
+    <nav className="hidden sm:block container mx-auto px-4" aria-label="Main navigation">
       <div className="-mb-px flex flex-wrap gap-1" role="tablist">
         {ALL_NAV_ITEMS.map((item) => (
           <div key={item.to} role="presentation">
@@ -136,7 +123,7 @@ const PRIMARY_NAV = [
   { to: "/", label: "Library", icon: Library },
   { to: "/books", label: "Books", icon: BookOpen },
   { to: "/authors", label: "Authors", icon: Users },
-  { to: "/wanted", label: "Wishlist", icon: Star },
+  { to: "/wishlist", label: "Wishlist", icon: Star },
   { to: "/activity", label: "Activity", icon: Activity },
 ] as const
 

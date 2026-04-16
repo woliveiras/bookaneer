@@ -1,5 +1,5 @@
-import type { Author } from "../../lib/api"
 import { User } from "lucide-react"
+import type { Author } from "../../lib/api"
 import { cn } from "../../lib/utils"
 import { Badge, Card, CardContent } from "../ui"
 

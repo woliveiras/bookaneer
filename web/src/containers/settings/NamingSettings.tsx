@@ -4,11 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { Input } from "../../components/ui/Input"
 import { Label } from "../../components/ui/Label"
 import {
-  useNamingSettings,
-  useUpdateNamingSettings,
   useNamingPreview,
-  useRenameAll,
+  useNamingSettings,
   usePreviewRenameAll,
+  useRenameAll,
+  useUpdateNamingSettings,
 } from "../../hooks/useNaming"
 import type { NamingPreviewInput } from "../../lib/types"
 
@@ -53,9 +53,15 @@ export function NamingSettings() {
     }
   }, [settings])
 
-  const previewInput: NamingPreviewInput | null = authorFormat && bookFormat
-    ? { authorFolderFormat: authorFormat, bookFileFormat: bookFormat, replaceSpaces, colonReplacement }
-    : null
+  const previewInput: NamingPreviewInput | null =
+    authorFormat && bookFormat
+      ? {
+          authorFolderFormat: authorFormat,
+          bookFileFormat: bookFormat,
+          replaceSpaces,
+          colonReplacement,
+        }
+      : null
 
   const { data: preview } = useNamingPreview(previewInput)
 
@@ -123,8 +129,8 @@ export function NamingSettings() {
               placeholder="$Author - $Title"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Template for the book file name (extension is added automatically).
-              Use {"{ }"} for conditional blocks, e.g. {"$Title{ ($SeriesName #$SeriesPosition)}"}
+              Template for the book file name (extension is added automatically). Use {"{ }"} for
+              conditional blocks, e.g. {"$Title{ ($SeriesName #$SeriesPosition)}"}
             </p>
           </div>
 
@@ -164,10 +170,7 @@ export function NamingSettings() {
           )}
 
           <div className="flex gap-2 pt-2">
-            <Button
-              onClick={handleSave}
-              disabled={!dirty || updateSettings.isPending}
-            >
+            <Button onClick={handleSave} disabled={!dirty || updateSettings.isPending}>
               {updateSettings.isPending ? "Saving..." : "Save"}
             </Button>
             {updateSettings.isSuccess && !dirty && (
@@ -230,7 +233,10 @@ export function NamingSettings() {
               {previewRenameAll.data.files && previewRenameAll.data.files.length > 0 && (
                 <div className="max-h-48 overflow-y-auto space-y-1">
                   {previewRenameAll.data.files.map((f) => (
-                    <div key={`${f.oldPath}-${f.newPath}`} className="text-xs font-mono space-y-0.5">
+                    <div
+                      key={`${f.oldPath}-${f.newPath}`}
+                      className="text-xs font-mono space-y-0.5"
+                    >
                       <p className="text-red-400">- {f.oldPath}</p>
                       <p className="text-green-400">+ {f.newPath}</p>
                     </div>
@@ -244,8 +250,8 @@ export function NamingSettings() {
           {renameAll.data && (
             <div className="bg-muted rounded-md p-3 space-y-1">
               <p className="text-sm font-medium">
-                Renamed: {renameAll.data.renamed} / {renameAll.data.total}{" "}
-                ({renameAll.data.skipped} skipped)
+                Renamed: {renameAll.data.renamed} / {renameAll.data.total} ({renameAll.data.skipped}{" "}
+                skipped)
               </p>
               {renameAll.data.errors && renameAll.data.errors.length > 0 && (
                 <div className="text-xs text-destructive space-y-0.5">

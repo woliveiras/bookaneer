@@ -108,19 +108,19 @@ func TestList_MissingFilter(t *testing.T) {
 	assert.Equal(t, "No File", books[0].Title)
 }
 
-func TestUpdate_Monitored(t *testing.T) {
+func TestUpdate_InWishlist(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Author")
-	created, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Test", Monitored: true})
+	created, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Test", InWishlist: true})
 	require.NoError(t, err)
 
-	monitored := false
-	updated, err := svc.Update(ctx, created.ID, book.UpdateBookInput{Monitored: &monitored})
+	inWishlist := false
+	updated, err := svc.Update(ctx, created.ID, book.UpdateBookInput{InWishlist: &inWishlist})
 	require.NoError(t, err)
-	assert.False(t, updated.Monitored)
+	assert.False(t, updated.InWishlist)
 }
 
 func TestUpdate_Title(t *testing.T) {
@@ -244,38 +244,37 @@ func TestGetWithEditions_WithFiles(t *testing.T) {
 	assert.Equal(t, "epub", bwe.Files[0].Format)
 }
 
-func TestCreate_ExistingForeignID_Remonitors(t *testing.T) {
+func TestCreate_ExistingForeignID_UpdatesWishlist(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Author")
-	created, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Book", ForeignID: "OL1W", Monitored: false})
+	created, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Book", ForeignID: "OL1W", InWishlist: false})
 	require.NoError(t, err)
-	assert.False(t, created.Monitored)
+	assert.False(t, created.InWishlist)
 
-	reMonitored, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Book 2", ForeignID: "OL1W", Monitored: true})
+	addedToWishlist, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Book 2", ForeignID: "OL1W", InWishlist: true})
 	require.NoError(t, err)
-	assert.Equal(t, created.ID, reMonitored.ID)
-	assert.True(t, reMonitored.Monitored)
+	assert.Equal(t, created.ID, addedToWishlist.ID)
+	assert.True(t, addedToWishlist.InWishlist)
 }
 
-func TestList_MonitoredFilter(t *testing.T) {
+func TestList_InWishlistFilter(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Author")
-	_, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Mon", Monitored: true, ForeignID: "mon-yes"})
+	_, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Wishlisted", InWishlist: true, ForeignID: "wl-yes"})
 	require.NoError(t, err)
-	_, err = svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Unmon", Monitored: false, ForeignID: "mon-no"})
+	_, err = svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Not Wishlisted", InWishlist: false, ForeignID: "wl-no"})
 	require.NoError(t, err)
 
-	monitored := true
-	books, total, err := svc.List(ctx, book.ListBooksFilter{Monitored: &monitored})
+	books, total, err := svc.List(ctx, book.ListBooksFilter{InWishlist: true})
 	require.NoError(t, err)
 	assert.Equal(t, 1, total)
-	assert.Equal(t, "Mon", books[0].Title)
+	assert.Equal(t, "Wishlisted", books[0].Title)
 }
 
 func TestList_Pagination(t *testing.T) {
@@ -378,13 +377,12 @@ func TestCreateEdition_WithAllFields(t *testing.T) {
 	e, err := svc.CreateEdition(ctx, book.CreateEditionInput{
 		BookID: b.ID, Title: "Paperback", ForeignID: "OL-PB1", ISBN: "1234567890",
 		Format: "paperback", Publisher: "Penguin", ReleaseDate: "2024-01-01",
-		PageCount: 300, Language: "en", Monitored: true,
+		PageCount: 300, Language: "en",
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "Paperback", e.Title)
 	assert.Equal(t, "OL-PB1", e.ForeignID)
 	assert.Equal(t, "paperback", e.Format)
-	assert.True(t, e.Monitored)
 }
 
 func TestUpdate_AllBookFields(t *testing.T) {
@@ -398,12 +396,12 @@ func TestUpdate_AllBookFields(t *testing.T) {
 
 	newTitle := "New Title"
 	newForeignID := "upd-new"
-	monitored := true
-	updated, err := svc.Update(ctx, created.ID, book.UpdateBookInput{Title: &newTitle, ForeignID: &newForeignID, Monitored: &monitored})
+	inWishlist := true
+	updated, err := svc.Update(ctx, created.ID, book.UpdateBookInput{Title: &newTitle, ForeignID: &newForeignID, InWishlist: &inWishlist})
 	require.NoError(t, err)
 	assert.Equal(t, "New Title", updated.Title)
 	assert.Equal(t, "upd-new", updated.ForeignID)
-	assert.True(t, updated.Monitored)
+	assert.True(t, updated.InWishlist)
 }
 
 func TestUpdate_DuplicateForeignID(t *testing.T) {
@@ -422,29 +420,23 @@ func TestUpdate_DuplicateForeignID(t *testing.T) {
 	require.ErrorIs(t, err, book.ErrDuplicate)
 }
 
-func TestUpdate_UnmonitorCleansQueue(t *testing.T) {
+func TestUpdate_RemoveFromWishlistCleansQueue(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Author")
-	created, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Mon", ForeignID: "unmon-q", Monitored: true})
+	created, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Mon", ForeignID: "unmon-q", InWishlist: true})
 	require.NoError(t, err)
 
 	// Add a queued download
 	_, err = db.ExecContext(ctx, `INSERT INTO download_queue (book_id, title, status) VALUES (?, 'test', 'queued')`, created.ID)
 	require.NoError(t, err)
 
-	monitored := false
-	updated, err := svc.Update(ctx, created.ID, book.UpdateBookInput{Monitored: &monitored})
+	inWishlist := false
+	updated, err := svc.Update(ctx, created.ID, book.UpdateBookInput{InWishlist: &inWishlist})
 	require.NoError(t, err)
-	assert.False(t, updated.Monitored)
-
-	// Verify queue was cleaned
-	var count int
-	err = db.QueryRowContext(ctx, "SELECT COUNT(*) FROM download_queue WHERE book_id = ?", created.ID).Scan(&count)
-	require.NoError(t, err)
-	assert.Zero(t, count)
+	assert.False(t, updated.InWishlist)
 }
 
 func TestUpdate_MultipleFields(t *testing.T) {

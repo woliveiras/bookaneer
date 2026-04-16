@@ -1,15 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
+import { AlertTriangle, BookOpen, Search, Trash2 } from "lucide-react"
 import { useState } from "react"
-import { AuthLayout } from "../components/layout/AppLayout"
+import { StarRating } from "../components/books/StarRating"
 import { PageError, PageLoading } from "../components/common"
+import { AuthLayout } from "../components/layout/AppLayout"
 import { Button } from "../components/ui"
+import { useRateBook } from "../hooks/useBooks"
+import { useReportWrongContent } from "../hooks/useWanted"
 import { bookApi } from "../lib/api"
 import { navigateToBookSearch } from "../lib/navigation"
-import { useReportWrongContent } from "../hooks/useWanted"
-import { useRateBook } from "../hooks/useBooks"
-import { StarRating } from "../components/books/StarRating"
-import { AlertTriangle, BookOpen, Search, Trash2 } from "lucide-react"
 
 export function LibraryBookDetailPage() {
   const { bookId } = useParams({ from: "/book/$bookId" })
@@ -75,7 +75,9 @@ export function LibraryBookDetailPage() {
             {book.imageUrl ? (
               <img src={book.imageUrl} alt={book.title} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center"><BookOpen className="w-8 h-8 text-muted-foreground" /></div>
+              <div className="w-full h-full flex items-center justify-center">
+                <BookOpen className="w-8 h-8 text-muted-foreground" />
+              </div>
             )}
           </div>
 
@@ -136,7 +138,8 @@ export function LibraryBookDetailPage() {
                 <div>
                   <p className="text-sm font-medium text-amber-500">Possible wrong content</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    The downloaded file's metadata doesn't match this book. Open to verify, or report as wrong content to try another source.
+                    The downloaded file's metadata doesn't match this book. Open to verify, or
+                    report as wrong content to try another source.
                   </p>
                 </div>
               </div>
@@ -164,11 +167,9 @@ export function LibraryBookDetailPage() {
                   <AlertTriangle className="w-4 h-4" /> <span className="ml-2">Wrong Content</span>
                 </Button>
               )}
-              <Button
-                variant="outline"
-                onClick={() => navigateToBookSearch(navigate, book)}
-              >
-                <Search className="w-4 h-4" /> <span className="ml-2">{hasFile ? "Search Again" : "Search"}</span>
+              <Button variant="outline" onClick={() => navigateToBookSearch(navigate, book)}>
+                <Search className="w-4 h-4" />{" "}
+                <span className="ml-2">{hasFile ? "Search Again" : "Search"}</span>
               </Button>
               <Button
                 variant="outline"
@@ -210,7 +211,8 @@ export function LibraryBookDetailPage() {
                 <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
                   <h3 className="text-lg font-semibold mb-2">Report Wrong Content?</h3>
                   <p className="text-muted-foreground mb-4">
-                    This will remove the current file, blocklist this source, and automatically search for an alternative download.
+                    This will remove the current file, blocklist this source, and automatically
+                    search for an alternative download.
                   </p>
                   <div className="flex gap-2 justify-end">
                     <Button variant="outline" onClick={() => setShowWrongContentConfirm(false)}>

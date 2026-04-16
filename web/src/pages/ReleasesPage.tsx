@@ -1,6 +1,6 @@
-import { useState } from "react"
-import { AlertTriangle, ArrowLeft, Library } from "lucide-react"
 import { Link } from "@tanstack/react-router"
+import { AlertTriangle, ArrowLeft, Library } from "lucide-react"
+import { useState } from "react"
 import { AuthLayout } from "../components/layout/AppLayout"
 import { SearchFilters } from "../components/search/SearchFilters"
 import { SearchResults } from "../components/search/SearchResults"
@@ -58,17 +58,13 @@ export function ReleasesPage({ book, autoSearch = true, existingBookId }: Releas
                 <p className="text-xs text-muted-foreground">{book.publishedYear}</p>
               )}
               <p className="text-xs text-muted-foreground mt-1">
-                {release.searchStarted ? (
-                  release.totalResults > 0 ? (
-                    `${release.totalResults} releases found`
-                  ) : release.isLibraryLoading || release.isIndexerLoading ? (
-                    "Searching…"
-                  ) : (
-                    "No releases found"
-                  )
-                ) : (
-                  "Releases"
-                )}
+                {release.searchStarted
+                  ? release.totalResults > 0
+                    ? `${release.totalResults} releases found`
+                    : release.isLibraryLoading || release.isIndexerLoading
+                      ? "Searching…"
+                      : "No releases found"
+                  : "Releases"}
               </p>
             </div>
           </div>

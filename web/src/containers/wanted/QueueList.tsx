@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react"
-import { Inbox } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
+import { Inbox } from "lucide-react"
+import { useEffect, useState } from "react"
 import { Button, Card, CardContent } from "../../components/ui"
 import { QueueItemCard, SearchCommandCard } from "../../components/wanted/QueueCards"
 import { getDismissedCommands, saveDismissedCommands } from "../../components/wanted/queueHelpers"
@@ -11,8 +11,8 @@ import {
   useRemoveFromQueue,
   useRetryDownload,
 } from "../../hooks/useWanted"
-import { queueApi } from "../../lib/api"
 import type { QueueItem } from "../../lib/api"
+import { queueApi } from "../../lib/api"
 
 export function QueueList() {
   const { data: queue, isLoading, error, refetch } = useDownloadQueue()
@@ -73,9 +73,7 @@ export function QueueList() {
 
   // Filter book-related commands that aren't dismissed
   const bookCommands = (recentCommands || []).filter(
-    (cmd) =>
-      ["DownloadGrab"].includes(cmd.name) &&
-      !dismissedCommands.has(cmd.id),
+    (cmd) => ["DownloadGrab"].includes(cmd.name) && !dismissedCommands.has(cmd.id),
   )
 
   // Active commands (still running)
@@ -146,8 +144,13 @@ export function QueueList() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {(finishedCommands.length + completedDownloads.length) > 1 && (
-            <Button variant="outline" size="sm" onClick={clearAllFinishedCommands} disabled={isClearing}>
+          {finishedCommands.length + completedDownloads.length > 1 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearAllFinishedCommands}
+              disabled={isClearing}
+            >
               Clear All Results
             </Button>
           )}
@@ -172,7 +175,9 @@ export function QueueList() {
       {isEmpty && (
         <Card>
           <CardContent className="p-12 text-center">
-            <div className="flex justify-center mb-4"><Inbox className="w-8 h-8 text-muted-foreground" /></div>
+            <div className="flex justify-center mb-4">
+              <Inbox className="w-8 h-8 text-muted-foreground" />
+            </div>
             <h3 className="text-lg font-semibold mb-2">No activity</h3>
             <p className="text-muted-foreground">
               Search for books to start downloading. Activity will appear here.

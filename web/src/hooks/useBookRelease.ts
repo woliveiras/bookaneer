@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react"
+import type { MetadataBookResult } from "../lib/api"
+import type { GrabResult } from "../lib/types"
 import { useAuthors, useCreateAuthor } from "./useAuthors"
 import { useCreateBook } from "./useBooks"
 import { type SearchParams, useSearch } from "./useIndexers"
 import { useDigitalLibrarySearch } from "./useMetadata"
 import { useRootFolders } from "./useRootFolders"
 import { useIndexerGrab, useManualGrab } from "./useWanted"
-import type { GrabResult } from "../lib/types"
-import type { MetadataBookResult } from "../lib/api"
 
 export interface IndexerGrabMeta {
   sourceType: "indexer"
@@ -55,9 +55,7 @@ export function useBookRelease(book: MetadataBookResult | null, existingBookId?:
   // better results with a text query than a raw ISBN.
   const titleAuthorQuery = [book?.title ?? "", ...(book?.authors ?? [])].join(" ").trim()
   const librarySearchQuery = titleAuthorQuery || isbn
-  const searchParams: SearchParams = isbn
-    ? { isbn, q: titleAuthorQuery }
-    : { q: titleAuthorQuery }
+  const searchParams: SearchParams = isbn ? { isbn, q: titleAuthorQuery } : { q: titleAuthorQuery }
 
   const indexerSearch = useSearch(searchStarted ? searchParams : { q: "" }, searchStarted && !!book)
   const librarySearch = useDigitalLibrarySearch(librarySearchQuery, searchStarted && !!book)
@@ -161,8 +159,7 @@ export function useBookRelease(book: MetadataBookResult | null, existingBookId?:
       const s = searchInResults.toLowerCase()
       results = results.filter(
         (r) =>
-          r.title.toLowerCase().includes(s) ||
-          r.authors?.some((a) => a.toLowerCase().includes(s)),
+          r.title.toLowerCase().includes(s) || r.authors?.some((a) => a.toLowerCase().includes(s)),
       )
     }
 
@@ -181,7 +178,9 @@ export function useBookRelease(book: MetadataBookResult | null, existingBookId?:
         break
       case "format": {
         const order = { epub: 1, pdf: 2, mobi: 3 } as Record<string, number>
-        results.sort((a, b) => (order[a.format.toLowerCase()] ?? 99) - (order[b.format.toLowerCase()] ?? 99))
+        results.sort(
+          (a, b) => (order[a.format.toLowerCase()] ?? 99) - (order[b.format.toLowerCase()] ?? 99),
+        )
         break
       }
       default:
@@ -328,7 +327,7 @@ export function useBookRelease(book: MetadataBookResult | null, existingBookId?:
     searchStarted,
     startSearch,
     closeSearch,
-    hasRootFolder: !!(rootFolders?.length),
+    hasRootFolder: !!rootFolders?.length,
     addingToLibrary,
     addError,
     isExpandSearching,

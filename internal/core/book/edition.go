@@ -21,7 +21,7 @@ func (s *Service) GetWithEditions(ctx context.Context, id int64) (*BookWithEditi
 
 	// Get editions
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, book_id, foreign_id, title, isbn, isbn13, format, publisher, release_date, page_count, language, monitored
+		SELECT id, book_id, foreign_id, title, isbn, isbn13, format, publisher, release_date, page_count, language
 		FROM editions WHERE book_id = ?
 	`, id)
 	if err != nil {
@@ -31,14 +31,12 @@ func (s *Service) GetWithEditions(ctx context.Context, id int64) (*BookWithEditi
 
 	for rows.Next() {
 		var e Edition
-		var monitored int
 		if err := rows.Scan(
 			&e.ID, &e.BookID, &e.ForeignID, &e.Title, &e.ISBN, &e.ISBN13,
-			&e.Format, &e.Publisher, &e.ReleaseDate, &e.PageCount, &e.Language, &monitored,
+			&e.Format, &e.Publisher, &e.ReleaseDate, &e.PageCount, &e.Language,
 		); err != nil {
 			return nil, fmt.Errorf("scan edition: %w", err)
 		}
-		e.Monitored = monitored == 1
 		result.Editions = append(result.Editions, e)
 	}
 
@@ -77,15 +75,10 @@ func (s *Service) CreateEdition(ctx context.Context, input CreateEditionInput) (
 		return nil, err
 	}
 
-	monitored := 0
-	if input.Monitored {
-		monitored = 1
-	}
-
 	result, err := s.db.ExecContext(ctx, `
-		INSERT INTO editions (book_id, foreign_id, title, isbn, isbn13, format, publisher, release_date, page_count, language, monitored)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, input.BookID, input.ForeignID, input.Title, input.ISBN, input.ISBN13, input.Format, input.Publisher, input.ReleaseDate, input.PageCount, input.Language, monitored)
+		INSERT INTO editions (book_id, foreign_id, title, isbn, isbn13, format, publisher, release_date, page_count, language)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, input.BookID, input.ForeignID, input.Title, input.ISBN, input.ISBN13, input.Format, input.Publisher, input.ReleaseDate, input.PageCount, input.Language)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 			return nil, ErrDuplicate
@@ -99,18 +92,16 @@ func (s *Service) CreateEdition(ctx context.Context, input CreateEditionInput) (
 	}
 
 	var e Edition
-	var mon int
 	err = s.db.QueryRowContext(ctx, `
-		SELECT id, book_id, foreign_id, title, isbn, isbn13, format, publisher, release_date, page_count, language, monitored
+		SELECT id, book_id, foreign_id, title, isbn, isbn13, format, publisher, release_date, page_count, language
 		FROM editions WHERE id = ?
 	`, id).Scan(
 		&e.ID, &e.BookID, &e.ForeignID, &e.Title, &e.ISBN, &e.ISBN13,
-		&e.Format, &e.Publisher, &e.ReleaseDate, &e.PageCount, &e.Language, &mon,
+		&e.Format, &e.Publisher, &e.ReleaseDate, &e.PageCount, &e.Language,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get created edition: %w", err)
 	}
-	e.Monitored = mon == 1
 
 	return &e, nil
 }

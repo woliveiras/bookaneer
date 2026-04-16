@@ -1,10 +1,11 @@
 import { AuthLayout } from "../components/layout/AppLayout"
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card"
 import { Badge } from "../components/ui/Badge"
-import { useBooks } from "../hooks/useBooks"
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card"
 import { useAuthors } from "../hooks/useAuthors"
-import { useWantedMissing, useDownloadQueue, useHistory } from "../hooks/useWanted"
+import { useBooks } from "../hooks/useBooks"
 import { useRootFolders } from "../hooks/useRootFolders"
+import { useDownloadQueue, useHistory } from "../hooks/useWanted"
+import { useWishlist } from "../hooks/useWishlist"
 import { formatBytes } from "../lib/format"
 
 function StatCard({
@@ -69,15 +70,15 @@ function eventBadgeVariant(eventType: string): "default" | "secondary" | "destru
 export function LibraryPage() {
   const { data: booksData } = useBooks({ limit: 1 })
   const { data: authorsData } = useAuthors({ limit: 1 })
-  const { data: wantedData } = useWantedMissing()
+  const { data: wishlistData } = useWishlist()
   const { data: queue } = useDownloadQueue()
   const { data: rootFolders } = useRootFolders()
   const { data: history } = useHistory({ limit: 10 })
 
   const totalBooks = booksData?.totalRecords ?? 0
   const totalAuthors = authorsData?.totalRecords ?? 0
-  const missingBooks = wantedData?.totalRecords ?? 0
-  const booksOnDisk = totalBooks - missingBooks
+  const inWishlist = wishlistData?.totalRecords ?? 0
+  const booksOnDisk = totalBooks - inWishlist
 
   const activeDownloads = queue?.filter((q) => q.status === "downloading") ?? []
   const completedQueue = queue?.filter((q) => q.status === "completed") ?? []
@@ -97,7 +98,7 @@ export function LibraryPage() {
             value={booksOnDisk >= 0 ? booksOnDisk : 0}
             detail={totalBooks > 0 ? `${booksOnDisk} of ${totalBooks} books have files` : undefined}
           />
-          <StatCard label="Missing" value={missingBooks} detail="In wishlist, not yet downloaded" />
+          <StatCard label="In Wishlist" value={inWishlist} detail="Not yet downloaded" />
         </div>
 
         {/* Disk usage */}
@@ -120,7 +121,7 @@ export function LibraryPage() {
                     <div
                       className="h-full bg-primary rounded-full transition-all"
                       style={{
-                        width: `${folder.totalSpace ? (((folder.totalSpace - (folder.freeSpace ?? 0)) / folder.totalSpace) * 100) : 0}%`,
+                        width: `${folder.totalSpace ? ((folder.totalSpace - (folder.freeSpace ?? 0)) / folder.totalSpace) * 100 : 0}%`,
                       }}
                     />
                   </div>
@@ -167,9 +168,11 @@ export function LibraryPage() {
                       <span>{failedQueue.length} failed</span>
                     </div>
                   )}
-                  {activeDownloads.length === 0 && completedQueue.length === 0 && failedQueue.length === 0 && (
-                    <p className="text-sm text-muted-foreground">Queue is idle</p>
-                  )}
+                  {activeDownloads.length === 0 &&
+                    completedQueue.length === 0 &&
+                    failedQueue.length === 0 && (
+                      <p className="text-sm text-muted-foreground">Queue is idle</p>
+                    )}
                 </div>
               )}
             </CardContent>
@@ -186,17 +189,15 @@ export function LibraryPage() {
               ) : (
                 <div className="space-y-2">
                   {history.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between gap-2 text-sm"
-                    >
+                    <div key={item.id} className="flex items-center justify-between gap-2 text-sm">
                       <div className="flex items-center gap-2 min-w-0">
-                        <Badge variant={eventBadgeVariant(item.eventType)} className="text-xs shrink-0">
+                        <Badge
+                          variant={eventBadgeVariant(item.eventType)}
+                          className="text-xs shrink-0"
+                        >
                           {eventLabel(item.eventType)}
                         </Badge>
-                        <span className="truncate">
-                          {item.bookTitle || item.sourceTitle}
-                        </span>
+                        <span className="truncate">{item.bookTitle || item.sourceTitle}</span>
                       </div>
                       <span className="text-xs text-muted-foreground shrink-0">
                         {new Date(item.date).toLocaleDateString()}

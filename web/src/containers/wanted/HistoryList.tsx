@@ -1,58 +1,70 @@
 import { Link } from "@tanstack/react-router"
-import { useState } from "react"
-import { AlertTriangle, CheckCircle, ClipboardList, Download, FileEdit, FileSearch, Library, ScrollText, Trash2, XCircle } from "lucide-react"
+import {
+  AlertTriangle,
+  CheckCircle,
+  ClipboardList,
+  Download,
+  FileEdit,
+  FileSearch,
+  Library,
+  ScrollText,
+  Trash2,
+  XCircle,
+} from "lucide-react"
 import type { ReactNode } from "react"
+import { useState } from "react"
 import { Button, Card, CardContent } from "../../components/ui"
 import { useHistory } from "../../hooks/useWanted"
 import type { HistoryEventType } from "../../lib/api"
 
-const eventTypeLabels: Record<HistoryEventType, { label: string; color: string; icon: ReactNode }> = {
-  grabbed: {
-    label: "Grabbed",
-    color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-    icon: <Download className="w-5 h-5" />,
-  },
-  downloadCompleted: {
-    label: "Downloaded",
-    color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-    icon: <CheckCircle className="w-5 h-5" />,
-  },
-  downloadFailed: {
-    label: "Failed",
-    color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-    icon: <XCircle className="w-5 h-5" />,
-  },
-  bookFileDeleted: {
-    label: "Deleted",
-    color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
-    icon: <Trash2 className="w-5 h-5" />,
-  },
-  bookFileRenamed: {
-    label: "Renamed",
-    color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-    icon: <FileEdit className="w-5 h-5" />,
-  },
-  bookImported: {
-    label: "Imported",
-    color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-    icon: <Library className="w-5 h-5" />,
-  },
-  contentMismatch: {
-    label: "Content Mismatch",
-    color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-    icon: <AlertTriangle className="w-5 h-5" />,
-  },
-  wrongContent: {
-    label: "Wrong Content",
-    color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-    icon: <AlertTriangle className="w-5 h-5" />,
-  },
-  metadataExtracted: {
-    label: "Metadata Extracted",
-    color: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
-    icon: <FileSearch className="w-5 h-5" />,
-  },
-}
+const eventTypeLabels: Record<HistoryEventType, { label: string; color: string; icon: ReactNode }> =
+  {
+    grabbed: {
+      label: "Grabbed",
+      color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+      icon: <Download className="w-5 h-5" />,
+    },
+    downloadCompleted: {
+      label: "Downloaded",
+      color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+      icon: <CheckCircle className="w-5 h-5" />,
+    },
+    downloadFailed: {
+      label: "Failed",
+      color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+      icon: <XCircle className="w-5 h-5" />,
+    },
+    bookFileDeleted: {
+      label: "Deleted",
+      color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
+      icon: <Trash2 className="w-5 h-5" />,
+    },
+    bookFileRenamed: {
+      label: "Renamed",
+      color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+      icon: <FileEdit className="w-5 h-5" />,
+    },
+    bookImported: {
+      label: "Imported",
+      color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+      icon: <Library className="w-5 h-5" />,
+    },
+    contentMismatch: {
+      label: "Content Mismatch",
+      color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+      icon: <AlertTriangle className="w-5 h-5" />,
+    },
+    wrongContent: {
+      label: "Wrong Content",
+      color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+      icon: <AlertTriangle className="w-5 h-5" />,
+    },
+    metadataExtracted: {
+      label: "Metadata Extracted",
+      color: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
+      icon: <FileSearch className="w-5 h-5" />,
+    },
+  }
 
 const eventTypeFilters: Array<{ value: HistoryEventType | ""; label: string }> = [
   { value: "", label: "All Events" },
@@ -147,7 +159,9 @@ export function HistoryList() {
       {items.length === 0 && (
         <Card>
           <CardContent className="p-12 text-center">
-            <div className="flex justify-center mb-4"><ScrollText className="w-8 h-8 text-muted-foreground" /></div>
+            <div className="flex justify-center mb-4">
+              <ScrollText className="w-8 h-8 text-muted-foreground" />
+            </div>
             <h3 className="text-lg font-semibold mb-2">No history</h3>
             <p className="text-muted-foreground">
               {eventTypeFilter ? "No events match this filter." : "No activity recorded yet."}

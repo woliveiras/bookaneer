@@ -1,13 +1,13 @@
-import { useState } from "react"
 import { Trash2 } from "lucide-react"
+import { useState } from "react"
 import { Button } from "../../components/ui/Button"
 import { Card, CardContent } from "../../components/ui/Card"
 import { Input } from "../../components/ui/Input"
 import { Label } from "../../components/ui/Label"
 import {
-  useRemotePathMappings,
   useCreateRemotePathMapping,
   useDeleteRemotePathMapping,
+  useRemotePathMappings,
 } from "../../hooks/useRemotePathMappings"
 
 export function RemotePathMappingSettings() {

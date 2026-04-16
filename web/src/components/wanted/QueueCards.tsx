@@ -124,7 +124,13 @@ interface QueueItemCardProps {
   isRetrying?: boolean
 }
 
-export function QueueItemCard({ item, onRemove, onRetry, isRemoving, isRetrying }: QueueItemCardProps) {
+export function QueueItemCard({
+  item,
+  onRemove,
+  onRetry,
+  isRemoving,
+  isRetrying,
+}: QueueItemCardProps) {
   const statusColors: Record<string, string> = {
     queued: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
     downloading: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",

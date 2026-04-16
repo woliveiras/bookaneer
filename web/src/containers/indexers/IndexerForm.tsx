@@ -204,66 +204,60 @@ export function IndexerForm({
           {/* Torznab-specific fields */}
           {isTorznab && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="minimumSeeders" className="text-amber-500">
-                    Minimum Seeders
-                  </Label>
-                  <Input
-                    id="minimumSeeders"
-                    type="number"
-                    min={0}
-                    value={formData.minimumSeeders}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        minimumSeeders: parseInt(e.target.value, 10) || 0,
-                      })
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Minimum number of seeders required
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="seedRatio">Seed Ratio</Label>
-                  <Input
-                    id="seedRatio"
-                    type="number"
-                    step="0.1"
-                    min={0}
-                    value={formData.seedRatio ?? ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        seedRatio: e.target.value ? parseFloat(e.target.value) : null,
-                      })
-                    }
-                    placeholder=""
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Empty uses download client default
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="seedTime">Seed Time (minutes)</Label>
-                  <Input
-                    id="seedTime"
-                    type="number"
-                    min={0}
-                    value={formData.seedTime ?? ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        seedTime: e.target.value ? parseInt(e.target.value, 10) : null,
-                      })
-                    }
-                    placeholder=""
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Empty uses download client default
-                  </p>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="minimumSeeders" className="text-amber-500">
+                  Minimum Seeders
+                </Label>
+                <Input
+                  id="minimumSeeders"
+                  type="number"
+                  min={0}
+                  value={formData.minimumSeeders}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      minimumSeeders: parseInt(e.target.value, 10) || 0,
+                    })
+                  }
+                />
+                <p className="text-xs text-muted-foreground">Minimum number of seeders required</p>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="seedRatio">Seed Ratio</Label>
+                <Input
+                  id="seedRatio"
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  value={formData.seedRatio ?? ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      seedRatio: e.target.value ? parseFloat(e.target.value) : null,
+                    })
+                  }
+                  placeholder=""
+                />
+                <p className="text-xs text-muted-foreground">Empty uses download client default</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="seedTime">Seed Time (minutes)</Label>
+                <Input
+                  id="seedTime"
+                  type="number"
+                  min={0}
+                  value={formData.seedTime ?? ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      seedTime: e.target.value ? parseInt(e.target.value, 10) : null,
+                    })
+                  }
+                  placeholder=""
+                />
+                <p className="text-xs text-muted-foreground">Empty uses download client default</p>
+              </div>
+            </div>
           )}
 
           {/* Priority */}

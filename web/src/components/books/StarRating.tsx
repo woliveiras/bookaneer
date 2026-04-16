@@ -1,5 +1,5 @@
-import { useState } from "react"
 import { Star } from "lucide-react"
+import { useState } from "react"
 
 interface StarRatingProps {
   value?: number // current rating 1-5, undefined = unrated
@@ -22,7 +22,7 @@ export function StarRating({ value, onChange, disabled }: StarRatingProps) {
   }
 
   return (
-    <div className="flex gap-0.5" role="group" aria-label="Rating">
+    <fieldset className="flex gap-0.5 border-0 p-0 m-0" aria-label="Rating">
       {[1, 2, 3, 4, 5].map((star) => (
         <button
           key={star}
@@ -43,6 +43,6 @@ export function StarRating({ value, onChange, disabled }: StarRatingProps) {
           />
         </button>
       ))}
-    </div>
+    </fieldset>
   )
 }

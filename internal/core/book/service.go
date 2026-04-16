@@ -22,11 +22,11 @@ func New(db *sql.DB) *Service {
 // FindByID returns a book by ID.
 func (s *Service) FindByID(ctx context.Context, id int64) (*Book, error) {
 	var b Book
-	var monitored, hasFile, inWishlist int
+	var hasFile, inWishlist int
 	var userRating sql.NullInt64
 	err := s.db.QueryRowContext(ctx, `
 		SELECT b.id, b.author_id, b.title, COALESCE(b.sort_title,''), COALESCE(b.foreign_id,''), COALESCE(b.isbn,''), COALESCE(b.isbn13,''),
-		       COALESCE(b.release_date,''), COALESCE(b.overview,''), COALESCE(b.image_url,''), b.page_count, b.monitored, b.added_at, b.updated_at,
+		       COALESCE(b.release_date,''), COALESCE(b.overview,''), COALESCE(b.image_url,''), b.page_count, b.added_at, b.updated_at,
 		       a.name,
 		       (SELECT COUNT(*) > 0 FROM book_files bf WHERE bf.book_id = b.id) as has_file,
 		       COALESCE((SELECT bf.format FROM book_files bf WHERE bf.book_id = b.id ORDER BY bf.added_at DESC LIMIT 1), '') as file_format,
@@ -36,7 +36,7 @@ func (s *Service) FindByID(ctx context.Context, id int64) (*Book, error) {
 		WHERE b.id = ?
 	`, id).Scan(
 		&b.ID, &b.AuthorID, &b.Title, &b.SortTitle, &b.ForeignID, &b.ISBN, &b.ISBN13,
-		&b.ReleaseDate, &b.Overview, &b.ImageURL, &b.PageCount, &monitored, &b.AddedAt, &b.UpdatedAt,
+		&b.ReleaseDate, &b.Overview, &b.ImageURL, &b.PageCount, &b.AddedAt, &b.UpdatedAt,
 		&b.AuthorName, &hasFile, &b.FileFormat, &userRating, &inWishlist,
 	)
 	if err == sql.ErrNoRows {
@@ -45,7 +45,6 @@ func (s *Service) FindByID(ctx context.Context, id int64) (*Book, error) {
 	if err != nil {
 		return nil, fmt.Errorf("find book %d: %w", id, err)
 	}
-	b.Monitored = monitored == 1
 	b.HasFile = hasFile == 1
 	b.InWishlist = inWishlist == 1
 	if userRating.Valid {
@@ -59,17 +58,16 @@ func (s *Service) FindByID(ctx context.Context, id int64) (*Book, error) {
 // FindByForeignID returns a book by foreign ID.
 func (s *Service) FindByForeignID(ctx context.Context, foreignID string) (*Book, error) {
 	var b Book
-	var monitored int
 	err := s.db.QueryRowContext(ctx, `
 		SELECT b.id, b.author_id, b.title, COALESCE(b.sort_title,''), COALESCE(b.foreign_id,''), COALESCE(b.isbn,''), COALESCE(b.isbn13,''),
-		       COALESCE(b.release_date,''), COALESCE(b.overview,''), COALESCE(b.image_url,''), b.page_count, b.monitored, b.added_at, b.updated_at,
+		       COALESCE(b.release_date,''), COALESCE(b.overview,''), COALESCE(b.image_url,''), b.page_count, b.added_at, b.updated_at,
 		       a.name
 		FROM books b
 		JOIN authors a ON b.author_id = a.id
 		WHERE b.foreign_id = ?
 	`, foreignID).Scan(
 		&b.ID, &b.AuthorID, &b.Title, &b.SortTitle, &b.ForeignID, &b.ISBN, &b.ISBN13,
-		&b.ReleaseDate, &b.Overview, &b.ImageURL, &b.PageCount, &monitored, &b.AddedAt, &b.UpdatedAt,
+		&b.ReleaseDate, &b.Overview, &b.ImageURL, &b.PageCount, &b.AddedAt, &b.UpdatedAt,
 		&b.AuthorName,
 	)
 	if err == sql.ErrNoRows {
@@ -78,7 +76,6 @@ func (s *Service) FindByForeignID(ctx context.Context, foreignID string) (*Book,
 	if err != nil {
 		return nil, fmt.Errorf("find book by foreign id %s: %w", foreignID, err)
 	}
-	b.Monitored = monitored == 1
 	return &b, nil
 }
 
@@ -90,13 +87,6 @@ func (s *Service) List(ctx context.Context, filter ListBooksFilter) ([]Book, int
 	if filter.AuthorID != nil {
 		conditions = append(conditions, "b.author_id = ?")
 		args = append(args, *filter.AuthorID)
-	}
-	if filter.Monitored != nil {
-		if *filter.Monitored {
-			conditions = append(conditions, "b.monitored = 1")
-		} else {
-			conditions = append(conditions, "b.monitored = 0")
-		}
 	}
 	if filter.Missing {
 		conditions = append(conditions, "NOT EXISTS (SELECT 1 FROM book_files bf WHERE bf.book_id = b.id)")
@@ -144,7 +134,7 @@ func (s *Service) List(ctx context.Context, filter ListBooksFilter) ([]Book, int
 
 	query := fmt.Sprintf(`
 		SELECT b.id, b.author_id, b.title, COALESCE(b.sort_title,''), COALESCE(b.foreign_id,''), COALESCE(b.isbn,''), COALESCE(b.isbn13,''),
-		       COALESCE(b.release_date,''), COALESCE(b.overview,''), COALESCE(b.image_url,''), b.page_count, b.monitored, b.added_at, b.updated_at,
+		       COALESCE(b.release_date,''), COALESCE(b.overview,''), COALESCE(b.image_url,''), b.page_count, b.added_at, b.updated_at,
 		       a.name,
 		       EXISTS (SELECT 1 FROM book_files bf WHERE bf.book_id = b.id) as has_file,
 		       COALESCE((SELECT bf.format FROM book_files bf WHERE bf.book_id = b.id ORDER BY bf.added_at DESC LIMIT 1), '') as file_format,
@@ -164,16 +154,15 @@ func (s *Service) List(ctx context.Context, filter ListBooksFilter) ([]Book, int
 	var books []Book
 	for rows.Next() {
 		var b Book
-		var monitored, hasFile, inWishlist int
+		var hasFile, inWishlist int
 		var userRating sql.NullInt64
 		if err := rows.Scan(
 			&b.ID, &b.AuthorID, &b.Title, &b.SortTitle, &b.ForeignID, &b.ISBN, &b.ISBN13,
-			&b.ReleaseDate, &b.Overview, &b.ImageURL, &b.PageCount, &monitored, &b.AddedAt, &b.UpdatedAt,
+			&b.ReleaseDate, &b.Overview, &b.ImageURL, &b.PageCount, &b.AddedAt, &b.UpdatedAt,
 			&b.AuthorName, &hasFile, &b.FileFormat, &userRating, &inWishlist,
 		); err != nil {
 			return nil, 0, fmt.Errorf("scan book: %w", err)
 		}
-		b.Monitored = monitored == 1
 		b.HasFile = hasFile == 1
 		b.InWishlist = inWishlist == 1
 		if userRating.Valid {
@@ -201,13 +190,16 @@ func (s *Service) Create(ctx context.Context, input CreateBookInput) (*Book, err
 		input.SortTitle = input.Title
 	}
 
-	// Check if book with same foreignId already exists (e.g., was previously removed from wanted)
+	// Check if book with same foreignId already exists
 	if input.ForeignID != "" {
 		existing, err := s.FindByForeignID(ctx, input.ForeignID)
 		if err == nil {
-			// Book exists - update it to set monitored=true
-			monitoredTrue := true
-			return s.Update(ctx, existing.ID, UpdateBookInput{Monitored: &monitoredTrue})
+			// Book exists — update wishlist flag if requested
+			if input.InWishlist {
+				wishlistTrue := true
+				return s.Update(ctx, existing.ID, UpdateBookInput{InWishlist: &wishlistTrue})
+			}
+			return existing, nil
 		}
 		// If not found, continue to create new book
 		if err != ErrNotFound {
@@ -225,15 +217,10 @@ func (s *Service) Create(ctx context.Context, input CreateBookInput) (*Book, err
 		return nil, fmt.Errorf("check author: %w", err)
 	}
 
-	monitored := 0
-	if input.Monitored {
-		monitored = 1
-	}
-
 	result, err := s.db.ExecContext(ctx, `
-		INSERT INTO books (author_id, title, sort_title, foreign_id, isbn, isbn13, release_date, overview, image_url, page_count, monitored, in_wishlist)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, input.AuthorID, input.Title, input.SortTitle, input.ForeignID, input.ISBN, input.ISBN13, input.ReleaseDate, input.Overview, input.ImageURL, input.PageCount, monitored, input.InWishlist)
+		INSERT INTO books (author_id, title, sort_title, foreign_id, isbn, isbn13, release_date, overview, image_url, page_count, in_wishlist)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, input.AuthorID, input.Title, input.SortTitle, input.ForeignID, input.ISBN, input.ISBN13, input.ReleaseDate, input.Overview, input.ImageURL, input.PageCount, input.InWishlist)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 			return nil, ErrDuplicate
@@ -304,22 +291,6 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateBookInput) (
 	if input.PageCount != nil {
 		sets = append(sets, "page_count = ?")
 		args = append(args, *input.PageCount)
-	}
-	if input.Monitored != nil {
-		m := 0
-		if *input.Monitored {
-			m = 1
-		}
-		sets = append(sets, "monitored = ?")
-		args = append(args, m)
-
-		// If unmonitoring, remove pending downloads from queue
-		if !*input.Monitored {
-			_, _ = s.db.ExecContext(ctx, `
-				DELETE FROM download_queue 
-				WHERE book_id = ? AND status IN ('queued', 'downloading', 'paused')
-			`, id)
-		}
 	}
 	if input.UserRating != nil {
 		if *input.UserRating == 0 {

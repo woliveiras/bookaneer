@@ -27,11 +27,6 @@ func NewWantedHandler(wantedSvc *wanted.Service, schedulerSvc *scheduler.Schedul
 
 // Register registers the wanted routes.
 func (h *WantedHandler) Register(g *echo.Group) {
-	// Wanted books
-	g.GET("/wanted/missing", h.GetMissingBooks)
-	g.POST("/wanted/cutoff", h.GetCutoffUnmet)
-	g.POST("/wanted/cutoff/search", h.SearchCutoffUnmet)
-
 	// Download queue
 	g.GET("/queue", h.GetQueue)
 	g.DELETE("/queue/:id", h.RemoveFromQueue)
@@ -54,43 +49,6 @@ func (h *WantedHandler) Register(g *echo.Group) {
 	g.POST("/book/:id/wrong-content", h.ReportWrongContent)
 	g.POST("/release", h.ManualGrab)
 	g.POST("/indexer-release", h.GrabIndexerRelease)
-}
-
-// GetMissingBooks returns all monitored books without files.
-func (h *WantedHandler) GetMissingBooks(c *echo.Context) error {
-	books, err := h.wantedService.GetWantedBooks(c.Request().Context())
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get missing books")
-	}
-
-	return c.JSON(http.StatusOK, map[string]any{
-		"page":          1,
-		"pageSize":      len(books),
-		"totalRecords":  len(books),
-		"sortKey":       "addedAt",
-		"sortDirection": "descending",
-		"records":       books,
-	})
-}
-
-// GetCutoffUnmet returns books that don't meet quality cutoff.
-// For now, returns empty as quality cutoff is not yet implemented.
-func (h *WantedHandler) GetCutoffUnmet(c *echo.Context) error {
-	return c.JSON(http.StatusOK, map[string]any{
-		"page":          1,
-		"pageSize":      0,
-		"totalRecords":  0,
-		"sortKey":       "addedAt",
-		"sortDirection": "descending",
-		"records":       []any{},
-	})
-}
-
-// SearchCutoffUnmet triggers a search for cutoff unmet books.
-func (h *WantedHandler) SearchCutoffUnmet(c *echo.Context) error {
-	return c.JSON(http.StatusAccepted, map[string]any{
-		"message": "Cutoff search is not yet implemented",
-	})
 }
 
 // GetQueue returns the current download queue.

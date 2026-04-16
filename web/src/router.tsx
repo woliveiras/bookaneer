@@ -4,16 +4,16 @@ import type { MetadataBookResult } from "./lib/api"
 import { ActivityPage } from "./pages/ActivityPage"
 import { AuthorDetailPage } from "./pages/AuthorDetailPage"
 import { AuthorsPage } from "./pages/AuthorsPage"
-import { LibraryBookDetailPage } from "./pages/LibraryBookDetailPage"
-import { ReaderPage } from "./pages/ReaderPage"
 import { BookSearchPage } from "./pages/BookSearchPage"
-import { ReleasesPage } from "./pages/ReleasesPage"
 import { BooksPage } from "./pages/BooksPage"
+import { LibraryBookDetailPage } from "./pages/LibraryBookDetailPage"
 import { LibraryPage } from "./pages/LibraryPage"
+import { ReaderPage } from "./pages/ReaderPage"
+import { ReleasesPage } from "./pages/ReleasesPage"
 import { SearchPage } from "./pages/SearchPage"
 import { SettingsPage } from "./pages/SettingsPage"
 import { SystemPage } from "./pages/SystemPage"
-import { WantedPage } from "./pages/WantedPage"
+import { WishlistPage } from "./pages/WishlistPage"
 
 // Root route
 const rootRoute = createRootRoute({
@@ -55,11 +55,11 @@ const searchRoute = createRoute({
   component: SearchPage,
 })
 
-// Wanted route (missing books)
-const wantedRoute = createRoute({
+// Wishlist route
+const wishlistRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/wanted",
-  component: WantedPage,
+  path: "/wishlist",
+  component: WishlistPage,
 })
 
 // Activity route (download queue)
@@ -207,7 +207,7 @@ const routeTree = rootRoute.addChildren([
   authorDetailRoute,
   booksRoute,
   libraryBookDetailRoute,
-  wantedRoute,
+  wishlistRoute,
   activityRoute,
   searchRoute,
   bookDetailsRoute,

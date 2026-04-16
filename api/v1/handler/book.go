@@ -31,7 +31,9 @@ func (h *BookHandler) Register(g *echo.Group) {
 	g.DELETE("/book/:id", h.Delete)
 
 	// Wishlist
+	g.GET("/wishlist", h.ListWishlist)
 	g.POST("/wishlist", h.AddToWishlist)
+	g.DELETE("/wishlist/:id", h.RemoveFromWishlist)
 
 	// Editions
 	g.POST("/book/:id/edition", h.CreateEdition)
@@ -41,20 +43,17 @@ func (h *BookHandler) Register(g *echo.Group) {
 // List returns a list of books.
 func (h *BookHandler) List(c *echo.Context) error {
 	filter := book.ListBooksFilter{
-		Search:  c.QueryParam("search"),
-		SortBy:  c.QueryParam("sortBy"),
-		SortDir: c.QueryParam("sortDir"),
-		Missing: c.QueryParam("missing") == "true",
+		Search:     c.QueryParam("search"),
+		SortBy:     c.QueryParam("sortBy"),
+		SortDir:    c.QueryParam("sortDir"),
+		Missing:    c.QueryParam("missing") == "true",
+		InWishlist: c.QueryParam("in_wishlist") == "true",
 	}
 
 	if a := c.QueryParam("authorId"); a != "" {
 		if authorID, err := strconv.ParseInt(a, 10, 64); err == nil {
 			filter.AuthorID = &authorID
 		}
-	}
-	if m := c.QueryParam("monitored"); m != "" {
-		monitored := m == "true"
-		filter.Monitored = &monitored
 	}
 	if l := c.QueryParam("limit"); l != "" {
 		if limit, err := strconv.Atoi(l); err == nil {
@@ -76,6 +75,52 @@ func (h *BookHandler) List(c *echo.Context) error {
 		"records":      books,
 		"totalRecords": total,
 	})
+}
+
+// ListWishlist returns all books in the user's wishlist.
+func (h *BookHandler) ListWishlist(c *echo.Context) error {
+	books, total, err := h.svc.List(c.Request().Context(), book.ListBooksFilter{
+		InWishlist: true,
+		Limit:      500,
+		SortBy:     "addedAt",
+		SortDir:    "desc",
+	})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list wishlist")
+	}
+	return c.JSON(http.StatusOK, map[string]any{
+		"records":      books,
+		"totalRecords": total,
+	})
+}
+
+// RemoveFromWishlist sets in_wishlist=false and deletes the book if it has no files.
+func (h *BookHandler) RemoveFromWishlist(c *echo.Context) error {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid book id")
+	}
+	ctx := c.Request().Context()
+	b, err := h.svc.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, book.ErrNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, "book not found")
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to find book")
+	}
+	if b.HasFile {
+		// Book has a file — just unmark wishlist, keep in library
+		false_ := false
+		if _, err := h.svc.Update(ctx, id, book.UpdateBookInput{InWishlist: &false_}); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to update wishlist")
+		}
+	} else {
+		// No file — delete the book entirely
+		if err := h.svc.Delete(ctx, id); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete book")
+		}
+	}
+	return c.NoContent(http.StatusNoContent)
 }
 
 // GetByID returns a book by ID with its editions.
@@ -262,7 +307,6 @@ func (h *BookHandler) AddToWishlist(c *echo.Context) error {
 		ISBN13:     req.ISBN13,
 		ImageURL:   req.ImageURL,
 		InWishlist: true,
-		Monitored:  false,
 	})
 	if err != nil {
 		if errors.Is(err, book.ErrDuplicate) {

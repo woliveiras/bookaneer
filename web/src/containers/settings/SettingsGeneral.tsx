@@ -121,7 +121,9 @@ export function SettingsGeneral() {
       <Card>
         <CardHeader>
           <CardTitle>Custom Providers</CardTitle>
-          <CardDescription>Configured custom providers currently active in this instance</CardDescription>
+          <CardDescription>
+            Configured custom providers currently active in this instance
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {!settings?.customProvidersEnabled ? (
@@ -149,7 +151,9 @@ export function SettingsGeneral() {
                   </div>
                   <div>
                     <span className="text-muted-foreground">Domain: </span>
-                    <span className="text-muted-foreground font-mono break-all">{provider.domain || "(missing)"}</span>
+                    <span className="text-muted-foreground font-mono break-all">
+                      {provider.domain || "(missing)"}
+                    </span>
                   </div>
                 </div>
               ))}

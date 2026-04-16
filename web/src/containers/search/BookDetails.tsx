@@ -42,11 +42,10 @@ export function BookDetails({ book, existingBookId }: BookDetailsProps) {
         addError={null}
         grabError={null}
         searchStarted={false}
-        hasRootFolder={!!(rootFolders?.length)}
+        hasRootFolder={!!rootFolders?.length}
         onAddToLibrary={() => undefined}
         onStartSearch={goToReleases}
       />
     </div>
   )
 }
-

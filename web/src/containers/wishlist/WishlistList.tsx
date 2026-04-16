@@ -1,16 +1,14 @@
-import { useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import { BookOpen, PartyPopper } from "lucide-react"
 import { useState } from "react"
 import { Button, Card, CardContent } from "../../components/ui"
-import { useBooks, useUpdateBook } from "../../hooks/useBooks"
+import { useRemoveFromWishlist, useWishlist } from "../../hooks/useWishlist"
 import type { Book } from "../../lib/api"
 
-export function WantedList() {
+export function WishlistList() {
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  const { data, isLoading, error, refetch } = useBooks({ inWishlist: true, limit: 500 })
-  const updateBookMutation = useUpdateBook()
+  const { data, isLoading, error, refetch } = useWishlist()
+  const removeFromWishlist = useRemoveFromWishlist()
   const [removingBooks, setRemovingBooks] = useState<Set<number>>(new Set())
   const [bookToRemove, setBookToRemove] = useState<Book | null>(null)
 
@@ -31,17 +29,12 @@ export function WantedList() {
     })
   }
 
-  const handleRemoveFromWanted = (book: Book) => {
-    setBookToRemove(book)
-  }
-
   const confirmRemove = async () => {
     if (!bookToRemove) return
     const bookId = bookToRemove.id
     setRemovingBooks((prev) => new Set(prev).add(bookId))
     try {
-      await updateBookMutation.mutateAsync({ id: bookId, data: { inWishlist: false } })
-      queryClient.invalidateQueries({ queryKey: ["books"] })
+      await removeFromWishlist.mutateAsync(bookId)
       setBookToRemove(null)
     } catch (err) {
       console.error("Failed to remove from wishlist:", err)
@@ -75,7 +68,7 @@ export function WantedList() {
     )
   }
 
-  const books = data?.records || []
+  const books = data?.records ?? []
 
   return (
     <div className="space-y-6">
@@ -112,11 +105,11 @@ export function WantedList() {
       {books.length > 0 && (
         <div className="grid gap-4">
           {books.map((book) => (
-            <WantedBookCard
+            <WishlistBookCard
               key={book.id}
               book={book}
               onSearch={() => handleSearchBook(book)}
-              onRemove={() => handleRemoveFromWanted(book)}
+              onRemove={() => setBookToRemove(book)}
               isRemoving={removingBooks.has(book.id)}
             />
           ))}
@@ -129,8 +122,7 @@ export function WantedList() {
           <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4 border">
             <h3 className="text-lg font-semibold mb-2">Remove from Wishlist?</h3>
             <p className="text-muted-foreground mb-4">
-              Are you sure you want to stop monitoring "{bookToRemove.title}"? This will remove it
-              from the Wishlist.
+              Are you sure you want to remove "{bookToRemove.title}" from your wishlist?
             </p>
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={() => setBookToRemove(null)}>
@@ -151,14 +143,14 @@ export function WantedList() {
   )
 }
 
-interface WantedBookCardProps {
+interface WishlistBookCardProps {
   book: Book
   onSearch: () => void
   onRemove: () => void
   isRemoving: boolean
 }
 
-function WantedBookCard({ book, onSearch, onRemove, isRemoving }: WantedBookCardProps) {
+function WishlistBookCard({ book, onSearch, onRemove, isRemoving }: WishlistBookCardProps) {
   return (
     <Card>
       <div className="flex items-start gap-4 p-4">
@@ -187,13 +179,10 @@ function WantedBookCard({ book, onSearch, onRemove, isRemoving }: WantedBookCard
               {book.isbn13 && (
                 <span className="text-xs bg-muted px-2 py-1 rounded">ISBN: {book.isbn13}</span>
               )}
-              <span className="text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-2 py-1 rounded">
-                Missing
-              </span>
             </div>
           </div>
 
-          {/* Actions — sit below info, always fully visible */}
+          {/* Actions */}
           <div className="flex gap-2">
             <Button size="sm" onClick={onSearch} disabled={isRemoving}>
               Search

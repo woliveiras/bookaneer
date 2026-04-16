@@ -12,7 +12,7 @@ export function BookList({ authorId }: BookListProps) {
   const navigate = useNavigate()
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
-  const [showMissing, setShowMissing] = useState(false)
+  const [showMissing, _setShowMissing] = useState(false)
   const [sortBy, setSortBy] = useState("")
 
   const { data, isLoading, error } = useBooks({
@@ -61,7 +61,9 @@ export function BookList({ authorId }: BookListProps) {
             />
           </div>
           <div>
-            <label htmlFor="book-sort" className="sr-only">Sort by</label>
+            <label htmlFor="book-sort" className="sr-only">
+              Sort by
+            </label>
             <select
               id="book-sort"
               value={sortBy}

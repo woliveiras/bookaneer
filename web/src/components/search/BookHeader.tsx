@@ -1,5 +1,15 @@
 import { Link, useNavigate } from "@tanstack/react-router"
-import { AlertTriangle, ClipboardList, ExternalLink, Flag, Library, Lightbulb, Plus, Search, Star } from "lucide-react"
+import {
+  AlertTriangle,
+  ClipboardList,
+  ExternalLink,
+  Flag,
+  Library,
+  Lightbulb,
+  Plus,
+  Search,
+  Star,
+} from "lucide-react"
 import type { MetadataBook, MetadataBookResult } from "../../lib/api"
 import { Badge, Button } from "../ui"
 
@@ -57,7 +67,10 @@ export function BookHeader({
           {/* Rating + Year + Page count */}
           <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
             {bookMetadata?.averageRating != null && bookMetadata.averageRating > 0 && (
-              <span className="flex items-center gap-1 text-amber-500" title={`${bookMetadata.ratingsCount ?? 0} ratings`}>
+              <span
+                className="flex items-center gap-1 text-amber-500"
+                title={`${bookMetadata.ratingsCount ?? 0} ratings`}
+              >
                 <Star className="w-4 h-4 fill-amber-500" aria-hidden="true" />
                 {bookMetadata.averageRating.toFixed(1)}
               </span>
@@ -90,7 +103,9 @@ export function BookHeader({
             <Badge variant="outline">{book.provider}</Badge>
             {book.isbn13 && <Badge variant="secondary">{book.isbn13}</Badge>}
             {bookMetadata?.genres?.slice(0, 4).map((g) => (
-              <Badge key={g} variant="secondary" className="text-xs">{g}</Badge>
+              <Badge key={g} variant="secondary" className="text-xs">
+                {g}
+              </Badge>
             ))}
           </div>
 
@@ -123,7 +138,13 @@ export function BookHeader({
                 onClick={onAddToLibrary}
                 disabled={addingToLibrary}
               >
-                {addingToLibrary ? "Adding..." : <><Plus className="w-4 h-4" /> Add to Library</>}
+                {addingToLibrary ? (
+                  "Adding..."
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" /> Add to Library
+                  </>
+                )}
               </Button>
             ) : (
               <Button
@@ -153,7 +174,9 @@ export function BookHeader({
             {/* Wanted Section */}
             <div className="text-center md:text-left space-y-3">
               <div className="flex items-center gap-2 justify-center md:justify-start">
-                <span className="text-2xl"><ClipboardList className="w-6 h-6" /></span>
+                <span className="text-2xl">
+                  <ClipboardList className="w-6 h-6" />
+                </span>
                 <h3 className="text-lg font-semibold">Add to Wanted</h3>
               </div>
               <p className="text-sm text-muted-foreground">
@@ -161,7 +184,9 @@ export function BookHeader({
                 automatically search for it when new releases become available.
               </p>
               <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                <span><Lightbulb className="w-4 h-4" /></span>
+                <span>
+                  <Lightbulb className="w-4 h-4" />
+                </span>
                 <span>
                   Wanted books appear in <strong>Activity → Wanted</strong> tab
                 </span>
@@ -171,7 +196,9 @@ export function BookHeader({
             {/* Manual Search Section */}
             <div className="text-center md:text-left space-y-3 md:border-l md:pl-8">
               <div className="flex items-center gap-2 justify-center md:justify-start">
-                <span className="text-2xl"><Search className="w-6 h-6" /></span>
+                <span className="text-2xl">
+                  <Search className="w-6 h-6" />
+                </span>
                 <h3 className="text-lg font-semibold">Manual Search</h3>
               </div>
               <p className="text-sm text-muted-foreground">

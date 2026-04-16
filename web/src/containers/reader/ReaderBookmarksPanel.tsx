@@ -1,10 +1,10 @@
-import { X, Bookmark as BookmarkIcon, Trash2 } from "lucide-react";
 import type { UseMutationResult } from "@tanstack/react-query"
-import type { CreateBookmarkInput } from "../../lib/api"
-import type { Bookmark } from "../../lib/types/reader"
-import { Button } from "../../components/ui"
+import { Bookmark as BookmarkIcon, Trash2, X } from "lucide-react"
 import type { ReaderSettings } from "../../components/reader/readerConfig"
 import { THEMES } from "../../components/reader/readerConfig"
+import { Button } from "../../components/ui"
+import type { CreateBookmarkInput } from "../../lib/api"
+import type { Bookmark } from "../../lib/types/reader"
 
 interface ReaderBookmarksPanelProps {
   settings: ReaderSettings
@@ -30,7 +30,8 @@ export function ReaderBookmarksPanel({
   deleteBookmarkMutation,
 }: ReaderBookmarksPanelProps) {
   const theme = THEMES[settings.theme]
-  const borderColor = settings.theme === "dark" ? "#333" : settings.theme === "sepia" ? "#d4c9b0" : "#e5e5e5"
+  const borderColor =
+    settings.theme === "dark" ? "#333" : settings.theme === "sepia" ? "#d4c9b0" : "#e5e5e5"
 
   const handleAddBookmark = () => {
     const title =
@@ -118,5 +119,5 @@ export function ReaderBookmarksPanel({
         )}
       </div>
     </div>
-  );
+  )
 }

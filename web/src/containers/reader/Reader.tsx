@@ -1,9 +1,14 @@
-import { BookOpen, Bookmark, ChevronLeft, ChevronRight, Settings, X } from "lucide-react"
+import { Bookmark, BookOpen, ChevronLeft, ChevronRight, Settings, X } from "lucide-react"
 import { useRef, useState } from "react"
 import { FORMAT_LABELS, THEMES } from "../../components/reader/readerConfig"
 import { TocList } from "../../components/reader/TocList"
 import { Badge, Button } from "../../components/ui"
-import { useBookmarks, useCreateBookmark, useDeleteBookmark, useReaderBookFile } from "../../hooks/useReader"
+import {
+  useBookmarks,
+  useCreateBookmark,
+  useDeleteBookmark,
+  useReaderBookFile,
+} from "../../hooks/useReader"
 import { ReaderBookmarksPanel } from "./ReaderBookmarksPanel"
 import { ReaderSettingsPanel } from "./ReaderSettingsPanel"
 import { useReaderCore } from "./useReaderCore"
@@ -89,9 +94,12 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
       : settings.theme === "sepia"
         ? "rgba(91,70,54,0.1)"
         : "rgba(0,0,0,0.06)"
-  const borderColor = settings.theme === "dark" ? "#333" : settings.theme === "sepia" ? "#d4c9b0" : "#e5e5e5"
-  const progressTrack = settings.theme === "dark" ? "#333" : settings.theme === "sepia" ? "#d4c9b0" : "#e5e5e5"
-  const progressBar = settings.theme === "dark" ? "#6ea8fe" : settings.theme === "sepia" ? "#8b7355" : "#0d6efd"
+  const borderColor =
+    settings.theme === "dark" ? "#333" : settings.theme === "sepia" ? "#d4c9b0" : "#e5e5e5"
+  const progressTrack =
+    settings.theme === "dark" ? "#333" : settings.theme === "sepia" ? "#d4c9b0" : "#e5e5e5"
+  const progressBar =
+    settings.theme === "dark" ? "#6ea8fe" : settings.theme === "sepia" ? "#8b7355" : "#0d6efd"
 
   // Handle swipe gestures for page turns
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -172,7 +180,9 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
               </Badge>
             )}
             <div className="text-sm min-w-0">
-              <span className="font-medium truncate block">{bookFile?.bookTitle || "Loading..."}</span>
+              <span className="font-medium truncate block">
+                {bookFile?.bookTitle || "Loading..."}
+              </span>
             </div>
           </div>
         </div>

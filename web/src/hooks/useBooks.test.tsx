@@ -33,7 +33,7 @@ const mockBook: Book = {
   overview: "A test book",
   imageUrl: "",
   pageCount: 200,
-  monitored: true,
+  inWishlist: false,
   addedAt: "2025-01-01T00:00:00Z",
   updatedAt: "2025-01-01T00:00:00Z",
 }
@@ -53,7 +53,6 @@ const mockBookWithEditions: BookWithEditions = {
       releaseDate: "2024-01-01",
       pageCount: 200,
       language: "en",
-      monitored: true,
     },
   ],
   files: [],
@@ -94,7 +93,7 @@ describe("useBooks", () => {
     const response: PaginatedResponse<Book> = { records: [], totalRecords: 0 }
     vi.mocked(bookApi.list).mockResolvedValue(response)
 
-    const params = { authorId: 10, monitored: true }
+    const params = { authorId: 10, inWishlist: true }
     const { result } = renderHook(() => useBooks(params), { wrapper: createWrapper() })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))

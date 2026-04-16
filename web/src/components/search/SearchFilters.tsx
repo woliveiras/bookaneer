@@ -1,7 +1,12 @@
-import { useState } from "react"
 import { ChevronDown, ChevronUp, SlidersHorizontal } from "lucide-react"
+import { useState } from "react"
 import { Input } from "../ui"
-import { FORMAT_OPTIONS, LANGUAGE_OPTIONS, PROVIDER_OPTIONS, SORT_OPTIONS } from "./book-search-options"
+import {
+  FORMAT_OPTIONS,
+  LANGUAGE_OPTIONS,
+  PROVIDER_OPTIONS,
+  SORT_OPTIONS,
+} from "./book-search-options"
 
 interface SearchFiltersProps {
   searchInResults: string

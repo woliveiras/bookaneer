@@ -1,4 +1,4 @@
-import { type ReactNode, forwardRef, useCallback, useEffect, useRef } from "react"
+import { forwardRef, type ReactNode, useCallback, useEffect, useRef } from "react"
 import { cn } from "../../lib/utils"
 
 export interface DialogProps {
@@ -83,12 +83,7 @@ export function DialogHeader({
   onClose?: () => void
 }) {
   return (
-    <div
-      className={cn(
-        "flex items-center justify-between px-6 py-4 border-b shrink-0",
-        className,
-      )}
-    >
+    <div className={cn("flex items-center justify-between px-6 py-4 border-b shrink-0", className)}>
       <div className="flex-1 min-w-0">{children}</div>
       {onClose && (
         <button
@@ -118,16 +113,6 @@ export function DialogHeader({
   )
 }
 
-export function DialogBody({
-  children,
-  className,
-}: {
-  children: ReactNode
-  className?: string
-}) {
-  return (
-    <div className={cn("flex-1 overflow-y-auto px-6 py-4", className)}>
-      {children}
-    </div>
-  )
+export function DialogBody({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={cn("flex-1 overflow-y-auto px-6 py-4", className)}>{children}</div>
 }

@@ -92,9 +92,7 @@ export function SearchModal({
   return (
     <Dialog open={open} onClose={onClose}>
       <DialogHeader onClose={onClose}>
-        <h2 className="text-lg font-semibold truncate">
-          Search releases for "{bookTitle}"
-        </h2>
+        <h2 className="text-lg font-semibold truncate">Search releases for "{bookTitle}"</h2>
       </DialogHeader>
 
       <DialogBody className="space-y-4">
@@ -132,7 +130,10 @@ export function SearchModal({
         {someSourcesFailed && (
           <div className="bg-amber-500/10 border border-amber-500/30 rounded p-3 text-sm">
             <p className="text-amber-600 dark:text-amber-400 font-medium flex items-center gap-2">
-              <span><AlertTriangle className="w-4 h-4" /></span> Some sources unavailable
+              <span>
+                <AlertTriangle className="w-4 h-4" />
+              </span>{" "}
+              Some sources unavailable
             </p>
             <p className="text-amber-600/80 dark:text-amber-400/80 mt-1">
               {indexerFailed && "Torrent indexers could not be reached. "}

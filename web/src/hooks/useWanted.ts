@@ -3,14 +3,6 @@ import { useRef } from "react"
 import type { HistoryEventType } from "../lib/api"
 import { blocklistApi, historyApi, queueApi, wantedApi } from "../lib/api"
 
-// Missing books hooks
-export function useWantedMissing() {
-  return useQuery({
-    queryKey: ["wanted", "missing"],
-    queryFn: wantedApi.getMissing,
-  })
-}
-
 export function useSearchBook() {
   return useMutation({
     mutationFn: wantedApi.searchBook,

@@ -5,14 +5,10 @@ import type {
   GrabResult,
   HistoryEventType,
   HistoryItem,
-  SearchCommandResponse,
-  WantedResponse,
 } from "../types"
 import { fetchAPI } from "./client"
 
 export const wantedApi = {
-  getMissing: () => fetchAPI<WantedResponse>("/wanted/missing"),
-
   searchBook: (bookId: number) =>
     fetchAPI<BookSearchResponse>(`/book/${bookId}/search`, {
       method: "POST",

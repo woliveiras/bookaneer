@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from "react"
-import { useNavigate } from "@tanstack/react-router"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { Bookmark, BookmarkCheck, Library, Download } from "lucide-react"
+import { useNavigate } from "@tanstack/react-router"
+import { Bookmark, BookmarkCheck, Download, Library } from "lucide-react"
+import { useCallback, useEffect, useState } from "react"
 import { Badge, Button, Card, CardContent, Input } from "../../components/ui"
 import { useMetadataSearchBooks } from "../../hooks/useMetadata"
-import { bookApi } from "../../lib/api"
 import type { MetadataBookResult } from "../../lib/api"
+import { bookApi } from "../../lib/api"
 
 interface BookCardProps {
   book: MetadataBookResult
@@ -16,7 +16,14 @@ interface BookCardProps {
   wishlisted: boolean
 }
 
-function BookCard({ book, onGet, isGetting, onWishlist, isWishlisting, wishlisted }: BookCardProps) {
+function BookCard({
+  book,
+  onGet,
+  isGetting,
+  onWishlist,
+  isWishlisting,
+  wishlisted,
+}: BookCardProps) {
   return (
     <Card className="flex flex-col overflow-hidden">
       <CardContent className="p-4 flex gap-4 flex-1">
@@ -53,11 +60,7 @@ function BookCard({ book, onGet, isGetting, onWishlist, isWishlisting, wishliste
         </div>
       </CardContent>
       <div className="px-4 pb-4 flex gap-2">
-        <Button
-          className="flex-1"
-          onClick={() => onGet(book)}
-          disabled={isGetting}
-        >
+        <Button className="flex-1" onClick={() => onGet(book)} disabled={isGetting}>
           {isGetting ? (
             <>
               <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -103,7 +106,7 @@ export function UnifiedSearch() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["books"] })
-      queryClient.invalidateQueries({ queryKey: ["wanted"] })
+      queryClient.invalidateQueries({ queryKey: ["wishlist"] })
     },
   })
   const [gettingBookId, setGettingBookId] = useState<string | null>(null)
@@ -179,7 +182,7 @@ export function UnifiedSearch() {
   // Reset the "getting" spinner when the user navigates back
   useEffect(() => {
     setGettingBookId(null)
-  }, [submittedQuery])
+  }, [])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {

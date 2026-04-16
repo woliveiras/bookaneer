@@ -18,15 +18,14 @@ func TestCreate_Success(t *testing.T) {
 	authorID := testutil.SeedAuthor(t, db, "Tolkien")
 
 	b, err := svc.Create(ctx, book.CreateBookInput{
-		AuthorID:  authorID,
-		Title:     "The Hobbit",
-		Monitored: true,
+		AuthorID: authorID,
+		Title:    "The Hobbit",
 	})
 	require.NoError(t, err)
 	assert.NotZero(t, b.ID)
 	assert.Equal(t, "The Hobbit", b.Title)
 	assert.Equal(t, "The Hobbit", b.SortTitle) // Defaults to title
-	assert.True(t, b.Monitored)
+	assert.False(t, b.InWishlist)
 	assert.Equal(t, "Tolkien", b.AuthorName)
 }
 
@@ -71,14 +70,15 @@ func TestCreate_DuplicateForeignID(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Same foreign ID returns existing (updated to monitored)
+	// Same foreign ID returns existing (updated to in_wishlist)
 	b2, err := svc.Create(ctx, book.CreateBookInput{
-		AuthorID:  authorID,
-		Title:     "The Hobbit 2nd",
-		ForeignID: "OL27516W",
+		AuthorID:   authorID,
+		Title:      "The Hobbit 2nd",
+		ForeignID:  "OL27516W",
+		InWishlist: true,
 	})
 	require.NoError(t, err)
-	assert.True(t, b2.Monitored)
+	assert.True(t, b2.InWishlist)
 }
 
 func TestFindByID(t *testing.T) {

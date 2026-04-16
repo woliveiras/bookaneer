@@ -141,7 +141,9 @@ export function useReaderKeyboard({
       }
       const nextContents = viewRef.current?.renderer?.getContents?.() ?? []
       for (const content of nextContents) {
-        content.doc.removeEventListener("keydown", handleKeyDown as EventListener, { capture: true })
+        content.doc.removeEventListener("keydown", handleKeyDown as EventListener, {
+          capture: true,
+        })
       }
       viewRef.current?.removeEventListener("load", handleReaderLoad as EventListener)
       viewRef.current?.removeEventListener("pointerdown", handleReaderPointerDown)

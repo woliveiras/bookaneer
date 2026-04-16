@@ -1,14 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
+import { BookOpen, Search, Trash2 } from "lucide-react"
 import { useState } from "react"
+import { StarRating } from "../components/books/StarRating"
 import { AuthLayout } from "../components/layout/AppLayout"
 import { Button } from "../components/ui"
 import { Reader } from "../containers/reader/Reader"
+import { useRateBook } from "../hooks/useBooks"
 import { bookApi } from "../lib/api"
 import { navigateToBookSearch } from "../lib/navigation"
-import { useRateBook } from "../hooks/useBooks"
-import { StarRating } from "../components/books/StarRating"
-import { BookOpen, Search, Trash2 } from "lucide-react"
 
 export function ReaderPage() {
   const { bookId } = useParams({ from: "/read/$bookId" })
@@ -82,6 +82,8 @@ export function LibraryBookDetailPage() {
     },
   })
 
+  const rateBook = useRateBook()
+
   if (isLoading) {
     return (
       <AuthLayout>
@@ -104,7 +106,6 @@ export function LibraryBookDetailPage() {
   }
 
   const hasFile = book.files && book.files.length > 0
-  const rateBook = useRateBook()
 
   return (
     <AuthLayout>
@@ -121,7 +122,9 @@ export function LibraryBookDetailPage() {
             {book.imageUrl ? (
               <img src={book.imageUrl} alt={book.title} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center"><BookOpen className="w-8 h-8 text-muted-foreground" /></div>
+              <div className="w-full h-full flex items-center justify-center">
+                <BookOpen className="w-8 h-8 text-muted-foreground" />
+              </div>
             )}
           </div>
 
@@ -183,10 +186,7 @@ export function LibraryBookDetailPage() {
                   <BookOpen className="w-4 h-4" /> Read
                 </Button>
               )}
-              <Button
-                variant="outline"
-                onClick={() => navigateToBookSearch(navigate, book)}
-              >
+              <Button variant="outline" onClick={() => navigateToBookSearch(navigate, book)}>
                 <Search className="w-4 h-4" /> {hasFile ? "Search Again" : "Search"}
               </Button>
               <Button

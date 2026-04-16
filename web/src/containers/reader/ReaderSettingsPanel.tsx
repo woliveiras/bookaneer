@@ -1,5 +1,10 @@
 import { X } from "lucide-react"
-import { FONTS, type ReaderSettings, THEMES, type ThemeKey } from "../../components/reader/readerConfig"
+import {
+  FONTS,
+  type ReaderSettings,
+  THEMES,
+  type ThemeKey,
+} from "../../components/reader/readerConfig"
 import { Button } from "../../components/ui"
 
 interface ReaderSettingsPanelProps {
@@ -14,7 +19,8 @@ export function ReaderSettingsPanel({
   onClose,
 }: ReaderSettingsPanelProps) {
   const theme = THEMES[settings.theme]
-  const borderColor = settings.theme === "dark" ? "#333" : settings.theme === "sepia" ? "#d4c9b0" : "#e5e5e5"
+  const borderColor =
+    settings.theme === "dark" ? "#333" : settings.theme === "sepia" ? "#d4c9b0" : "#e5e5e5"
 
   return (
     <div
@@ -24,7 +30,13 @@ export function ReaderSettingsPanel({
       <div className="p-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-bold text-lg">Settings</h2>
-          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close settings" style={{ color: theme.fg }}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            aria-label="Close settings"
+            style={{ color: theme.fg }}
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>

@@ -10,7 +10,6 @@ export interface Book {
   overview: string
   imageUrl: string
   pageCount: number
-  monitored: boolean
   userRating?: number // 1-5, undefined = unrated
   inWishlist: boolean
   addedAt: string
@@ -32,7 +31,6 @@ export interface Edition {
   releaseDate: string
   pageCount: number
   language: string
-  monitored: boolean
 }
 
 export interface BookFile {
@@ -65,14 +63,12 @@ export interface CreateBookInput {
   overview?: string
   imageUrl?: string
   pageCount?: number
-  monitored?: boolean
   userRating?: number
   inWishlist?: boolean
 }
 
 export interface ListBooksParams {
   authorId?: number
-  monitored?: boolean
   missing?: boolean
   inWishlist?: boolean
   search?: string

@@ -1,5 +1,5 @@
-import type { ColumnConfig, ColumnSchema } from "../../lib/types"
 import { formatBytes } from "../../lib/format"
+import type { ColumnConfig, ColumnSchema } from "../../lib/types"
 import { Badge } from "../ui"
 
 const FORMAT_COLORS: Record<string, string> = {
@@ -38,7 +38,7 @@ interface DynamicCellProps {
 
 export function DynamicCell({ column, row }: DynamicCellProps) {
   const raw = row[column.key]
-  const value = raw != null ? String(raw) : column.fallback ?? ""
+  const value = raw != null ? String(raw) : (column.fallback ?? "")
 
   switch (column.renderType) {
     case "badge": {
@@ -71,16 +71,10 @@ export function DynamicCell({ column, row }: DynamicCellProps) {
       const leechers = typeof row.leechers === "number" ? row.leechers : 0
       return (
         <span className="text-xs tabular-nums">
-          {seeders > 0 && (
-            <span className="text-green-600 dark:text-green-400">{seeders}</span>
-          )}
+          {seeders > 0 && <span className="text-green-600 dark:text-green-400">{seeders}</span>}
           {seeders > 0 && leechers > 0 && <span className="text-muted-foreground">/</span>}
-          {leechers > 0 && (
-            <span className="text-red-500 dark:text-red-400">{leechers}</span>
-          )}
-          {seeders === 0 && leechers === 0 && (
-            <span className="text-muted-foreground">-</span>
-          )}
+          {leechers > 0 && <span className="text-red-500 dark:text-red-400">{leechers}</span>}
+          {seeders === 0 && leechers === 0 && <span className="text-muted-foreground">-</span>}
         </span>
       )
     }

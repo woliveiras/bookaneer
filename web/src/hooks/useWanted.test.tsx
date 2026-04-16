@@ -8,7 +8,6 @@ import type {
   BookSearchResponse,
   HistoryItem,
   QueueItem,
-  WantedResponse,
 } from "../lib/api"
 import {
   useActiveCommands,
@@ -21,7 +20,6 @@ import {
   useRemoveFromBlocklist,
   useRemoveFromQueue,
   useSearchBook,
-  useWantedMissing,
 } from "./useWanted"
 
 vi.mock("../lib/api", async () => {
@@ -29,7 +27,6 @@ vi.mock("../lib/api", async () => {
   return {
     ...actual,
     wantedApi: {
-      getMissing: vi.fn(),
       searchBook: vi.fn(),
       manualGrab: vi.fn(),
       getActiveCommands: vi.fn(),
@@ -68,30 +65,18 @@ beforeEach(() => {
   vi.clearAllMocks()
 })
 
-describe("useWantedMissing", () => {
-  it("fetches missing books", async () => {
-    const missing: WantedResponse = {
-      page: 1,
-      pageSize: 20,
-      totalRecords: 0,
-      sortKey: "title",
-      sortDirection: "asc",
-      records: [],
-    }
-    vi.mocked(wantedApi.getMissing).mockResolvedValue(missing)
-
-    const { result } = renderHook(() => useWantedMissing(), { wrapper: createWrapper() })
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(result.current.data).toEqual(missing)
-  })
-})
-
 describe("useSearchBook", () => {
   it("returns search results for a specific book", async () => {
     const response: BookSearchResponse = {
       results: [
-        { title: "The Hobbit", source: "library", provider: "mock", format: "epub", size: 1024000, downloadUrl: "http://a.com/hobbit.epub" },
+        {
+          title: "The Hobbit",
+          source: "library",
+          provider: "mock",
+          format: "epub",
+          size: 1024000,
+          downloadUrl: "http://a.com/hobbit.epub",
+        },
       ],
       noResults: false,
     }

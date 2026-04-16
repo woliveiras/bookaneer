@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router"
-import { useState } from "react"
 import { Ban } from "lucide-react"
+import { useState } from "react"
 import { Button, Card, CardContent } from "../../components/ui"
 import { useBlocklist, useRemoveFromBlocklist } from "../../hooks/useWanted"
 import type { BlocklistItem } from "../../lib/api"
@@ -93,7 +93,9 @@ export function BlocklistList() {
       {items.length === 0 && (
         <Card>
           <CardContent className="p-12 text-center">
-            <div className="flex justify-center mb-4"><Ban className="w-8 h-8 text-muted-foreground" /></div>
+            <div className="flex justify-center mb-4">
+              <Ban className="w-8 h-8 text-muted-foreground" />
+            </div>
             <h3 className="text-lg font-semibold mb-2">Blocklist is empty</h3>
             <p className="text-muted-foreground">
               No releases have been blocked. Failed downloads can be added to the blocklist to

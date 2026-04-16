@@ -1,11 +1,11 @@
-import { useState } from "react"
-import type { DigitalLibraryResult, SearchResult } from "../../lib/api"
-import type { GrabMeta } from "../../hooks/useBookRelease"
-import type { ColumnConfig } from "../../lib/types"
 import { Library, Search } from "lucide-react"
+import { useState } from "react"
+import type { GrabMeta } from "../../hooks/useBookRelease"
+import type { DigitalLibraryResult, SearchResult } from "../../lib/api"
+import type { ColumnConfig } from "../../lib/types"
 import { Badge, Button } from "../ui"
-import { DownloadResult, LibraryResult } from "./SearchResultCards"
 import { SearchLoadingAnimation } from "./SearchLoadingAnimation"
+import { DownloadResult, LibraryResult } from "./SearchResultCards"
 
 type SourceTab = "all" | "library" | "indexer"
 
@@ -22,7 +22,12 @@ interface SearchResultsProps {
   libraryError?: boolean
   indexerError?: boolean
   searchActive?: boolean
-  onGrab: (downloadUrl: string, releaseTitle: string, size: number, meta?: GrabMeta) => Promise<void>
+  onGrab: (
+    downloadUrl: string,
+    releaseTitle: string,
+    size: number,
+    meta?: GrabMeta,
+  ) => Promise<void>
   onResetFilters: () => void
   onExpandSearch?: () => void
   isExpanded?: boolean
@@ -116,7 +121,10 @@ export function SearchResults({
         <div>
           {activeTab === "all" && (
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <span><Library className="w-5 h-5" /></span> Digital Libraries
+              <span>
+                <Library className="w-5 h-5" />
+              </span>{" "}
+              Digital Libraries
               <Badge variant="secondary">{filteredLibraryResults.length}</Badge>
             </h3>
           )}
@@ -159,18 +167,24 @@ export function SearchResults({
       )}
 
       {/* Library loading / empty in tab view */}
-      {showLibrary && !isLibraryLoading && filteredLibraryResults.length === 0 && activeTab === "library" && (
-        <p className="text-center text-muted-foreground py-6 text-sm">
-          {libraryError ? "Digital libraries could not be reached" : "No library results found"}
-        </p>
-      )}
+      {showLibrary &&
+        !isLibraryLoading &&
+        filteredLibraryResults.length === 0 &&
+        activeTab === "library" && (
+          <p className="text-center text-muted-foreground py-6 text-sm">
+            {libraryError ? "Digital libraries could not be reached" : "No library results found"}
+          </p>
+        )}
 
       {/* Indexer Results */}
       {showIndexer && filteredIndexerResults.length > 0 && (
         <div>
           {activeTab === "all" && (
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <span><Search className="w-5 h-5" /></span> Torrent/Usenet Indexers
+              <span>
+                <Search className="w-5 h-5" />
+              </span>{" "}
+              Torrent/Usenet Indexers
               <Badge variant="secondary">{filteredIndexerResults.length}</Badge>
             </h3>
           )}
@@ -213,11 +227,16 @@ export function SearchResults({
       )}
 
       {/* Indexer loading / empty in tab view */}
-      {showIndexer && !isIndexerLoading && filteredIndexerResults.length === 0 && activeTab === "indexer" && (
-        <p className="text-center text-muted-foreground py-6 text-sm">
-          {indexerError ? "Torrent/Usenet indexers could not be reached" : "No indexer results found"}
-        </p>
-      )}
+      {showIndexer &&
+        !isIndexerLoading &&
+        filteredIndexerResults.length === 0 &&
+        activeTab === "indexer" && (
+          <p className="text-center text-muted-foreground py-6 text-sm">
+            {indexerError
+              ? "Torrent/Usenet indexers could not be reached"
+              : "No indexer results found"}
+          </p>
+        )}
 
       {/* No results after filtering */}
       {totalResults === 0 && (rawLibraryCount > 0 || rawIndexerCount > 0) && (
@@ -230,24 +249,30 @@ export function SearchResults({
       )}
 
       {/* No results at all */}
-      {totalResults === 0 && rawLibraryCount === 0 && rawIndexerCount === 0 && !isLibraryLoading && !isIndexerLoading && (
-        <div className="text-center text-muted-foreground py-8">
-          <p className="text-lg mb-2">No downloads found</p>
-          <p className="text-sm mb-4">Could not find "{bookTitle}" in any available source.</p>
-          {onExpandSearch && !isExpanded && activeTab !== "indexer" && (
-            <Button variant="outline" onClick={onExpandSearch} disabled={isExpandSearching}>
-              {isExpandSearching ? "Searching…" : "Expand search"}
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              Searching for more results…
-            </Button>
-          )}
-        </div>
-      )}
+      {totalResults === 0 &&
+        rawLibraryCount === 0 &&
+        rawIndexerCount === 0 &&
+        !isLibraryLoading &&
+        !isIndexerLoading && (
+          <div className="text-center text-muted-foreground py-8">
+            <p className="text-lg mb-2">No downloads found</p>
+            <p className="text-sm mb-4">Could not find "{bookTitle}" in any available source.</p>
+            {onExpandSearch && !isExpanded && activeTab !== "indexer" && (
+              <Button variant="outline" onClick={onExpandSearch} disabled={isExpandSearching}>
+                {isExpandSearching ? "Searching…" : "Expand search"}
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                Searching for more results…
+              </Button>
+            )}
+          </div>
+        )}
 
       {/* Footer */}
       {totalResults > 0 && (
         <div className="text-sm text-muted-foreground text-center pt-4 border-t space-y-2">
-          <p>{totalResults} download {totalResults === 1 ? "option" : "options"} found</p>
+          <p>
+            {totalResults} download {totalResults === 1 ? "option" : "options"} found
+          </p>
           {onExpandSearch && !isExpanded && activeTab !== "indexer" && (
             <Button variant="ghost" size="sm" onClick={onExpandSearch} disabled={isExpandSearching}>
               {isExpandSearching ? "Searching…" : "Expand search"}
@@ -288,7 +313,9 @@ function TabButton({ active, onClick, icon, label, count, loading }: TabButtonPr
       {loading ? (
         <span className="inline-block w-3 h-3 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
       ) : (
-        <Badge variant="secondary" className="text-xs ml-1">{count}</Badge>
+        <Badge variant="secondary" className="text-xs ml-1">
+          {count}
+        </Badge>
       )}
     </button>
   )

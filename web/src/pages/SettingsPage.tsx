@@ -1,5 +1,5 @@
-import { useState } from "react"
 import { ChevronDown, ChevronRight } from "lucide-react"
+import { useState } from "react"
 import { AuthLayout } from "../components/layout/AppLayout"
 import { DownloadClientList } from "../containers/download/DownloadClientList"
 import { IndexerList } from "../containers/indexers/IndexerList"
@@ -35,7 +35,9 @@ function GeneralSettings() {
         className="flex items-center justify-between w-full p-4 text-left hover:bg-accent/50 transition-colors"
       >
         <span className="text-lg font-semibold">General</span>
-        <span className="text-muted-foreground">{isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</span>
+        <span className="text-muted-foreground">
+          {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        </span>
       </button>
       {isOpen && (
         <div className="p-4 border-t">
@@ -56,7 +58,9 @@ function RootFolderSettings() {
         className="flex items-center justify-between w-full p-4 text-left hover:bg-accent/50 transition-colors"
       >
         <span className="text-lg font-semibold">Root Folders</span>
-        <span className="text-muted-foreground">{isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</span>
+        <span className="text-muted-foreground">
+          {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        </span>
       </button>
       {isOpen && (
         <div className="p-4 border-t">
@@ -77,7 +81,9 @@ function NamingSettingsSection() {
         className="flex items-center justify-between w-full p-4 text-left hover:bg-accent/50 transition-colors"
       >
         <span className="text-lg font-semibold">File Naming</span>
-        <span className="text-muted-foreground">{isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</span>
+        <span className="text-muted-foreground">
+          {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        </span>
       </button>
       {isOpen && (
         <div className="p-4 border-t">
@@ -98,7 +104,9 @@ function IndexerSettings() {
         className="flex items-center justify-between w-full p-4 text-left hover:bg-accent/50 transition-colors"
       >
         <span className="text-lg font-semibold">Indexers</span>
-        <span className="text-muted-foreground">{isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</span>
+        <span className="text-muted-foreground">
+          {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        </span>
       </button>
       {isOpen && (
         <div className="p-4 border-t space-y-6">
@@ -121,7 +129,9 @@ function DownloadClientSettings() {
         className="flex items-center justify-between w-full p-4 text-left hover:bg-accent/50 transition-colors"
       >
         <span className="text-lg font-semibold">Download Clients</span>
-        <span className="text-muted-foreground">{isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</span>
+        <span className="text-muted-foreground">
+          {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        </span>
       </button>
       {isOpen && (
         <div className="p-4 border-t">
@@ -142,7 +152,9 @@ function RemotePathMappings() {
         className="flex items-center justify-between w-full p-4 text-left hover:bg-accent/50 transition-colors"
       >
         <span className="text-lg font-semibold">Remote Path Mappings</span>
-        <span className="text-muted-foreground">{isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</span>
+        <span className="text-muted-foreground">
+          {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        </span>
       </button>
       {isOpen && (
         <div className="p-4 border-t">
