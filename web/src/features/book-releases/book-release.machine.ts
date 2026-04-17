@@ -26,7 +26,7 @@ interface PendingGrab {
   meta?: GrabMeta
 }
 
-interface BookReleaseMachineContext {
+export interface BookReleaseMachineContext {
   formatFilter: string
   providerFilter: string
   languageFilter: string

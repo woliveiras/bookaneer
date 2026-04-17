@@ -1,7 +1,7 @@
 import { createActor, fromPromise } from "xstate"
 import { describe, expect, it, vi } from "vitest"
 import { bookReleaseMachine } from "./book-release.machine"
-import type { EnsureBookInLibraryFn, GrabFn, GrabMeta } from "./book-release.machine"
+import type { BookReleaseMachineContext, EnsureBookInLibraryFn, GrabFn, GrabMeta } from "./book-release.machine"
 import type { GrabResult } from "../../lib/schemas/wanted.schema"
 
 // ---------------------------------------------------------------------------
@@ -149,7 +149,7 @@ describe("bookReleaseMachine", () => {
       bookReleaseMachine.provide({
         actors: {
           // Actor that never resolves so we can inspect the grabbing state
-          grabActor: fromPromise(async () => {
+          grabActor: fromPromise<GrabResult, BookReleaseMachineContext>(async () => {
             await new Promise<never>(() => {})
             return mockGrabResult
           }),
@@ -171,7 +171,7 @@ describe("bookReleaseMachine", () => {
     const actor = createActor(
       bookReleaseMachine.provide({
         actors: {
-          grabActor: fromPromise(async () => mockGrabResult),
+          grabActor: fromPromise<GrabResult, BookReleaseMachineContext>(async () => mockGrabResult),
         },
       }),
     )
@@ -189,7 +189,7 @@ describe("bookReleaseMachine", () => {
     const actor = createActor(
       bookReleaseMachine.provide({
         actors: {
-          grabActor: fromPromise(async () => {
+          grabActor: fromPromise<GrabResult, BookReleaseMachineContext>(async () => {
             throw new Error("Connection refused")
           }),
         },
@@ -209,7 +209,7 @@ describe("bookReleaseMachine", () => {
     const actor = createActor(
       bookReleaseMachine.provide({
         actors: {
-          grabActor: fromPromise(async () => mockGrabResult),
+          grabActor: fromPromise<GrabResult, BookReleaseMachineContext>(async () => mockGrabResult),
         },
       }),
     )
@@ -228,7 +228,7 @@ describe("bookReleaseMachine", () => {
     const actor = createActor(
       bookReleaseMachine.provide({
         actors: {
-          grabActor: fromPromise(async () => mockGrabResult),
+          grabActor: fromPromise<GrabResult, BookReleaseMachineContext>(async () => mockGrabResult),
         },
       }),
     )
