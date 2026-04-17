@@ -27,12 +27,6 @@ export const rootFolderApi = {
       body: JSON.stringify(data),
     }),
 
-  migrate: (id: number, newPath: string) =>
-    fetchAPI<RootFolder>(`/rootfolder/${id}/migrate`, {
-      method: "POST",
-      body: JSON.stringify({ newPath }),
-    }),
-
   delete: (id: number) =>
     fetch(`${API_BASE}/rootfolder/${id}`, {
       method: "DELETE",

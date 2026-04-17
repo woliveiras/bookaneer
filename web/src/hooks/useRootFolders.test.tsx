@@ -6,7 +6,6 @@ import type { RootFolder } from "../lib/api"
 import {
   useCreateRootFolder,
   useDeleteRootFolder,
-  useMigrateRootFolder,
   useRootFolder,
   useRootFolders,
   useUpdateRootFolder,
@@ -21,7 +20,6 @@ vi.mock("../lib/api", async () => {
       get: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
-      migrate: vi.fn(),
       delete: vi.fn(),
     },
   }
@@ -112,20 +110,6 @@ describe("useUpdateRootFolder", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(rootFolderApi.update).toHaveBeenCalledWith(1, { name: "My Books" })
-  })
-})
-
-describe("useMigrateRootFolder", () => {
-  it("migrates a root folder to new path", async () => {
-    const migrated = { ...mockFolder, path: "/new/path" }
-    vi.mocked(rootFolderApi.migrate).mockResolvedValue(migrated)
-
-    const { result } = renderHook(() => useMigrateRootFolder(), { wrapper: createWrapper() })
-
-    result.current.mutate({ id: 1, newPath: "/new/path" })
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(rootFolderApi.migrate).toHaveBeenCalledWith(1, "/new/path")
   })
 })
 

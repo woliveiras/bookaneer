@@ -37,18 +37,6 @@ export function useUpdateRootFolder() {
   })
 }
 
-export function useMigrateRootFolder() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({ id, newPath }: { id: number; newPath: string }) =>
-      rootFolderApi.migrate(id, newPath),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["rootFolders"] })
-      queryClient.invalidateQueries({ queryKey: ["authors"] })
-    },
-  })
-}
-
 export function useDeleteRootFolder() {
   const queryClient = useQueryClient()
   return useMutation({
