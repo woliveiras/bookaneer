@@ -53,16 +53,6 @@ type Client struct {
 	client *http.Client
 }
 
-// New creates a new qBittorrent client.
-func New(cfg Config, httpClient *http.Client) *Client {
-	jar, _ := cookiejar.New(nil)
-	httpClient.Jar = jar
-	return &Client{
-		cfg:    cfg,
-		client: httpClient,
-	}
-}
-
 // Name returns the client name.
 func (c *Client) Name() string {
 	return c.cfg.Name

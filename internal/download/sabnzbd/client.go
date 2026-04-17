@@ -43,14 +43,6 @@ type Client struct {
 	client *http.Client
 }
 
-// New creates a new SABnzbd client.
-func New(cfg Config, httpClient *http.Client) *Client {
-	return &Client{
-		cfg:    cfg,
-		client: httpClient,
-	}
-}
-
 // Name returns the client name.
 func (c *Client) Name() string {
 	return c.cfg.Name

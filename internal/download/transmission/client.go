@@ -46,14 +46,6 @@ type Client struct {
 	mu        sync.RWMutex
 }
 
-// New creates a new Transmission client.
-func New(cfg Config, httpClient *http.Client) *Client {
-	return &Client{
-		cfg:    cfg,
-		client: httpClient,
-	}
-}
-
 // Name returns the client name.
 func (c *Client) Name() string {
 	return c.cfg.Name

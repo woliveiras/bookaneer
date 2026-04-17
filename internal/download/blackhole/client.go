@@ -41,16 +41,6 @@ type Client struct {
 	client *http.Client
 }
 
-// New creates a new Blackhole client.
-func New(cfg Config) *Client {
-	return &Client{
-		cfg: cfg,
-		client: &http.Client{
-			Timeout: 60 * time.Second,
-		},
-	}
-}
-
 // Name returns the client name.
 func (c *Client) Name() string {
 	return c.cfg.Name
