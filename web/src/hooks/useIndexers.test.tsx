@@ -6,7 +6,6 @@ import type { Indexer, IndexerOptions, SearchResponse, TestIndexerResponse } fro
 import {
   useCreateIndexer,
   useDeleteIndexer,
-  useIndexer,
   useIndexerOptions,
   useIndexers,
   useSearch,
@@ -90,24 +89,6 @@ describe("useIndexers", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(result.current.data).toEqual([mockIndexer])
-  })
-})
-
-describe("useIndexer", () => {
-  it("fetches a single indexer by ID", async () => {
-    vi.mocked(indexerApi.get).mockResolvedValue(mockIndexer)
-
-    const { result } = renderHook(() => useIndexer(1), { wrapper: createWrapper() })
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(result.current.data).toEqual(mockIndexer)
-    expect(indexerApi.get).toHaveBeenCalledWith(1)
-  })
-
-  it("does not fetch when id is 0", () => {
-    const { result } = renderHook(() => useIndexer(0), { wrapper: createWrapper() })
-    expect(result.current.fetchStatus).toBe("idle")
-    expect(indexerApi.get).not.toHaveBeenCalled()
   })
 })
 

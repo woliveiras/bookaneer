@@ -6,7 +6,6 @@ import type { RootFolder } from "../lib/api"
 import {
   useCreateRootFolder,
   useDeleteRootFolder,
-  useRootFolder,
   useRootFolders,
   useUpdateRootFolder,
 } from "./useRootFolders"
@@ -62,24 +61,6 @@ describe("useRootFolders", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(result.current.data).toEqual([mockFolder])
-  })
-})
-
-describe("useRootFolder", () => {
-  it("fetches a single root folder by ID", async () => {
-    vi.mocked(rootFolderApi.get).mockResolvedValue(mockFolder)
-
-    const { result } = renderHook(() => useRootFolder(1), { wrapper: createWrapper() })
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(result.current.data).toEqual(mockFolder)
-    expect(rootFolderApi.get).toHaveBeenCalledWith(1)
-  })
-
-  it("does not fetch when id is 0", () => {
-    const { result } = renderHook(() => useRootFolder(0), { wrapper: createWrapper() })
-    expect(result.current.fetchStatus).toBe("idle")
-    expect(rootFolderApi.get).not.toHaveBeenCalled()
   })
 })
 

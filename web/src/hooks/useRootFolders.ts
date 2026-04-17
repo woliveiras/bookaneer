@@ -8,14 +8,6 @@ export function useRootFolders() {
   })
 }
 
-export function useRootFolder(id: number) {
-  return useQuery({
-    queryKey: ["rootFolder", id],
-    queryFn: () => rootFolderApi.get(id),
-    enabled: id > 0,
-  })
-}
-
 export function useCreateRootFolder() {
   const queryClient = useQueryClient()
   return useMutation({

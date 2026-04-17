@@ -2,13 +2,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { renderHook, waitFor } from "@testing-library/react"
 import type { ReactNode } from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import type { DownloadClient, QueueItem } from "../lib/api"
+import type { DownloadClient } from "../lib/api"
 import {
   useCreateDownloadClient,
   useDeleteDownloadClient,
-  useDownloadClient,
   useDownloadClients,
-  useQueue,
   useTestDownloadClient,
   useUpdateDownloadClient,
 } from "./useDownload"
@@ -25,13 +23,10 @@ vi.mock("../lib/api", async () => {
       delete: vi.fn(),
       test: vi.fn(),
     },
-    queueApi: {
-      list: vi.fn(),
-    },
   }
 })
 
-import { downloadClientApi, queueApi } from "../lib/api"
+import { downloadClientApi } from "../lib/api"
 
 const mockClient: DownloadClient = {
   id: 1,
@@ -80,22 +75,6 @@ describe("useDownloadClients", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(result.current.data).toEqual([mockClient])
-  })
-})
-
-describe("useDownloadClient", () => {
-  it("fetches single client by ID", async () => {
-    vi.mocked(downloadClientApi.get).mockResolvedValue(mockClient)
-
-    const { result } = renderHook(() => useDownloadClient(1), { wrapper: createWrapper() })
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(result.current.data).toEqual(mockClient)
-  })
-
-  it("does not fetch when id is 0", () => {
-    const { result } = renderHook(() => useDownloadClient(0), { wrapper: createWrapper() })
-    expect(result.current.fetchStatus).toBe("idle")
   })
 })
 
@@ -154,33 +133,6 @@ describe("useTestDownloadClient", () => {
       { name: "Test", type: "sabnzbd" },
       expect.anything(),
     )
-  })
-})
-
-describe("useQueue", () => {
-  it("fetches queue items", async () => {
-    const items: QueueItem[] = [
-      {
-        id: 1,
-        bookId: 1,
-        externalId: "ext-1",
-        title: "Book",
-        size: 1024,
-        format: "epub",
-        status: "downloading",
-        progress: 50,
-        downloadUrl: "",
-        addedAt: "2025-01-01T00:00:00Z",
-        bookTitle: "Book",
-        clientName: "SABnzbd",
-      },
-    ]
-    vi.mocked(queueApi.list).mockResolvedValue(items)
-
-    const { result } = renderHook(() => useQueue(), { wrapper: createWrapper() })
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(result.current.data).toEqual(items)
   })
 })
 

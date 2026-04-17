@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   type CreateDownloadClientInput,
   downloadClientApi,
-  queueApi,
 } from "../lib/api"
 
 // Download Clients hooks
@@ -10,14 +9,6 @@ export function useDownloadClients() {
   return useQuery({
     queryKey: ["downloadClients"],
     queryFn: downloadClientApi.list,
-  })
-}
-
-export function useDownloadClient(id: number) {
-  return useQuery({
-    queryKey: ["downloadClient", id],
-    queryFn: () => downloadClientApi.get(id),
-    enabled: id > 0,
   })
 }
 
@@ -58,11 +49,3 @@ export function useTestDownloadClient() {
   })
 }
 
-// Queue hooks
-export function useQueue() {
-  return useQuery({
-    queryKey: ["queue"],
-    queryFn: queueApi.list,
-    refetchInterval: 5000, // Refresh every 5 seconds
-  })
-}

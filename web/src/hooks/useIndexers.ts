@@ -14,15 +14,6 @@ export function useIndexers() {
   })
 }
 
-export function useIndexer(id: number) {
-  return useQuery({
-    queryKey: ["indexer", id],
-    queryFn: () => indexerApi.get(id),
-    enabled: id > 0,
-    staleTime: 30 * 1000,
-  })
-}
-
 export function useCreateIndexer() {
   const queryClient = useQueryClient()
 
