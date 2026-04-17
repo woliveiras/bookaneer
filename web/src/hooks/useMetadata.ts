@@ -21,16 +21,6 @@ export function useMetadataSearchBooks(query: string, enabled = true) {
   })
 }
 
-// Get author details from metadata provider
-export function useMetadataAuthor(foreignId: string, provider?: string, enabled = true) {
-  return useQuery({
-    queryKey: ["metadata", "author", foreignId, provider],
-    queryFn: () => metadataApi.getAuthor(foreignId, provider),
-    enabled: enabled && !!foreignId,
-    staleTime: 30 * 60 * 1000, // 30 minutes
-  })
-}
-
 // Get book details from metadata provider
 export function useMetadataBook(foreignId: string, provider?: string, enabled = true) {
   return useQuery({
@@ -38,25 +28,6 @@ export function useMetadataBook(foreignId: string, provider?: string, enabled = 
     queryFn: () => metadataApi.getBook(foreignId, provider),
     enabled: enabled && !!foreignId,
     staleTime: 30 * 60 * 1000, // 30 minutes
-  })
-}
-
-// Lookup book by ISBN
-export function useMetadataISBN(isbn: string, enabled = true) {
-  return useQuery({
-    queryKey: ["metadata", "isbn", isbn],
-    queryFn: () => metadataApi.lookupISBN(isbn),
-    enabled: enabled && isbn.length >= 10,
-    staleTime: 30 * 60 * 1000, // 30 minutes
-  })
-}
-
-// Get available metadata providers
-export function useMetadataProviders() {
-  return useQuery({
-    queryKey: ["metadata", "providers"],
-    queryFn: () => metadataApi.getProviders(),
-    staleTime: 60 * 60 * 1000, // 1 hour
   })
 }
 
@@ -72,11 +43,3 @@ export function useDigitalLibrarySearch(query: string, enabled = true) {
   })
 }
 
-// Get available digital library providers
-export function useDigitalLibraryProviders() {
-  return useQuery({
-    queryKey: ["digitallibrary", "providers"],
-    queryFn: () => digitalLibraryApi.getProviders(),
-    staleTime: 60 * 60 * 1000, // 1 hour
-  })
-}
