@@ -2,8 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   type CreateDownloadClientInput,
   downloadClientApi,
-  type GrabStatus,
-  grabApi,
   queueApi,
 } from "../lib/api"
 
@@ -66,44 +64,5 @@ export function useQueue() {
     queryKey: ["queue"],
     queryFn: queueApi.list,
     refetchInterval: 5000, // Refresh every 5 seconds
-  })
-}
-
-export function useClientQueue(clientId: number) {
-  return useQuery({
-    queryKey: ["queue", clientId],
-    queryFn: () => queueApi.listByClient(clientId),
-    enabled: clientId > 0,
-    refetchInterval: 5000,
-  })
-}
-
-// Grab hooks
-export function useGrabs(params?: { bookId?: number; status?: GrabStatus; limit?: number }) {
-  return useQuery({
-    queryKey: ["grabs", params],
-    queryFn: () => grabApi.list(params),
-  })
-}
-
-export function useCreateGrab() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: grabApi.create,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["grabs"] })
-      queryClient.invalidateQueries({ queryKey: ["queue"] })
-    },
-  })
-}
-
-export function useSendGrab() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: grabApi.send,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["grabs"] })
-      queryClient.invalidateQueries({ queryKey: ["queue"] })
-    },
   })
 }

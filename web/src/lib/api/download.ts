@@ -1,9 +1,6 @@
 import type {
   CreateDownloadClientInput,
-  CreateGrabInput,
   DownloadClient,
-  Grab,
-  GrabStatus,
   QueueItem,
   TestDownloadClientResponse,
 } from "../schemas"
@@ -46,8 +43,6 @@ export const downloadClientApi = {
 export const queueApi = {
   list: () => fetchAPI<QueueItem[]>("/queue"),
 
-  listByClient: (clientId: number) => fetchAPI<QueueItem[]>(`/queue/${clientId}`),
-
   remove: (id: number) =>
     fetch(`${API_BASE}/queue/${id}`, {
       method: "DELETE",
@@ -60,28 +55,6 @@ export const queueApi = {
 
   retry: (id: number) =>
     fetchAPI<void>(`/queue/${id}/retry`, {
-      method: "POST",
-    }),
-}
-
-export const grabApi = {
-  list: (params?: { bookId?: number; status?: GrabStatus; limit?: number }) => {
-    const searchParams = new URLSearchParams()
-    if (params?.bookId) searchParams.set("bookId", params.bookId.toString())
-    if (params?.status) searchParams.set("status", params.status)
-    if (params?.limit) searchParams.set("limit", params.limit.toString())
-    const query = searchParams.toString()
-    return fetchAPI<Grab[]>(`/grab${query ? `?${query}` : ""}`)
-  },
-
-  create: (data: CreateGrabInput) =>
-    fetchAPI<Grab>("/grab", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-
-  send: (id: number) =>
-    fetchAPI<Grab>(`/grab/${id}/send`, {
       method: "POST",
     }),
 }
