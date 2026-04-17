@@ -321,7 +321,7 @@ No configuration is needed. The download appears in the activity queue as `"Embe
 **Limitation:** Many digital library sources protect download pages with Cloudflare or DDoS-Guard challenges. A plain HTTP request will receive a challenge page instead of the file, and the download will fail with a message like:
 
 ```
-Cloudflare challenge detected — configure FlareSolverr in Settings → Download
+Cloudflare challenge detected — set flareSolverrUrl in config.yaml or BOOKANEER_FLARESOLVERR_URL
 ```
 
 See [FlareSolverr bypass](#flaresolverr-optional-bypass-for-digital-libraries) below to resolve this.

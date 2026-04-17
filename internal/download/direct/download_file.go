@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	_previewSize = 4096       // bytes to read for challenge detection
-	_downloadBuf = 32 * 1024  // copy buffer size
+	_previewSize = 4096      // bytes to read for challenge detection
+	_downloadBuf = 32 * 1024 // copy buffer size
 )
 
 // fetchURL makes an HTTP GET to url, applying optional cookies and a custom
@@ -49,11 +49,11 @@ func (c *Client) fetchURL(ctx context.Context, url string, headers map[string]st
 func challengeMessage(reason string) string {
 	switch reason {
 	case "cloudflare":
-		return "Cloudflare challenge detected — configure FlareSolverr in Settings → Download"
+		return "Cloudflare challenge detected — set flareSolverrUrl in config.yaml or BOOKANEER_FLARESOLVERR_URL"
 	case "ddosguard":
-		return "DDoS-Guard challenge detected — configure FlareSolverr in Settings → Download"
+		return "DDoS-Guard challenge detected — set flareSolverrUrl in config.yaml or BOOKANEER_FLARESOLVERR_URL"
 	default:
-		return "login required — configure FlareSolverr or try a different source"
+		return "login required — set flareSolverrUrl in config.yaml or try a different source"
 	}
 }
 
@@ -206,4 +206,3 @@ func (c *Client) downloadFile(ctx context.Context, dl *downloadItem, headers map
 	dl.completedAt = &now
 	c.mu.Unlock()
 }
-
