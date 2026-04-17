@@ -6,6 +6,7 @@ import type {
   ActiveCommand,
   BlocklistItem,
   BookSearchResponse,
+  GrabResult,
   HistoryItem,
   QueueItem,
 } from "../lib/api"
@@ -155,7 +156,16 @@ describe("useActiveCommands", () => {
 
 describe("useManualGrab", () => {
   it("triggers a manual grab", async () => {
-    const response: SearchCommandResponse = { commandId: "cmd-3", message: "Grab started" }
+    const response: GrabResult = {
+      bookId: 1,
+      title: "Book.epub",
+      source: "library",
+      providerName: "mock",
+      format: "epub",
+      size: 1024,
+      downloadId: "dl-1",
+      clientName: "mock-client",
+    }
     vi.mocked(wantedApi.manualGrab).mockResolvedValue(response)
 
     const { result } = renderHook(() => useManualGrab(), { wrapper: createWrapper() })

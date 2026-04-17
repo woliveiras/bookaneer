@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react"
+import { useActorRef, useSelector } from "@xstate/react"
+import { useMemo } from "react"
 import type { MetadataBookResult } from "../lib/api"
-import type { GrabResult } from "../lib/types"
+import { bookReleaseMachine } from "../features/book-releases/book-release.machine"
 import { useAuthors, useCreateAuthor } from "./useAuthors"
 import { useCreateBook } from "./useBooks"
 import { type SearchParams, useSearch } from "./useIndexers"
@@ -23,24 +24,21 @@ export interface LibraryGrabMeta {
 export type GrabMeta = IndexerGrabMeta | LibraryGrabMeta
 
 export function useBookRelease(book: MetadataBookResult | null, existingBookId?: number) {
-  const [searchStarted, setSearchStarted] = useState(false)
-  const [expandedSearch, setExpandedSearch] = useState(false)
+  const actorRef = useActorRef(bookReleaseMachine)
 
-  const [bookIdToUse, setBookIdToUse] = useState<number | undefined>(existingBookId)
-  const [createdBookId, setCreatedBookId] = useState<number | null>(null)
-  const [addingToLibrary, setAddingToLibrary] = useState(false)
-  const [addError, setAddError] = useState<string | null>(null)
-
-  const [isGrabbing, setIsGrabbing] = useState(false)
-  const [grabSuccess, setGrabSuccess] = useState(false)
-  const [grabError, setGrabError] = useState<string | null>(null)
-  const [grabResult, setGrabResult] = useState<GrabResult | null>(null)
-
-  const [formatFilter, setFormatFilter] = useState<string>("all")
-  const [providerFilter, setProviderFilter] = useState<string>("all")
-  const [languageFilter, setLanguageFilter] = useState<string>("all")
-  const [sortBy, setSortBy] = useState<string>("score")
-  const [searchInResults, setSearchInResults] = useState("")
+  // Machine state
+  const isSearching = useSelector(actorRef, (s) => s.matches("searching") || s.matches("grabbing") || s.matches("grabbed"))
+  const isGrabbing = useSelector(actorRef, (s) => s.matches("grabbing"))
+  const grabSuccess = useSelector(actorRef, (s) => s.matches("grabbed"))
+  const formatFilter = useSelector(actorRef, (s) => s.context.formatFilter)
+  const providerFilter = useSelector(actorRef, (s) => s.context.providerFilter)
+  const languageFilter = useSelector(actorRef, (s) => s.context.languageFilter)
+  const sortBy = useSelector(actorRef, (s) => s.context.sortBy)
+  const searchInResults = useSelector(actorRef, (s) => s.context.searchInResults)
+  const isExpanded = useSelector(actorRef, (s) => s.context.isExpanded)
+  const grabResult = useSelector(actorRef, (s) => s.context.grabResult)
+  const addError = useSelector(actorRef, (s) => s.context.addError)
+  const grabError = useSelector(actorRef, (s) => s.context.grabError)
 
   const createBook = useCreateBook()
   const createAuthor = useCreateAuthor()
@@ -51,27 +49,25 @@ export function useBookRelease(book: MetadataBookResult | null, existingBookId?:
   const { data: existingAuthors } = useAuthors({ search: authorName, limit: 1 })
 
   const isbn = book?.isbn13 ?? ""
-  // Use title+author for library search — Anna's Archive and LibGen return much
-  // better results with a text query than a raw ISBN.
   const titleAuthorQuery = [book?.title ?? "", ...(book?.authors ?? [])].join(" ").trim()
   const librarySearchQuery = titleAuthorQuery || isbn
   const searchParams: SearchParams = isbn ? { isbn, q: titleAuthorQuery } : { q: titleAuthorQuery }
 
-  const indexerSearch = useSearch(searchStarted ? searchParams : { q: "" }, searchStarted && !!book)
-  const librarySearch = useDigitalLibrarySearch(librarySearchQuery, searchStarted && !!book)
+  const indexerSearch = useSearch(isSearching ? searchParams : { q: "" }, isSearching && !!book)
+  const librarySearch = useDigitalLibrarySearch(librarySearchQuery, isSearching && !!book)
 
   const expandedIndexerQuery = titleAuthorQuery
   const expandedIndexerSearch = useSearch(
-    expandedSearch ? { q: expandedIndexerQuery } : { q: "" },
-    expandedSearch && !!book,
+    isExpanded ? { q: expandedIndexerQuery } : { q: "" },
+    isExpanded && !!book,
   )
   const expandedLibrarySearch = useDigitalLibrarySearch(
     book?.title ?? "",
-    expandedSearch && !!isbn && !!book,
+    isExpanded && !!isbn && !!book,
   )
 
   const isExpandSearching =
-    expandedSearch && (expandedIndexerSearch.isLoading || expandedLibrarySearch.isLoading)
+    isExpanded && (expandedIndexerSearch.isLoading || expandedLibrarySearch.isLoading)
 
   const libraryFailed =
     !librarySearch.isLoading && !!librarySearch.error && !librarySearch.data?.results?.length
@@ -79,7 +75,6 @@ export function useBookRelease(book: MetadataBookResult | null, existingBookId?:
     !indexerSearch.isLoading && !!indexerSearch.error && !indexerSearch.data?.results?.length
   const someSourcesFailed = (libraryFailed || indexerFailed) && !(libraryFailed && indexerFailed)
 
-  // Track which result IDs came exclusively from the expanded search
   const expandedIndexerGuids = useMemo(() => {
     const primaryGuids = new Set((indexerSearch.data?.results ?? []).map((r) => r.guid))
     const set = new Set<string>()
@@ -202,15 +197,14 @@ export function useBookRelease(book: MetadataBookResult | null, existingBookId?:
 
   const totalResults = filteredLibraryResults.length + filteredIndexerResults.length
 
-  const ensureBookInLibrary = async (): Promise<number> => {
-    if (bookIdToUse) return bookIdToUse
-    if (createdBookId) return createdBookId
-    if (!book) throw new Error("No book selected")
+  // Build ensureBookInLibrary as a function (for machine's grabFn)
+  const buildEnsureBookInLibrary = () => {
+    let resolvedBookId: number | null = existingBookId ?? null
 
-    setAddingToLibrary(true)
-    setAddError(null)
+    return async (): Promise<number> => {
+      if (resolvedBookId != null) return resolvedBookId
+      if (!book) throw new Error("No book selected")
 
-    try {
       let authorId: number
 
       if (
@@ -248,34 +242,21 @@ export function useBookRelease(book: MetadataBookResult | null, existingBookId?:
         imageUrl: book.coverUrl ?? "",
       })
 
-      setCreatedBookId(newBook.id)
-      setBookIdToUse(newBook.id)
+      resolvedBookId = newBook.id
       return newBook.id
-    } catch (err) {
-      setAddError(err instanceof Error ? err.message : "Failed to add to library")
-      throw err
-    } finally {
-      setAddingToLibrary(false)
     }
   }
 
-  const handleGrab = async (
-    downloadUrl: string,
-    releaseTitle: string,
-    size: number,
-    meta?: GrabMeta,
-  ) => {
-    setIsGrabbing(true)
-    setGrabError(null)
-    setGrabSuccess(false)
-    setGrabResult(null)
-
-    try {
-      const bookId = await ensureBookInLibrary()
-      let result: GrabResult
-
+  const buildGrabFn = () => {
+    return async (
+      bookId: number,
+      downloadUrl: string,
+      releaseTitle: string,
+      size: number,
+      meta?: GrabMeta,
+    ) => {
       if (meta?.sourceType === "indexer") {
-        result = await indexerGrab.mutateAsync({
+        return indexerGrab.mutateAsync({
           bookId,
           downloadUrl,
           releaseTitle,
@@ -285,52 +266,42 @@ export function useBookRelease(book: MetadataBookResult | null, existingBookId?:
           indexerId: meta.indexerId,
           indexerName: meta.indexerName,
         })
-      } else {
-        result = await manualGrab.mutateAsync({ bookId, downloadUrl, releaseTitle, size })
       }
-
-      setGrabResult(result)
-      setGrabSuccess(true)
-    } catch (err) {
-      setGrabError(err instanceof Error ? err.message : "Failed to grab release")
-    } finally {
-      setIsGrabbing(false)
+      return manualGrab.mutateAsync({ bookId, downloadUrl, releaseTitle, size })
     }
   }
 
+  const addingToLibrary = useSelector(actorRef, (s) => s.matches("grabbing"))
+
   const startSearch = () => {
-    setSearchStarted(true)
-    setExpandedSearch(false)
-    setGrabSuccess(false)
-    setGrabError(null)
-    setFormatFilter("all")
-    setProviderFilter("all")
-    setLanguageFilter("all")
-    setSortBy("score")
-    setSearchInResults("")
+    actorRef.send({
+      type: "START_SEARCH",
+      ensureBookInLibraryFn: buildEnsureBookInLibrary(),
+      grabFn: buildGrabFn(),
+    })
   }
 
   const closeSearch = () => {
-    setSearchStarted(false)
-    setExpandedSearch(false)
-    setGrabSuccess(false)
-    setGrabError(null)
-    setFormatFilter("all")
-    setProviderFilter("all")
-    setLanguageFilter("all")
-    setSortBy("score")
-    setSearchInResults("")
+    actorRef.send({ type: "CLOSE_SEARCH" })
+  }
+
+  const handleGrab = async (
+    downloadUrl: string,
+    releaseTitle: string,
+    size: number,
+    meta?: GrabMeta,
+  ) => {
+    actorRef.send({ type: "GRAB", downloadUrl, releaseTitle, size, meta })
   }
 
   return {
-    searchStarted,
+    searchStarted: isSearching,
     startSearch,
     closeSearch,
     hasRootFolder: !!rootFolders?.length,
     addingToLibrary,
     addError,
     isExpandSearching,
-    // Results
     filteredLibraryResults,
     filteredIndexerResults,
     totalResults,
@@ -343,7 +314,6 @@ export function useBookRelease(book: MetadataBookResult | null, existingBookId?:
     someSourcesFailed,
     libraryColumnConfig: librarySearch.data?.columnConfig,
     indexerColumnConfig: indexerSearch.data?.columnConfig,
-    // Grab
     isGrabbing,
     grabSuccess,
     grabError,
@@ -351,24 +321,18 @@ export function useBookRelease(book: MetadataBookResult | null, existingBookId?:
     handleGrab,
     expandedLibraryKeys,
     expandedIndexerGuids,
-    handleExpandSearch: () => setExpandedSearch(true),
-    isExpanded: expandedSearch,
-    // Filters
+    handleExpandSearch: () => actorRef.send({ type: "EXPAND_SEARCH" }),
+    isExpanded,
     formatFilter,
-    setFormatFilter,
+    setFormatFilter: (v: string) => actorRef.send({ type: "SET_FORMAT_FILTER", value: v }),
+    setProviderFilter: (v: string) => actorRef.send({ type: "SET_PROVIDER_FILTER", value: v }),
+    setLanguageFilter: (v: string) => actorRef.send({ type: "SET_LANGUAGE_FILTER", value: v }),
+    setSortBy: (v: string) => actorRef.send({ type: "SET_SORT_BY", value: v }),
+    setSearchInResults: (v: string) => actorRef.send({ type: "SET_SEARCH_IN_RESULTS", value: v }),
     providerFilter,
-    setProviderFilter,
     languageFilter,
-    setLanguageFilter,
     sortBy,
-    setSortBy,
     searchInResults,
-    setSearchInResults,
-    resetFilters: () => {
-      setFormatFilter("all")
-      setLanguageFilter("all")
-      setProviderFilter("all")
-      setSearchInResults("")
-    },
+    resetFilters: () => actorRef.send({ type: "RESET_FILTERS" }),
   }
 }

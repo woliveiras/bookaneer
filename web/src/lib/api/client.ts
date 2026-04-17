@@ -1,9 +1,15 @@
+import * as z from "zod"
+
 const API_BASE = "/api/v1"
 const API_KEY_STORAGE_KEY = "bookaneer_api_key"
 
-// Get stored API key
+const storedKeySchema = z.string().min(1)
+
+// Get stored API key (validated — rejects empty strings)
 export function getStoredApiKey(): string | null {
-  return localStorage.getItem(API_KEY_STORAGE_KEY)
+  const raw = localStorage.getItem(API_KEY_STORAGE_KEY)
+  const result = storedKeySchema.safeParse(raw)
+  return result.success ? result.data : null
 }
 
 // Set stored API key
@@ -16,8 +22,12 @@ export function clearStoredApiKey(): void {
   localStorage.removeItem(API_KEY_STORAGE_KEY)
 }
 
-// Generic fetch wrapper with auth
-export async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
+// Generic fetch wrapper with auth and optional Zod schema validation
+export async function fetchAPI<T>(
+  path: string,
+  options?: RequestInit,
+  schema?: z.ZodSchema<T>,
+): Promise<T> {
   const apiKey = getStoredApiKey()
   const headers: HeadersInit = {
     "Content-Type": "application/json",
@@ -42,7 +52,11 @@ export async function fetchAPI<T>(path: string, options?: RequestInit): Promise<
     return undefined as T
   }
 
-  return res.json()
+  const data = await res.json()
+  if (schema) {
+    return schema.parse(data)
+  }
+  return data as T
 }
 
 export { API_BASE }

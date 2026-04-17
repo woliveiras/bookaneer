@@ -1,26 +1,22 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect } from "react"
 import {
   type FoliateView,
-  loadSettings,
-  type ReaderSettings,
-  saveSettings,
   THEMES,
 } from "../../components/reader/readerConfig"
+import { useReaderSettingsStore } from "../../store/reader/reader-settings.store"
 
 /**
  * Manages reader display settings (font, theme, line height) and applies
  * them to the foliate-view renderer whenever they change.
  */
 export function useReaderSettings(viewRef: React.RefObject<FoliateView | null>) {
-  const [settings, setSettings] = useState<ReaderSettings>(loadSettings)
-
-  const updateSettings = useCallback((updates: Partial<ReaderSettings>) => {
-    setSettings((prev) => {
-      const next = { ...prev, ...updates }
-      saveSettings(next)
-      return next
-    })
-  }, [])
+  const settings = useReaderSettingsStore((s) => ({
+    theme: s.theme,
+    fontSize: s.fontSize,
+    fontFamily: s.fontFamily,
+    lineHeight: s.lineHeight,
+  }))
+  const updateSettings = useReaderSettingsStore((s) => s.updateSettings)
 
   const applyStyles = useCallback(() => {
     const view = viewRef.current

@@ -1,23 +1,24 @@
 import { X } from "lucide-react"
 import {
   FONTS,
-  type ReaderSettings,
   THEMES,
   type ThemeKey,
 } from "../../components/reader/readerConfig"
 import { Button } from "../../components/ui"
+import { useReaderSettingsStore } from "../../store/reader/reader-settings.store"
 
 interface ReaderSettingsPanelProps {
-  settings: ReaderSettings
-  onUpdateSettings: (updates: Partial<ReaderSettings>) => void
   onClose: () => void
 }
 
-export function ReaderSettingsPanel({
-  settings,
-  onUpdateSettings,
-  onClose,
-}: ReaderSettingsPanelProps) {
+export function ReaderSettingsPanel({ onClose }: ReaderSettingsPanelProps) {
+  const settings = useReaderSettingsStore((s) => ({
+    theme: s.theme,
+    fontSize: s.fontSize,
+    fontFamily: s.fontFamily,
+    lineHeight: s.lineHeight,
+  }))
+  const updateSettings = useReaderSettingsStore((s) => s.updateSettings)
   const theme = THEMES[settings.theme]
   const borderColor =
     settings.theme === "dark" ? "#333" : settings.theme === "sepia" ? "#d4c9b0" : "#e5e5e5"
@@ -49,7 +50,7 @@ export function ReaderSettingsPanel({
               <button
                 key={key}
                 type="button"
-                onClick={() => onUpdateSettings({ theme: key })}
+                onClick={() => updateSettings({ theme: key })}
                 className={`flex-1 py-2 px-3 rounded border text-sm ${
                   settings.theme === key ? "ring-2 ring-blue-500" : ""
                 }`}
@@ -75,7 +76,7 @@ export function ReaderSettingsPanel({
               max="200"
               step="5"
               value={settings.fontSize}
-              onChange={(e) => onUpdateSettings({ fontSize: Number(e.target.value) })}
+              onChange={(e) => updateSettings({ fontSize: Number(e.target.value) })}
               className="w-full"
             />
           </label>
@@ -91,7 +92,7 @@ export function ReaderSettingsPanel({
             Font
             <select
               value={settings.fontFamily}
-              onChange={(e) => onUpdateSettings({ fontFamily: e.target.value })}
+              onChange={(e) => updateSettings({ fontFamily: e.target.value })}
               className="w-full p-2 rounded border"
               style={{
                 background: theme.bg,
@@ -118,7 +119,7 @@ export function ReaderSettingsPanel({
               max="2.5"
               step="0.1"
               value={settings.lineHeight}
-              onChange={(e) => onUpdateSettings({ lineHeight: Number(e.target.value) })}
+              onChange={(e) => updateSettings({ lineHeight: Number(e.target.value) })}
               className="w-full"
             />
           </label>

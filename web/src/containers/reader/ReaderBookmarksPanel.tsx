@@ -1,13 +1,12 @@
 import type { UseMutationResult } from "@tanstack/react-query"
 import { Bookmark as BookmarkIcon, Trash2, X } from "lucide-react"
-import type { ReaderSettings } from "../../components/reader/readerConfig"
 import { THEMES } from "../../components/reader/readerConfig"
 import { Button } from "../../components/ui"
 import type { CreateBookmarkInput } from "../../lib/api"
 import type { Bookmark } from "../../lib/types/reader"
+import { useReaderSettingsStore } from "../../store/reader/reader-settings.store"
 
 interface ReaderBookmarksPanelProps {
-  settings: ReaderSettings
   bookmarks: Bookmark[] | undefined
   currentCfi: string
   currentLocation: string
@@ -19,7 +18,6 @@ interface ReaderBookmarksPanelProps {
 }
 
 export function ReaderBookmarksPanel({
-  settings,
   bookmarks,
   currentCfi,
   currentLocation,
@@ -29,9 +27,10 @@ export function ReaderBookmarksPanel({
   createBookmarkMutation,
   deleteBookmarkMutation,
 }: ReaderBookmarksPanelProps) {
-  const theme = THEMES[settings.theme]
+  const theme_key = useReaderSettingsStore((s) => s.theme)
+  const theme = THEMES[theme_key]
   const borderColor =
-    settings.theme === "dark" ? "#333" : settings.theme === "sepia" ? "#d4c9b0" : "#e5e5e5"
+    theme_key === "dark" ? "#333" : theme_key === "sepia" ? "#d4c9b0" : "#e5e5e5"
 
   const handleAddBookmark = () => {
     const title =
@@ -67,7 +66,7 @@ export function ReaderBookmarksPanel({
           onClick={handleAddBookmark}
           disabled={!currentCfi || createBookmarkMutation.isPending}
           style={{
-            borderColor: settings.theme === "dark" ? "#555" : "#ccc",
+            borderColor: theme_key === "dark" ? "#555" : "#ccc",
             color: theme.fg,
           }}
         >

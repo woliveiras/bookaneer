@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useActorRef, useSelector } from "@xstate/react"
+import { useCallback, useEffect, useRef } from "react"
 import type {
   FoliateView,
-  ReaderSettings,
   RelocateDetail,
   TocItem,
 } from "../../components/reader/readerConfig"
 import { useReaderBookFile } from "../../hooks/useReader"
 import { readerApi } from "../../lib/api"
+import { readerMachine } from "../../features/reader/reader.machine"
+import { useReaderSettingsStore } from "../../store/reader/reader-settings.store"
 import { useReaderProgress } from "./useReaderProgress"
 import { useReaderSettings } from "./useReaderSettings"
 
@@ -26,8 +28,6 @@ export interface ReaderCoreState {
   currentCfi: string
   progress: number
   toc: TocItem[]
-  settings: ReaderSettings
-  updateSettings: (updates: Partial<ReaderSettings>) => void
   handlePrev: () => Promise<void>
   handleNext: () => Promise<void>
   handleTocNavigate: (href: string) => Promise<void>
@@ -38,14 +38,16 @@ export function useReaderCore(bookFileId: number): ReaderCoreState {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<FoliateView | null>(null)
 
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [currentLocation, setCurrentLocation] = useState("")
-  const [currentCfi, setCurrentCfi] = useState("")
-  const [progress, setProgress] = useState(0)
-  const [toc, setToc] = useState<TocItem[]>([])
+  const actorRef = useActorRef(readerMachine)
+  const isLoading = useSelector(actorRef, (s) => s.context.isLoading)
+  const error = useSelector(actorRef, (s) => s.context.error)
+  const currentLocation = useSelector(actorRef, (s) => s.context.currentLocation)
+  const currentCfi = useSelector(actorRef, (s) => s.context.currentCfi)
+  const progress = useSelector(actorRef, (s) => s.context.progress)
+  const toc = useSelector(actorRef, (s) => s.context.toc)
 
-  const { settings, updateSettings, applyStyles } = useReaderSettings(viewRef)
+  const { applyStyles } = useReaderSettings(viewRef)
+  const settingsTheme = useReaderSettingsStore((s) => s.theme)
   const { savedProgress, saveProgress } = useReaderProgress(bookFileId)
 
   const { data: bookFile } = useReaderBookFile(bookFileId)
@@ -65,8 +67,7 @@ export function useReaderCore(bookFileId: number): ReaderCoreState {
 
     const initReader = async () => {
       try {
-        setIsLoading(true)
-        setError(null)
+        actorRef.send({ type: "INIT", bookFile, bookFileId })
 
         const view = document.createElement("foliate-view") as FoliateView
         view.style.width = "100%"
@@ -77,18 +78,20 @@ export function useReaderCore(bookFileId: number): ReaderCoreState {
           if (cancelled) return
           const detail = e.detail
           if (detail.cfi) {
-            setCurrentLocation(detail.tocItem?.label || "")
-            setCurrentCfi(detail.cfi)
-            const percentage = detail.fraction || 0
-            setProgress(percentage)
-            saveProgressRef.current(detail.cfi, percentage)
+            actorRef.send({
+              type: "LOCATION_UPDATED",
+              location: detail.tocItem?.label || "",
+              cfi: detail.cfi,
+              progress: detail.fraction || 0,
+            })
+            saveProgressRef.current(detail.cfi, detail.fraction || 0)
           }
         }) as EventListener)
 
         view.addEventListener("load", (() => {
           if (cancelled) return
           if (view.book?.toc) {
-            setToc(view.book.toc)
+            actorRef.send({ type: "TOC_UPDATED", toc: view.book.toc })
           }
           applyStylesRef.current()
         }) as EventListener)
@@ -118,12 +121,11 @@ export function useReaderCore(bookFileId: number): ReaderCoreState {
           }
         }
 
-        if (!cancelled) setIsLoading(false)
+        if (!cancelled) actorRef.send({ type: "LOAD_SUCCESS" })
       } catch (err) {
         if (cancelled) return
         console.error("Failed to initialize reader:", err)
-        setError(err instanceof Error ? err.message : "Failed to load book")
-        setIsLoading(false)
+        actorRef.send({ type: "LOAD_ERROR", error: err instanceof Error ? err.message : "Failed to load book" })
       }
     }
 
@@ -134,7 +136,7 @@ export function useReaderCore(bookFileId: number): ReaderCoreState {
       if (viewRef.current) container.innerHTML = ""
       viewRef.current = null
     }
-  }, [bookFile, bookFileId, settings.theme])
+  }, [bookFile, bookFileId, settingsTheme])
 
   const handlePrev = useCallback(async () => {
     await viewRef.current?.prev()
@@ -161,8 +163,6 @@ export function useReaderCore(bookFileId: number): ReaderCoreState {
     currentCfi,
     progress,
     toc,
-    settings,
-    updateSettings,
     handlePrev,
     handleNext,
     handleTocNavigate,

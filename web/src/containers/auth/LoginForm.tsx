@@ -1,34 +1,46 @@
 import { Flag } from "lucide-react"
 import { type FormEvent, useState } from "react"
+import { useSelector } from "@xstate/react"
+import * as z from "zod"
 import { Button } from "../../components/ui/Button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/Card"
 import { Input } from "../../components/ui/Input"
-import { useAuth } from "../../contexts/AuthContext"
+import { useAuthActor } from "../../features/auth/AuthProvider"
+
+const loginSchema = z.object({
+  username: z
+    .string()
+    .min(1, { error: "Username is required" })
+    .transform((s) => s.trim()),
+  password: z.string().min(1, { error: "Password is required" }),
+})
 
 export function LoginForm() {
-  const { loginWithCredentials } = useAuth()
+  const actorRef = useAuthActor()
+  const error = useSelector(actorRef, (s) => s.context.error)
+  const isLoading = useSelector(actorRef, (s) => s.matches("loggingIn"))
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [validationError, setValidationError] = useState<string | null>(null)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    setError(null)
-    setIsLoading(true)
+    setValidationError(null)
 
-    try {
-      if (!username.trim() || !password) {
-        setError("Username and password are required")
-        return
-      }
-      await loginWithCredentials(username.trim(), password)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Authentication failed")
-    } finally {
-      setIsLoading(false)
+    const result = loginSchema.safeParse({ username, password })
+    if (!result.success) {
+      setValidationError(z.prettifyError(result.error))
+      return
     }
+
+    actorRef.send({
+      type: "LOGIN_WITH_CREDENTIALS",
+      username: result.data.username,
+      password: result.data.password,
+    })
   }
+
+  const displayError = validationError ?? error
 
   return (
     <Card className="w-full max-w-md">
@@ -69,13 +81,13 @@ export function LoginForm() {
             />
           </div>
 
-          {error && (
+          {displayError && (
             <div
               className="p-3 text-sm text-destructive bg-destructive/10 rounded-md"
               role="alert"
               aria-live="polite"
             >
-              {error}
+              {displayError}
             </div>
           )}
 

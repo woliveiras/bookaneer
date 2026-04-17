@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { AuthLayout } from "../components/layout/AppLayout"
 import { Button } from "../components/ui"
-import { useAuth } from "../contexts/AuthContext"
+import { useAuthStore } from "../store/auth/auth.store"
 import { type ActiveCommand, wantedApi } from "../lib/api"
 
 interface SystemStatus {
@@ -16,7 +16,7 @@ interface SystemStatus {
 }
 
 export function SystemPage() {
-  const { isAuthenticated } = useAuth()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   const status = useQuery<SystemStatus>({
     queryKey: ["status"],

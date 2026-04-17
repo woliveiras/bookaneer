@@ -9,6 +9,7 @@ import {
   useDeleteBookmark,
   useReaderBookFile,
 } from "../../hooks/useReader"
+import { useReaderSettingsStore } from "../../store/reader/reader-settings.store"
 import { ReaderBookmarksPanel } from "./ReaderBookmarksPanel"
 import { ReaderSettingsPanel } from "./ReaderSettingsPanel"
 import { useReaderCore } from "./useReaderCore"
@@ -44,13 +45,13 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
     currentCfi,
     progress,
     toc,
-    settings,
-    updateSettings,
     handlePrev,
     handleNext,
     handleTocNavigate,
     handleBookmarkNavigate,
   } = useReaderCore(bookFileId)
+
+  const theme_key = useReaderSettingsStore((s) => s.theme)
 
   const { data: bookFile } = useReaderBookFile(bookFileId)
   const { data: bookmarks } = useBookmarks(bookFileId)
@@ -85,21 +86,21 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
     onClose,
   })
 
-  const theme = THEMES[settings.theme]
+  const theme = THEMES[theme_key]
 
   // Compute theme-aware hover colors
   const hoverBg =
-    settings.theme === "dark"
+    theme_key === "dark"
       ? "rgba(255,255,255,0.1)"
-      : settings.theme === "sepia"
+      : theme_key === "sepia"
         ? "rgba(91,70,54,0.1)"
         : "rgba(0,0,0,0.06)"
   const borderColor =
-    settings.theme === "dark" ? "#333" : settings.theme === "sepia" ? "#d4c9b0" : "#e5e5e5"
+    theme_key === "dark" ? "#333" : theme_key === "sepia" ? "#d4c9b0" : "#e5e5e5"
   const progressTrack =
-    settings.theme === "dark" ? "#333" : settings.theme === "sepia" ? "#d4c9b0" : "#e5e5e5"
+    theme_key === "dark" ? "#333" : theme_key === "sepia" ? "#d4c9b0" : "#e5e5e5"
   const progressBar =
-    settings.theme === "dark" ? "#6ea8fe" : settings.theme === "sepia" ? "#8b7355" : "#0d6efd"
+    theme_key === "dark" ? "#6ea8fe" : theme_key === "sepia" ? "#8b7355" : "#0d6efd"
 
   // Handle swipe gestures for page turns
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -306,8 +307,6 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
         {/* Settings Panel */}
         {showSettings && (
           <ReaderSettingsPanel
-            settings={settings}
-            onUpdateSettings={updateSettings}
             onClose={() => setShowSettings(false)}
           />
         )}
@@ -315,7 +314,6 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
         {/* Bookmarks Panel */}
         {showBookmarks && (
           <ReaderBookmarksPanel
-            settings={settings}
             bookmarks={bookmarks}
             currentCfi={currentCfi}
             currentLocation={currentLocation}

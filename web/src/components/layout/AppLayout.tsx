@@ -3,7 +3,9 @@ import { Link, Outlet } from "@tanstack/react-router"
 import { Activity, BookOpen, Library, Menu, Search, Settings, Star, Users, X } from "lucide-react"
 import { type ReactNode, useState } from "react"
 import { Toaster } from "sonner"
-import { AuthProvider, useAuth } from "../../contexts/AuthContext"
+import { AuthProvider } from "../../features/auth/AuthProvider"
+import { useAuthActor } from "../../features/auth/AuthProvider"
+import { useAuthStore } from "../../store/auth/auth.store"
 import { LoginPage } from "../../pages/LoginPage"
 import { RootFolderWarning } from "../common"
 import { Button } from "../ui"
@@ -14,7 +16,13 @@ interface HealthResponse {
 
 // Auth-protected layout wrapper
 export function AuthLayout({ children }: { children: ReactNode }) {
-  const { isAuthenticated, isLoading: authLoading, logout, user } = useAuth()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const user = useAuthStore((s) => s.user)
+  const actorRef = useAuthActor()
+  // Machine is loading when in checkingSession or authenticating states
+  const snapshot = actorRef.getSnapshot()
+  const authLoading =
+    snapshot.matches("checkingSession") || snapshot.matches("authenticating")
 
   const health = useQuery<HealthResponse>({
     queryKey: ["health"],
@@ -60,7 +68,11 @@ export function AuthLayout({ children }: { children: ReactNode }) {
                 {user.username || "API Key"}
               </span>
             )}
-            <Button variant="outline" size="sm" onClick={logout}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => actorRef.send({ type: "LOGOUT" })}
+            >
               Sign Out
             </Button>
           </div>
