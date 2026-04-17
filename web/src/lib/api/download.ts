@@ -9,8 +9,6 @@ import { API_BASE, fetchAPI, getStoredApiKey } from "./client"
 export const downloadClientApi = {
   list: () => fetchAPI<DownloadClient[]>("/downloadclient"),
 
-  get: (id: number) => fetchAPI<DownloadClient>(`/downloadclient/${id}`),
-
   create: (data: CreateDownloadClientInput) =>
     fetchAPI<DownloadClient>("/downloadclient", {
       method: "POST",

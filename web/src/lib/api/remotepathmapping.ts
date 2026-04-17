@@ -8,8 +8,6 @@ import { fetchAPI } from "./client"
 export const remotePathMappingApi = {
   list: () => fetchAPI<RemotePathMapping[]>("/remotepathmapping"),
 
-  get: (id: number) => fetchAPI<RemotePathMapping>(`/remotepathmapping/${id}`),
-
   create: (data: CreateRemotePathMappingInput) =>
     fetchAPI<RemotePathMapping>("/remotepathmapping", {
       method: "POST",

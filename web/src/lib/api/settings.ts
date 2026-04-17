@@ -13,8 +13,6 @@ export const settingsApi = {
 export const rootFolderApi = {
   list: () => fetchAPI<RootFolder[]>("/rootfolder"),
 
-  get: (id: number) => fetchAPI<RootFolder>(`/rootfolder/${id}`),
-
   create: (data: CreateRootFolderInput) =>
     fetchAPI<RootFolder>("/rootfolder", {
       method: "POST",

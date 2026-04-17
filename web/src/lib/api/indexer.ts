@@ -12,8 +12,6 @@ import { API_BASE, fetchAPI, getStoredApiKey } from "./client"
 export const indexerApi = {
   list: () => fetchAPI<Indexer[]>("/indexer"),
 
-  get: (id: number) => fetchAPI<Indexer>(`/indexer/${id}`),
-
   create: (data: CreateIndexerInput) =>
     fetchAPI<Indexer>("/indexer", {
       method: "POST",
