@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Button, Card, CardContent } from "../../components/ui"
 import { QueueItemCard, SearchCommandCard } from "../../components/wanted/QueueCards"
 import { getDismissedCommands, saveDismissedCommands } from "../../components/wanted/queueHelpers"
+import { useBooks } from "../../hooks/useBooks"
 import {
   useActiveCommands,
   useDownloadQueue,
@@ -18,6 +19,12 @@ export function QueueList() {
   const { data: queue, isLoading, error, refetch } = useDownloadQueue()
   const { data: activeCommands } = useActiveCommands()
   const { data: recentCommands } = useRecentCommands(50)
+  const { data: booksData } = useBooks({ limit: 500 })
+
+  // Build a set of bookIds that already have a file
+  const hasFileBookIds = new Set(
+    (booksData?.records ?? []).filter((b) => b.hasFile).map((b) => b.id),
+  )
   const removeMutation = useRemoveFromQueue()
   const retryMutation = useRetryDownload()
   const queryClient = useQueryClient()
@@ -211,6 +218,7 @@ export function QueueList() {
               onRetry={item.status === "failed" ? () => retryMutation.mutate(item.id) : undefined}
               isRemoving={removeMutation.isPending}
               isRetrying={retryMutation.isPending}
+              hasExistingFile={hasFileBookIds.has(item.bookId)}
             />
           ))}
         </div>

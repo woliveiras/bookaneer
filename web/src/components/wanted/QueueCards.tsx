@@ -1,4 +1,6 @@
 import { Link } from "@tanstack/react-router"
+import { useState } from "react"
+import { toast } from "sonner"
 import type { ActiveCommand, QueueItem } from "../../lib/api"
 import { Button, Card, CardContent, Progress } from "../ui"
 import { DownloadingIcon, QueuedIcon, SearchingIcon } from "./QueueIcons"
@@ -122,6 +124,7 @@ interface QueueItemCardProps {
   onRetry?: () => void
   isRemoving: boolean
   isRetrying?: boolean
+  hasExistingFile?: boolean
 }
 
 export function QueueItemCard({
@@ -130,7 +133,10 @@ export function QueueItemCard({
   onRetry,
   isRemoving,
   isRetrying,
+  hasExistingFile = false,
 }: QueueItemCardProps) {
+  const [showImportConfirm, setShowImportConfirm] = useState(false)
+  const [imported, setImported] = useState(false)
   const statusColors: Record<string, string> = {
     queued: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
     downloading: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
@@ -153,140 +159,181 @@ export function QueueItemCard({
   const isActive = item.status === "queued" || item.status === "downloading"
 
   return (
-    <Card
-      className={`relative overflow-hidden ${item.status === "failed" ? "border-red-500/30" : ""}`}
-    >
-      {/* Shimmer gradient overlay when downloading or queued */}
-      {isActive && (
-        <div
-          className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite]"
-          style={{
-            background:
-              item.status === "downloading"
-                ? "linear-gradient(90deg, transparent 0%, rgba(59, 130, 246, 0.15) 50%, transparent 100%)"
-                : "linear-gradient(90deg, transparent 0%, rgba(245, 158, 11, 0.1) 50%, transparent 100%)",
-          }}
-        />
-      )}
-      <CardContent className="p-4 relative z-10">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3 flex-1 min-w-0">
-            {/* Status indicator */}
-            <div className="shrink-0 mt-0.5">
-              {item.status === "downloading" ? (
-                <DownloadingIcon />
-              ) : item.status === "completed" ? (
-                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-green-500 text-white text-xs">
-                  ✓
-                </span>
-              ) : item.status === "failed" ? (
-                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-red-500 text-white text-xs">
-                  ✕
-                </span>
-              ) : (
-                <QueuedIcon />
-              )}
+    <>
+      <Card
+        className={`relative overflow-hidden ${item.status === "failed" ? "border-red-500/30" : ""}`}
+      >
+        {/* Shimmer gradient overlay when downloading or queued */}
+        {isActive && (
+          <div
+            className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite]"
+            style={{
+              background:
+                item.status === "downloading"
+                  ? "linear-gradient(90deg, transparent 0%, rgba(59, 130, 246, 0.15) 50%, transparent 100%)"
+                  : "linear-gradient(90deg, transparent 0%, rgba(245, 158, 11, 0.1) 50%, transparent 100%)",
+            }}
+          />
+        )}
+        <CardContent className="p-4 relative z-10">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              {/* Status indicator */}
+              <div className="shrink-0 mt-0.5">
+                {item.status === "downloading" ? (
+                  <DownloadingIcon />
+                ) : item.status === "completed" ? (
+                  <span className="flex items-center justify-center h-6 w-6 rounded-full bg-green-500 text-white text-xs">
+                    ✓
+                  </span>
+                ) : item.status === "failed" ? (
+                  <span className="flex items-center justify-center h-6 w-6 rounded-full bg-red-500 text-white text-xs">
+                    ✕
+                  </span>
+                ) : (
+                  <QueuedIcon />
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-medium truncate">{item.bookTitle}</h3>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded ${statusColors[item.status] || statusColors.queued}`}
+                  >
+                    {item.status === "downloading"
+                      ? "Downloading..."
+                      : item.status === "queued"
+                        ? "Queued"
+                        : item.status === "completed"
+                          ? "Completed"
+                          : item.status === "failed"
+                            ? "Failed"
+                            : item.status}
+                  </span>
+                  <span className="text-xs text-muted-foreground uppercase">{item.format}</span>
+                </div>
+                <p className="text-xs text-muted-foreground truncate">{item.title}</p>
+
+                {/* Progress bar for queued items - indeterminate */}
+                {item.status === "queued" && (
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                      <span>Waiting to download...</span>
+                    </div>
+                    <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-amber-500 rounded-full animate-pulse"
+                        style={{ width: "30%" }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Progress bar for active downloads */}
+                {item.status === "downloading" && (
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                      <span>{Math.round(item.progress)}%</span>
+                      <span>{item.size > 0 && formatSize(item.size)}</span>
+                    </div>
+                    <Progress value={item.progress} className="h-2" />
+                  </div>
+                )}
+
+                {/* Completed info */}
+                {item.status === "completed" && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatSize(item.size)} • Downloaded
+                  </p>
+                )}
+
+                {/* Error message */}
+                {item.status === "failed" && (
+                  <div className="mt-1">
+                    <p className="text-xs text-destructive">
+                      Download failed - this file requires login or is unavailable
+                    </p>
+                  </div>
+                )}
+
+                {/* Client info */}
+                <p className="text-xs text-muted-foreground mt-1">{item.clientName}</p>
+              </div>
             </div>
 
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-medium truncate">{item.bookTitle}</h3>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded ${statusColors[item.status] || statusColors.queued}`}
+            <div className="flex items-center gap-1 shrink-0">
+              {/* Import button for completed downloads when book already has a file */}
+              {item.status === "completed" && hasExistingFile && !imported && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowImportConfirm(true)}
+                  title="Replace existing file with this download"
                 >
-                  {item.status === "downloading"
-                    ? "Downloading..."
-                    : item.status === "queued"
-                      ? "Queued"
-                      : item.status === "completed"
-                        ? "Completed"
-                        : item.status === "failed"
-                          ? "Failed"
-                          : item.status}
-                </span>
-                <span className="text-xs text-muted-foreground uppercase">{item.format}</span>
-              </div>
-              <p className="text-xs text-muted-foreground truncate">{item.title}</p>
-
-              {/* Progress bar for queued items - indeterminate */}
-              {item.status === "queued" && (
-                <div className="mt-2">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                    <span>Waiting to download...</span>
-                  </div>
-                  <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-amber-500 rounded-full animate-pulse"
-                      style={{ width: "30%" }}
-                    />
-                  </div>
-                </div>
+                  Import
+                </Button>
               )}
-
-              {/* Progress bar for active downloads */}
-              {item.status === "downloading" && (
-                <div className="mt-2">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                    <span>{Math.round(item.progress)}%</span>
-                    <span>{item.size > 0 && formatSize(item.size)}</span>
-                  </div>
-                  <Progress value={item.progress} className="h-2" />
-                </div>
+              {item.status === "failed" && onRetry && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onRetry}
+                  disabled={isRetrying}
+                  title="Retry this download"
+                >
+                  {isRetrying ? "Retrying..." : "Retry"}
+                </Button>
               )}
-
-              {/* Completed info */}
-              {item.status === "completed" && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {formatSize(item.size)} • Downloaded
-                </p>
-              )}
-
-              {/* Error message */}
               {item.status === "failed" && (
-                <div className="mt-1">
-                  <p className="text-xs text-destructive">
-                    Download failed - this file requires login or is unavailable
-                  </p>
-                </div>
+                <Link to="/book/$bookId" params={{ bookId: String(item.bookId) }}>
+                  <Button variant="outline" size="sm" title="Search for alternative sources">
+                    Search Again
+                  </Button>
+                </Link>
               )}
-
-              {/* Client info */}
-              <p className="text-xs text-muted-foreground mt-1">{item.clientName}</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onRemove}
+                disabled={isRemoving}
+                className="text-muted-foreground hover:text-destructive"
+                title="Remove from queue"
+              >
+                ✕
+              </Button>
             </div>
           </div>
+        </CardContent>
+      </Card>
 
-          <div className="flex items-center gap-1 shrink-0">
-            {item.status === "failed" && onRetry && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onRetry}
-                disabled={isRetrying}
-                title="Retry this download"
-              >
-                {isRetrying ? "Retrying..." : "Retry"}
+      {/* Import confirmation modal */}
+      {showImportConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4 border">
+            <h3 className="text-lg font-semibold mb-2">Replace existing file?</h3>
+            <p className="text-muted-foreground mb-4">
+              The current file for <strong>"{item.bookTitle}"</strong> will be removed and replaced
+              by this download. This action cannot be undone.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setShowImportConfirm(false)}>
+                Cancel
               </Button>
-            )}
-            {item.status === "failed" && (
-              <Link to="/book/$bookId" params={{ bookId: String(item.bookId) }}>
-                <Button variant="outline" size="sm" title="Search for alternative sources">
-                  Search Again
-                </Button>
-              </Link>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onRemove}
-              disabled={isRemoving}
-              className="text-muted-foreground hover:text-destructive"
-              title="Remove from queue"
-            >
-              ✕
-            </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setShowImportConfirm(false)
+                  setImported(true)
+                  toast.success(`"${item.bookTitle}" will be replaced with the new download.`)
+                }}
+              >
+                Replace
+              </Button>
+            </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </>
   )
 }

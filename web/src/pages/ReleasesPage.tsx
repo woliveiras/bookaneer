@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { AlertTriangle, ArrowLeft, Library } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -8,7 +7,6 @@ import { SearchFilters } from "../components/search/SearchFilters"
 import { SearchResults } from "../components/search/SearchResults"
 import { useBookRelease } from "../hooks/useBookRelease"
 import type { MetadataBookResult } from "../lib/api"
-import { bookApi } from "../lib/api"
 
 interface ReleasesPageProps {
   book: MetadataBookResult
@@ -18,13 +16,6 @@ interface ReleasesPageProps {
 
 export function ReleasesPage({ book, autoSearch = true, existingBookId }: ReleasesPageProps) {
   const release = useBookRelease(book, existingBookId)
-
-  const { data: existingBook } = useQuery({
-    queryKey: ["book", existingBookId],
-    queryFn: () => bookApi.get(existingBookId!),
-    enabled: !!existingBookId,
-  })
-  const hasExistingFile = !!(existingBook?.files && existingBook.files.length > 0)
 
   // Auto-start search on first render
   const [autoStarted, setAutoStarted] = useState(false)
@@ -149,7 +140,6 @@ export function ReleasesPage({ book, autoSearch = true, existingBookId }: Releas
           indexerColumnConfig={release.indexerColumnConfig}
           expandedLibraryKeys={release.expandedLibraryKeys}
           expandedIndexerGuids={release.expandedIndexerGuids}
-          hasExistingFile={hasExistingFile}
         />
       </div>
     </AuthLayout>

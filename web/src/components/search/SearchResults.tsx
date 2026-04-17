@@ -36,7 +36,6 @@ interface SearchResultsProps {
   indexerColumnConfig?: ColumnConfig
   expandedLibraryKeys?: Set<string>
   expandedIndexerGuids?: Set<string>
-  hasExistingFile?: boolean
 }
 
 export function SearchResults({
@@ -61,7 +60,6 @@ export function SearchResults({
   indexerColumnConfig,
   expandedLibraryKeys,
   expandedIndexerGuids,
-  hasExistingFile = false,
 }: SearchResultsProps) {
   const [activeTab, setActiveTab] = useState<SourceTab>("all")
 
@@ -138,7 +136,6 @@ export function SearchResults({
                 onGrab={onGrab}
                 isGrabbing={isGrabbing}
                 columnConfig={libraryColumnConfig}
-                hasExistingFile={hasExistingFile}
               />
             ))}
           </div>
@@ -161,7 +158,6 @@ export function SearchResults({
                     isGrabbing={isGrabbing}
                     columnConfig={libraryColumnConfig}
                     fromExpanded
-                    hasExistingFile={hasExistingFile}
                   />
                 ))}
               </div>
@@ -200,7 +196,6 @@ export function SearchResults({
                 onGrab={onGrab}
                 isGrabbing={isGrabbing}
                 columnConfig={indexerColumnConfig}
-                hasExistingFile={hasExistingFile}
               />
             ))}
           </div>
@@ -223,7 +218,6 @@ export function SearchResults({
                     isGrabbing={isGrabbing}
                     columnConfig={indexerColumnConfig}
                     fromExpanded
-                    hasExistingFile={hasExistingFile}
                   />
                 ))}
               </div>
