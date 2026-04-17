@@ -47,6 +47,13 @@ services:
       - ${LIBRARY_PATH:-./library}:/downloads
     restart: unless-stopped
 
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: bookaneer-flaresolverr
+    environment:
+      - LOG_LEVEL=info
+    restart: unless-stopped
+
 volumes:
   prowlarr_config:
   qbittorrent_config:
