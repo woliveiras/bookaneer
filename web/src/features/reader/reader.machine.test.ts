@@ -11,17 +11,12 @@ const mockBookFile: ReaderBookFile = {
   id: 1,
   bookId: 10,
   path: "/books/clean-code.epub",
+  relativePath: "clean-code.epub",
   format: "epub",
   size: 2048000,
-  modified: "2024-01-01T00:00:00Z",
-  quality: "",
-  mediaInfo: "",
-  qualityCutoffNotMet: false,
-  languages: [],
-  releaseGroup: "",
-  edition: "",
-  sceneName: "",
-  indexerFlags: [],
+  quality: "good",
+  hash: "abc123",
+  addedAt: "2024-01-01T00:00:00Z",
 }
 
 const mockToc = [
