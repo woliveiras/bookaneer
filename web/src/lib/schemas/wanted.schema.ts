@@ -1,5 +1,4 @@
 import * as z from "zod"
-import { BookSchema } from "./book.schema"
 
 export const CommandStatusSchema = z.enum(["queued", "running", "completed", "failed", "cancelled"])
 
@@ -14,20 +13,6 @@ export const ActiveCommandSchema = z.object({
   queuedAt: z.string(),
   startedAt: z.string().optional(),
   endedAt: z.string().optional(),
-})
-
-export const WantedResponseSchema = z.object({
-  page: z.number(),
-  pageSize: z.number(),
-  totalRecords: z.number(),
-  sortKey: z.string(),
-  sortDirection: z.string(),
-  records: z.array(BookSchema),
-})
-
-export const SearchCommandResponseSchema = z.object({
-  commandId: z.string(),
-  message: z.string(),
 })
 
 export const GrabResultSchema = z.object({
@@ -94,8 +79,6 @@ export const BlocklistItemSchema = z.object({
 
 export type CommandStatus = z.infer<typeof CommandStatusSchema>
 export type ActiveCommand = z.infer<typeof ActiveCommandSchema>
-export type WantedResponse = z.infer<typeof WantedResponseSchema>
-export type SearchCommandResponse = z.infer<typeof SearchCommandResponseSchema>
 export type GrabResult = z.infer<typeof GrabResultSchema>
 export type BookSearchResult = z.infer<typeof BookSearchResultSchema>
 export type BookSearchResponse = z.infer<typeof BookSearchResponseSchema>

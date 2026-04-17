@@ -79,41 +79,6 @@ export const QueueItemSchema = z.object({
   errorMessage: z.string().optional(),
 })
 
-export const GrabStatusSchema = z.enum([
-  "pending",
-  "sent",
-  "downloading",
-  "completed",
-  "failed",
-  "imported",
-])
-
-export const GrabSchema = z.object({
-  id: z.number(),
-  bookId: z.number(),
-  indexerId: z.number(),
-  releaseTitle: z.string(),
-  downloadUrl: z.string(),
-  size: z.number(),
-  quality: z.string(),
-  clientId: z.number(),
-  downloadId: z.string(),
-  status: GrabStatusSchema,
-  errorMessage: z.string(),
-  grabbedAt: z.string(),
-  completedAt: z.string().optional(),
-})
-
-export const CreateGrabInputSchema = z.object({
-  bookId: z.number(),
-  indexerId: z.number(),
-  releaseTitle: z.string(),
-  downloadUrl: z.string(),
-  size: z.number().optional(),
-  quality: z.string().optional(),
-  clientId: z.number(),
-})
-
 export const TestDownloadClientResponseSchema = z.object({
   success: z.boolean(),
   message: z.string(),
@@ -124,7 +89,4 @@ export type DownloadClient = z.infer<typeof DownloadClientSchema>
 export type CreateDownloadClientInput = z.infer<typeof CreateDownloadClientInputSchema>
 export type DownloadStatus = z.infer<typeof DownloadStatusSchema>
 export type QueueItem = z.infer<typeof QueueItemSchema>
-export type GrabStatus = z.infer<typeof GrabStatusSchema>
-export type Grab = z.infer<typeof GrabSchema>
-export type CreateGrabInput = z.infer<typeof CreateGrabInputSchema>
 export type TestDownloadClientResponse = z.infer<typeof TestDownloadClientResponseSchema>

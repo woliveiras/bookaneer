@@ -20,12 +20,9 @@ export type {
 export { BookSchema, PaginatedResponseSchema } from "./book.schema"
 export type {
   CreateDownloadClientInput,
-  CreateGrabInput,
   DownloadClient,
   DownloadClientType,
   DownloadStatus,
-  Grab,
-  GrabStatus,
   QueueItem,
   TestDownloadClientResponse,
 } from "./download.schema"
@@ -89,6 +86,4 @@ export type {
   GrabResult,
   HistoryEventType,
   HistoryItem,
-  SearchCommandResponse,
-  WantedResponse,
 } from "./wanted.schema"
