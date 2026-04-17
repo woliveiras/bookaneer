@@ -33,11 +33,6 @@ func (h *DownloadHandler) Register(g *echo.Group) {
 	// Queue
 	g.GET("/downloadclient/queue", h.GetQueue)
 	g.GET("/downloadclient/queue/:clientId", h.GetClientQueue)
-
-	// Grabs
-	g.GET("/grab", h.ListGrabs)
-	g.POST("/grab", h.CreateGrab)
-	g.POST("/grab/:id/send", h.SendGrab)
 }
 
 // ListClients returns all download clients.
@@ -260,72 +255,3 @@ func (h *DownloadHandler) GetClientQueue(c *echo.Context) error {
 	return c.JSON(http.StatusOK, items)
 }
 
-// ListGrabs returns all grabs.
-func (h *DownloadHandler) ListGrabs(c *echo.Context) error {
-	grabs, err := h.svc.ListGrabs(c.Request().Context())
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list grabs")
-	}
-	return c.JSON(http.StatusOK, grabs)
-}
-
-// CreateGrabRequest is the request body for creating a grab.
-type CreateGrabRequest struct {
-	BookID       int64  `json:"bookId"`
-	IndexerID    int64  `json:"indexerId"`
-	ReleaseTitle string `json:"releaseTitle"`
-	DownloadURL  string `json:"downloadUrl"`
-	Size         int64  `json:"size"`
-	Quality      string `json:"quality"`
-}
-
-// CreateGrab creates a new grab.
-func (h *DownloadHandler) CreateGrab(c *echo.Context) error {
-	var req CreateGrabRequest
-	if err := c.Bind(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
-	}
-
-	grab := &download.GrabItem{
-		BookID:       req.BookID,
-		IndexerID:    req.IndexerID,
-		ReleaseTitle: req.ReleaseTitle,
-		DownloadURL:  req.DownloadURL,
-		Size:         req.Size,
-		Quality:      req.Quality,
-	}
-
-	if err := h.svc.CreateGrab(c.Request().Context(), grab); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create grab")
-	}
-	return c.JSON(http.StatusCreated, grab)
-}
-
-// SendGrabRequest is the request body for sending a grab to a client.
-type SendGrabRequest struct {
-	ClientID int64 `json:"clientId"`
-}
-
-// SendGrab sends a grab to a download client.
-func (h *DownloadHandler) SendGrab(c *echo.Context) error {
-	grabID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid grab id")
-	}
-
-	var req SendGrabRequest
-	if err := c.Bind(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
-	}
-
-	if err := h.svc.SendGrab(c.Request().Context(), grabID, req.ClientID); err != nil {
-		if errors.Is(err, download.ErrNotFound) {
-			return echo.NewHTTPError(http.StatusNotFound, "grab or client not found")
-		}
-		if errors.Is(err, download.ErrClientDisabled) {
-			return echo.NewHTTPError(http.StatusBadRequest, "download client is disabled")
-		}
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to send grab: "+err.Error())
-	}
-	return c.NoContent(http.StatusOK)
-}

@@ -21,18 +21,8 @@ func NewLibraryHandler(scanner *library.Scanner) *LibraryHandler {
 
 // Register registers the library routes.
 func (h *LibraryHandler) Register(g *echo.Group) {
-	g.POST("/command/libraryscan", h.ScanAll)
 	g.POST("/command/libraryscan/rootfolder/:id", h.ScanRootFolder)
 	g.POST("/command/libraryscan/author/:id", h.ScanAuthor)
-}
-
-// ScanAll triggers a scan of all root folders.
-func (h *LibraryHandler) ScanAll(c *echo.Context) error {
-	// This would typically be queued as a background command
-	// For now, return accepted status
-	return c.JSON(http.StatusAccepted, map[string]any{
-		"message": "Library scan queued",
-	})
 }
 
 // ScanRootFolder triggers a scan of a specific root folder.
