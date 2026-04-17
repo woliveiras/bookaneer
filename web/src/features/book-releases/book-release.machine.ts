@@ -1,5 +1,5 @@
 import { assign, fromPromise, setup } from "xstate"
-import type { GrabResult } from "../../lib/types"
+import type { GrabResult } from "../../lib/schemas/wanted.schema"
 
 // ---------------------------------------------------------------------------
 // Types

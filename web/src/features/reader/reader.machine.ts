@@ -1,6 +1,6 @@
 import { assign, fromCallback, setup } from "xstate"
 import type { FoliateView, TocItem } from "../../components/reader/readerConfig"
-import type { ReaderBookFile } from "../../lib/types/reader"
+import type { ReaderBookFile } from "../../lib/schemas/reader.schema"
 
 // ---------------------------------------------------------------------------
 // Types

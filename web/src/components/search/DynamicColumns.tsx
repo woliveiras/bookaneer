@@ -1,5 +1,5 @@
 import { formatBytes } from "../../lib/format"
-import type { ColumnConfig, ColumnSchema } from "../../lib/types"
+import type { ColumnConfig, ColumnSchema } from "../../lib/api"
 import { Badge } from "../ui"
 
 const FORMAT_COLORS: Record<string, string> = {

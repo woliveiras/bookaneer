@@ -1,8 +1,7 @@
 import { useState } from "react"
-import type { GrabMeta } from "../../hooks/useBookRelease"
-import type { DigitalLibraryResult, SearchResult } from "../../lib/api"
+import type { GrabMeta } from "../../features/book-releases/book-release.machine"
+import type { ColumnConfig, DigitalLibraryResult, SearchResult } from "../../lib/api"
 import { formatBytes } from "../../lib/format"
-import type { ColumnConfig } from "../../lib/types"
 import { Badge, Button, Card, CardContent } from "../ui"
 import { DynamicCell } from "./DynamicColumns"
 

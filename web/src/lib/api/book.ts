@@ -1,3 +1,8 @@
+import {
+  BookSchema,
+  BookWithEditionsSchema,
+  PaginatedResponseSchema,
+} from "../schemas/book.schema"
 import type {
   Book,
   BookWithEditions,
@@ -19,22 +24,28 @@ export const bookApi = {
     if (params?.limit) searchParams.set("limit", String(params.limit))
     if (params?.offset) searchParams.set("offset", String(params.offset))
     const query = searchParams.toString()
-    return fetchAPI<PaginatedResponse<Book>>(`/book${query ? `?${query}` : ""}`)
+    return fetchAPI<PaginatedResponse<Book>>(
+      `/book${query ? `?${query}` : ""}`,
+      undefined,
+      PaginatedResponseSchema(BookSchema),
+    )
   },
 
-  get: (id: number) => fetchAPI<BookWithEditions>(`/book/${id}`),
+  get: (id: number) => fetchAPI<BookWithEditions>(`/book/${id}`, undefined, BookWithEditionsSchema),
 
   create: (data: CreateBookInput) =>
-    fetchAPI<Book>("/book", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
+    fetchAPI<Book>(
+      "/book",
+      { method: "POST", body: JSON.stringify(data) },
+      BookSchema,
+    ),
 
   update: (id: number, data: Partial<CreateBookInput>) =>
-    fetchAPI<Book>(`/book/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    }),
+    fetchAPI<Book>(
+      `/book/${id}`,
+      { method: "PUT", body: JSON.stringify(data) },
+      BookSchema,
+    ),
 
   delete: (id: number) =>
     fetchAPI<void>(`/book/${id}`, {
@@ -48,8 +59,9 @@ export const bookApi = {
     isbn13?: string
     imageUrl?: string
   }) =>
-    fetchAPI<Book>("/wishlist", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
+    fetchAPI<Book>(
+      "/wishlist",
+      { method: "POST", body: JSON.stringify(data) },
+      BookSchema,
+    ),
 }

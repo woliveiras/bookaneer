@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router"
 import { AlertTriangle, ArrowLeft, Library } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useRef } from "react"
 import { toast } from "sonner"
 import { AuthLayout } from "../components/layout/AppLayout"
 import { SearchFilters } from "../components/search/SearchFilters"
@@ -17,12 +17,15 @@ interface ReleasesPageProps {
 export function ReleasesPage({ book, autoSearch = true, existingBookId }: ReleasesPageProps) {
   const release = useBookRelease(book, existingBookId)
 
-  // Auto-start search on first render
-  const [autoStarted, setAutoStarted] = useState(false)
-  if (autoSearch && !autoStarted && !release.searchStarted) {
-    setAutoStarted(true)
-    release.startSearch()
-  }
+  // Auto-start search on first mount when autoSearch is enabled
+  const autoStarted = useRef(false)
+  useEffect(() => {
+    if (autoSearch && !autoStarted.current) {
+      autoStarted.current = true
+      release.startSearch()
+    }
+    // biome-ignore lint/correctness/useExhaustiveDependencies: startSearch is stable (sends to machine actorRef)
+  }, [autoSearch])
 
   useEffect(() => {
     if (release.grabSuccess) {

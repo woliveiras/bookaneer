@@ -10,7 +10,7 @@ import {
   useRenameAll,
   useUpdateNamingSettings,
 } from "../../hooks/useNaming"
-import type { NamingPreviewInput } from "../../lib/types"
+import type { NamingPreviewInput } from "../../lib/api"
 
 const TEMPLATE_VARIABLES = [
   { token: "$Author", description: "Author name" },

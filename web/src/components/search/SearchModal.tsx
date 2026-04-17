@@ -1,7 +1,5 @@
 import { AlertTriangle } from "lucide-react"
-import type { DigitalLibraryResult } from "../../lib/api"
-import type { ColumnConfig } from "../../lib/types"
-import type { SearchResult } from "../../lib/types/indexer"
+import type { ColumnConfig, DigitalLibraryResult, SearchResult } from "../../lib/api"
 import { Dialog, DialogBody, DialogHeader } from "../ui"
 import { SearchFilters } from "./SearchFilters"
 import { SearchResults } from "./SearchResults"

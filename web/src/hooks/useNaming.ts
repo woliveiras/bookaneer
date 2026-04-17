@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { namingApi } from "../lib/api"
-import type { NamingPreviewInput, NamingSettingsInput } from "../lib/types"
+import type { NamingPreviewInput, NamingSettingsInput } from "../lib/api"
 
 export function useNamingSettings() {
   return useQuery({

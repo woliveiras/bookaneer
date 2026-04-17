@@ -3,7 +3,7 @@ import { Bookmark as BookmarkIcon, Trash2, X } from "lucide-react"
 import { THEMES } from "../../components/reader/readerConfig"
 import { Button } from "../../components/ui"
 import type { CreateBookmarkInput } from "../../lib/api"
-import type { Bookmark } from "../../lib/types/reader"
+import type { Bookmark } from "../../lib/schemas/reader.schema"
 import { useReaderSettingsStore } from "../../store/reader/reader-settings.store"
 
 interface ReaderBookmarksPanelProps {
