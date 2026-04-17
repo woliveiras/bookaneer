@@ -252,7 +252,7 @@ export function QueueItemCard({
                 {item.status === "failed" && (
                   <div className="mt-1">
                     <p className="text-xs text-destructive">
-                      Download failed - this file requires login or is unavailable
+                      {item.errorMessage || "Download failed"}
                     </p>
                   </div>
                 )}

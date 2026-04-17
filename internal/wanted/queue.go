@@ -15,7 +15,8 @@ func (s *Service) GetDownloadQueue(ctx context.Context) ([]DownloadQueueItem, er
 		SELECT dq.id, dq.book_id, dq.download_client_id, dq.indexer_id, dq.external_id,
 		       dq.title, dq.size, dq.format, dq.status, dq.progress, dq.download_url, dq.added_at,
 		       b.title as book_title,
-		       dc.name as client_name
+		       dc.name as client_name,
+		       dq.error_message
 		FROM download_queue dq
 		LEFT JOIN books b ON b.id = dq.book_id
 		LEFT JOIN download_clients dc ON dc.id = dq.download_client_id
@@ -33,10 +34,11 @@ func (s *Service) GetDownloadQueue(ctx context.Context) ([]DownloadQueueItem, er
 		var indexerID sql.NullInt64
 		var bookTitle sql.NullString
 		var clientName sql.NullString
+		var errorMessage sql.NullString
 		if err := rows.Scan(
 			&item.ID, &item.BookID, &clientID, &indexerID, &item.ExternalID,
 			&item.Title, &item.Size, &item.Format, &item.Status, &item.Progress, &item.DownloadURL, &item.AddedAt,
-			&bookTitle, &clientName,
+			&bookTitle, &clientName, &errorMessage,
 		); err != nil {
 			return nil, err
 		}
@@ -56,6 +58,9 @@ func (s *Service) GetDownloadQueue(ctx context.Context) ([]DownloadQueueItem, er
 		} else {
 			item.ClientName = "Embedded Downloader"
 		}
+		if errorMessage.Valid {
+			item.ErrorMessage = errorMessage.String
+		}
 		items = append(items, item)
 	}
 
@@ -74,8 +79,13 @@ func (s *Service) GetDownloadQueue(ctx context.Context) ([]DownloadQueueItem, er
 					// Update with real-time status from embedded client
 					items[i].Status = string(status.Status)
 					items[i].Progress = status.Progress
-					// Also update DB to persist the status
-					_ = s.UpdateQueueItemStatus(ctx, items[i].ID, items[i].Status, items[i].Progress)
+					items[i].ErrorMessage = status.ErrorMessage
+					// Also update DB to persist the status and error
+					if status.ErrorMessage != "" {
+						_ = s.UpdateQueueItemStatusWithError(ctx, items[i].ID, items[i].Status, items[i].Progress, status.ErrorMessage)
+					} else {
+						_ = s.UpdateQueueItemStatus(ctx, items[i].ID, items[i].Status, items[i].Progress)
+					}
 				}
 			}
 		}
@@ -87,6 +97,12 @@ func (s *Service) GetDownloadQueue(ctx context.Context) ([]DownloadQueueItem, er
 // UpdateQueueItemStatus updates the status of a queue item.
 func (s *Service) UpdateQueueItemStatus(ctx context.Context, id int64, status string, progress float64) error {
 	_, err := s.db.ExecContext(ctx, `UPDATE download_queue SET status = ?, progress = ? WHERE id = ?`, status, progress, id)
+	return err
+}
+
+// UpdateQueueItemStatusWithError updates status and persists the error message.
+func (s *Service) UpdateQueueItemStatusWithError(ctx context.Context, id int64, status string, progress float64, errorMessage string) error {
+	_, err := s.db.ExecContext(ctx, `UPDATE download_queue SET status = ?, progress = ?, error_message = ? WHERE id = ?`, status, progress, errorMessage, id)
 	return err
 }
 

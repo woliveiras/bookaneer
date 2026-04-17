@@ -76,6 +76,7 @@ export const QueueItemSchema = z.object({
   addedAt: z.string(),
   bookTitle: z.string(),
   clientName: z.string(),
+  errorMessage: z.string().optional(),
 })
 
 export const GrabStatusSchema = z.enum([

@@ -128,6 +128,9 @@ func (s *Service) ProcessDownloads(ctx context.Context) (*ProcessDownloadsResult
 				"queueId", d.ID,
 				"error", status.ErrorMessage,
 			)
+			if err := s.UpdateQueueItemStatusWithError(ctx, d.ID, string(download.StatusFailed), 0, status.ErrorMessage); err != nil {
+				slog.Warn("Failed to persist download error", "id", d.ID, "error", err)
+			}
 		}
 	}
 

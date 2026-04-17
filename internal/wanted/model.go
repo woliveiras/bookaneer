@@ -28,6 +28,7 @@ type DownloadQueueItem struct {
 	AddedAt          string  `json:"addedAt"`
 	BookTitle        string  `json:"bookTitle"`
 	ClientName       string  `json:"clientName"`
+	ErrorMessage     string  `json:"errorMessage,omitempty"`
 }
 
 // HistoryItem represents a history event.
