@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/woliveiras/bookaneer/internal/bypass"
 	"github.com/woliveiras/bookaneer/internal/download"
 	"github.com/woliveiras/bookaneer/internal/testutil"
 	_ "modernc.org/sqlite"
@@ -23,7 +24,7 @@ func openClosedDB(t *testing.T) *sql.DB {
 
 func TestCreateClient(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	cfg := &download.ClientConfig{
@@ -43,7 +44,7 @@ func TestCreateClient(t *testing.T) {
 
 func TestListClients_Empty(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	clients, err := svc.ListClients(ctx)
@@ -53,7 +54,7 @@ func TestListClients_Empty(t *testing.T) {
 
 func TestListClients_WithClients(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	_ = svc.CreateClient(ctx, &download.ClientConfig{
@@ -72,7 +73,7 @@ func TestListClients_WithClients(t *testing.T) {
 
 func TestGetClient(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	cfg := &download.ClientConfig{
@@ -99,7 +100,7 @@ func TestGetClient(t *testing.T) {
 
 func TestGetClient_NotFound(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	_, err := svc.GetClient(ctx, 9999)
@@ -108,7 +109,7 @@ func TestGetClient_NotFound(t *testing.T) {
 
 func TestUpdateClient(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	cfg := &download.ClientConfig{
@@ -130,7 +131,7 @@ func TestUpdateClient(t *testing.T) {
 
 func TestDeleteClient(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	cfg := &download.ClientConfig{
@@ -148,7 +149,7 @@ func TestDeleteClient(t *testing.T) {
 
 func TestDeleteClient_NotFound(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	err := svc.DeleteClient(ctx, 9999)
@@ -157,7 +158,7 @@ func TestDeleteClient_NotFound(t *testing.T) {
 
 func TestCreateClient_NullableFields(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	cfg := &download.ClientConfig{
@@ -182,7 +183,7 @@ func TestCreateClient_NullableFields(t *testing.T) {
 
 // TestListClients_DBError covers the db.QueryContext error path in ListClients.
 func TestListClients_DBError(t *testing.T) {
-	svc := download.NewService(openClosedDB(t))
+	svc := download.NewService(openClosedDB(t), bypass.Noop{})
 	_, err := svc.ListClients(context.Background())
 	require.Error(t, err)
 }
@@ -190,7 +191,7 @@ func TestListClients_DBError(t *testing.T) {
 // TestGetClient_DBError covers the db.QueryRowContext error path in GetClient
 // when the error is not sql.ErrNoRows (i.e., a real DB failure).
 func TestGetClient_DBError(t *testing.T) {
-	svc := download.NewService(openClosedDB(t))
+	svc := download.NewService(openClosedDB(t), bypass.Noop{})
 	_, err := svc.GetClient(context.Background(), 1)
 	require.Error(t, err)
 	assert.NotErrorIs(t, err, download.ErrNotFound)
@@ -198,7 +199,7 @@ func TestGetClient_DBError(t *testing.T) {
 
 // TestCreateClient_DBError covers the db.ExecContext error path in CreateClient.
 func TestCreateClient_DBError(t *testing.T) {
-	svc := download.NewService(openClosedDB(t))
+	svc := download.NewService(openClosedDB(t), bypass.Noop{})
 	err := svc.CreateClient(context.Background(), &download.ClientConfig{
 		Name: "X", Type: "direct", Host: "localhost",
 	})
@@ -207,7 +208,7 @@ func TestCreateClient_DBError(t *testing.T) {
 
 // TestDeleteClient_DBError covers the db.ExecContext error path in DeleteClient.
 func TestDeleteClient_DBError(t *testing.T) {
-	svc := download.NewService(openClosedDB(t))
+	svc := download.NewService(openClosedDB(t), bypass.Noop{})
 	err := svc.DeleteClient(context.Background(), 1)
 	require.Error(t, err)
 	assert.NotErrorIs(t, err, download.ErrNotFound)
@@ -217,7 +218,7 @@ func TestDeleteClient_DBError(t *testing.T) {
 // the client ID does not match any row.
 func TestUpdateClient_NotFound(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	err := svc.UpdateClient(ctx, &download.ClientConfig{

@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/woliveiras/bookaneer/internal/bypass"
 	"github.com/woliveiras/bookaneer/internal/download"
 	_ "github.com/woliveiras/bookaneer/internal/download/direct"
 	"github.com/woliveiras/bookaneer/internal/testutil"
@@ -16,13 +17,13 @@ import (
 
 func TestNewService(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	assert.NotNil(t, svc)
 }
 
 func TestListGrabs_Empty(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	grabs, err := svc.ListGrabs(context.Background())
 	require.NoError(t, err)
 	assert.Empty(t, grabs)
@@ -30,7 +31,7 @@ func TestListGrabs_Empty(t *testing.T) {
 
 func TestCreateGrab(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Author")
@@ -61,7 +62,7 @@ func TestCreateGrab(t *testing.T) {
 
 func TestListGrabs_WithData(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Author")
@@ -85,7 +86,7 @@ func TestListGrabs_WithData(t *testing.T) {
 
 func TestGetQueue_NoClients(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	queue, err := svc.GetQueue(context.Background())
 	require.NoError(t, err)
 	assert.Empty(t, queue)
@@ -93,7 +94,7 @@ func TestGetQueue_NoClients(t *testing.T) {
 
 func TestGetClientQueue_NotFound(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	_, err := svc.GetClientQueue(context.Background(), 9999)
 	require.Error(t, err)
 }
@@ -111,7 +112,7 @@ func TestNewClient_UnknownType(t *testing.T) {
 
 func TestGetDirectClient_NoRootFolder(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	_, _, err := svc.GetDirectClient(context.Background())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "root folder")
@@ -119,7 +120,7 @@ func TestGetDirectClient_NoRootFolder(t *testing.T) {
 
 func TestGetDirectClient_WithRootFolder(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	dir := t.TempDir()
@@ -134,7 +135,7 @@ func TestGetDirectClient_WithRootFolder(t *testing.T) {
 
 func TestGetUsenetClient_NoneConfigured(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	client, cfg, err := svc.GetUsenetClient(context.Background())
 	require.NoError(t, err)
 	assert.Nil(t, client)
@@ -143,7 +144,7 @@ func TestGetUsenetClient_NoneConfigured(t *testing.T) {
 
 func TestGetTorrentClient_NoneConfigured(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	client, cfg, err := svc.GetTorrentClient(context.Background())
 	require.NoError(t, err)
 	assert.Nil(t, client)
@@ -152,7 +153,7 @@ func TestGetTorrentClient_NoneConfigured(t *testing.T) {
 
 func TestSendGrab_NotFound(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	err := svc.SendGrab(context.Background(), 9999, 1)
 	require.Error(t, err)
 }
@@ -168,7 +169,7 @@ func TestGrabItem_UnmarshalJSON(t *testing.T) {
 
 func TestTestClient_Direct(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	dir := t.TempDir()
 	err := svc.TestClient(context.Background(), &download.ClientConfig{
 		Name:        "DirectTest",
@@ -181,7 +182,7 @@ func TestTestClient_Direct(t *testing.T) {
 
 func TestTestClient_UnknownType(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	err := svc.TestClient(context.Background(), &download.ClientConfig{
 		Type: "totally-nonexistent-type",
 	})
@@ -190,7 +191,7 @@ func TestTestClient_UnknownType(t *testing.T) {
 
 func TestSendGrab_ClientNotFound(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Author")
@@ -218,7 +219,7 @@ func TestSendGrab_ClientNotFound(t *testing.T) {
 
 func TestSendGrab_DisabledClient(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Author")
@@ -249,7 +250,7 @@ func TestSendGrab_DisabledClient(t *testing.T) {
 
 func TestSendGrab_WithDirectClient(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Author")
@@ -287,7 +288,7 @@ func TestSendGrab_WithDirectClient(t *testing.T) {
 
 func TestListGrabs_WithCompletedAt(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	authorID := testutil.SeedAuthor(t, db, "Author")
@@ -324,7 +325,7 @@ func TestListGrabs_WithCompletedAt(t *testing.T) {
 
 func TestGetDirectClient_Cached(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	dir := t.TempDir()
@@ -347,7 +348,7 @@ func TestGetQueue_DBError(t *testing.T) {
 	// Use the openClosedDB helper defined in repository_test.go (same package).
 	db, err := openClosedDBForService()
 	require.NoError(t, err)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	_, queueErr := svc.GetQueue(context.Background())
 	require.Error(t, queueErr)
 }
@@ -356,7 +357,7 @@ func TestGetQueue_DBError(t *testing.T) {
 func TestListGrabs_DBError(t *testing.T) {
 	db, err := openClosedDBForService()
 	require.NoError(t, err)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	_, listErr := svc.ListGrabs(context.Background())
 	require.Error(t, listErr)
 }
@@ -365,7 +366,7 @@ func TestListGrabs_DBError(t *testing.T) {
 func TestCreateGrab_DBError(t *testing.T) {
 	db, err := openClosedDBForService()
 	require.NoError(t, err)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	grabErr := svc.CreateGrab(context.Background(), &download.GrabItem{
 		BookID: 1, IndexerID: 1, ReleaseTitle: "Book", DownloadURL: "http://a.com",
 	})

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/woliveiras/bookaneer/internal/core/book"
 	"github.com/woliveiras/bookaneer/internal/core/naming"
+	"github.com/woliveiras/bookaneer/internal/bypass"
 	"github.com/woliveiras/bookaneer/internal/download"
 	_ "github.com/woliveiras/bookaneer/internal/download/direct" // register embedded downloader factory
 	"github.com/woliveiras/bookaneer/internal/testutil"
@@ -28,7 +29,7 @@ func TestGrabRelease_EmptyTitle(t *testing.T) {
 	bookID := testutil.SeedBook(t, db, authorID, "The Hobbit")
 
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
@@ -49,7 +50,7 @@ func TestGrabRelease_NoRootFolder(t *testing.T) {
 	bookID := testutil.SeedBook(t, db, authorID, "The Hobbit")
 
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
@@ -83,7 +84,7 @@ VALUES ('DirectClient', 'direct', '', 0, 1, 0, ?)
 	require.NoError(t, err)
 
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
@@ -118,7 +119,7 @@ func TestProcessDownloads_ImportFailsNoRootFolder(t *testing.T) {
 	bookID := testutil.SeedBook(t, db, authorID, "The Hobbit")
 
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 

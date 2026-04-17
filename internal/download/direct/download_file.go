@@ -1,7 +1,9 @@
 package direct
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -9,40 +11,122 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/woliveiras/bookaneer/internal/bypass"
+	"github.com/woliveiras/bookaneer/internal/bypass/challenge"
 	"github.com/woliveiras/bookaneer/internal/download"
 )
 
-// downloadFile performs the actual HTTP download.
-func (c *Client) downloadFile(ctx context.Context, dl *downloadItem, headers map[string]string) {
-	c.updateStatus(dl.id, download.StatusDownloading, "")
+const (
+	_previewSize = 4096       // bytes to read for challenge detection
+	_downloadBuf = 32 * 1024  // copy buffer size
+)
 
-	// Create request
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, dl.url, nil)
+// fetchURL makes an HTTP GET to url, applying optional cookies and a custom
+// user-agent (used when retrying after a bypass solve).
+func (c *Client) fetchURL(ctx context.Context, url string, headers map[string]string, cookies []*http.Cookie, userAgent string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		c.updateStatus(dl.id, download.StatusFailed, fmt.Sprintf("invalid URL: %v", err))
-		return
+		return nil, fmt.Errorf("invalid URL: %w", err)
 	}
 
-	// Add custom headers
-	req.Header.Set("User-Agent", "Bookaneer/1.0")
+	ua := "Bookaneer/1.0"
+	if userAgent != "" {
+		ua = userAgent
+	}
+	req.Header.Set("User-Agent", ua)
+
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
+	for _, ck := range cookies {
+		req.AddCookie(ck)
+	}
 
-	// Make request
-	resp, err := c.httpClient.Do(req)
+	return c.httpClient.Do(req)
+}
+
+// challengeMessage returns a human-readable failure message for a given challenge reason.
+func challengeMessage(reason string) string {
+	switch reason {
+	case "cloudflare":
+		return "Cloudflare challenge detected — configure FlareSolverr in Settings → Download"
+	case "ddosguard":
+		return "DDoS-Guard challenge detected — configure FlareSolverr in Settings → Download"
+	default:
+		return "login required — configure FlareSolverr or try a different source"
+	}
+}
+
+// downloadFile performs the actual HTTP download with optional bypass support.
+func (c *Client) downloadFile(ctx context.Context, dl *downloadItem, headers map[string]string) {
+	c.updateStatus(dl.id, download.StatusDownloading, "")
+
+	// --- Attempt 1: plain HTTP GET ---
+	resp, err := c.fetchURL(ctx, dl.url, headers, nil, "")
 	if err != nil {
 		c.updateStatus(dl.id, download.StatusFailed, fmt.Sprintf("download failed: %v", err))
 		return
 	}
-	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
+		_ = resp.Body.Close()
 		c.updateStatus(dl.id, download.StatusFailed, fmt.Sprintf("HTTP %d: %s", resp.StatusCode, resp.Status))
 		return
 	}
 
-	// Get file size
+	// Read a small preview to detect challenge/HTML pages before writing to disk.
+	preview := make([]byte, _previewSize)
+	n, _ := io.ReadFull(resp.Body, preview)
+	preview = preview[:n]
+
+	if challenge.IsHTML(resp.Header.Get("Content-Type")) {
+		_ = resp.Body.Close()
+
+		found, reason := challenge.Detect(string(preview))
+		if !found {
+			c.updateStatus(dl.id, download.StatusFailed,
+				"received HTML response — source may require login")
+			return
+		}
+
+		// --- Challenge detected: attempt bypass ---
+		if c.cfg.Bypasser == nil || !c.cfg.Bypasser.Enabled() {
+			c.updateStatus(dl.id, download.StatusFailed, challengeMessage(reason))
+			return
+		}
+
+		bypassResult, bypassErr := c.cfg.Bypasser.Solve(ctx, dl.url)
+		if bypassErr != nil {
+			if errors.Is(bypassErr, bypass.ErrUnsolvable) {
+				c.updateStatus(dl.id, download.StatusFailed,
+					fmt.Sprintf("bypass could not solve challenge: %v", bypassErr))
+			} else {
+				c.updateStatus(dl.id, download.StatusFailed,
+					fmt.Sprintf("bypass error: %v", bypassErr))
+			}
+			return
+		}
+
+		// --- Attempt 2: retry with bypass session cookies ---
+		resp, err = c.fetchURL(ctx, dl.url, headers, bypassResult.Cookies, bypassResult.UserAgent)
+		if err != nil {
+			c.updateStatus(dl.id, download.StatusFailed,
+				fmt.Sprintf("download failed after bypass: %v", err))
+			return
+		}
+		if resp.StatusCode != http.StatusOK {
+			_ = resp.Body.Close()
+			c.updateStatus(dl.id, download.StatusFailed,
+				fmt.Sprintf("HTTP %d after bypass: %s", resp.StatusCode, resp.Status))
+			return
+		}
+		// Reset preview — second response should be the actual file.
+		preview = preview[:0]
+	}
+
+	defer func() { _ = resp.Body.Close() }()
+
+	// Update file size from whichever response we ended up with.
 	c.mu.Lock()
 	dl.size = resp.ContentLength
 	c.mu.Unlock()
@@ -60,33 +144,35 @@ func (c *Client) downloadFile(ctx context.Context, dl *downloadItem, headers map
 		return
 	}
 
-	outFile, err := os.Create(filePath)
+	outFile, err := os.Create(filePath) //nolint:gosec // path is constructed from trusted config root
 	if err != nil {
 		c.updateStatus(dl.id, download.StatusFailed, fmt.Sprintf("cannot create file: %v", err))
 		return
 	}
 	defer func() { _ = outFile.Close() }()
 
-	// Download with progress tracking
+	// Update the saved path so status queries return the correct path.
 	c.mu.Lock()
 	dl.savePath = filePath
 	c.mu.Unlock()
 
-	buf := make([]byte, 32*1024) // 32KB buffer
+	// Stream: replay the preview bytes already read, then the remaining body.
+	fullBody := io.MultiReader(bytes.NewReader(preview), resp.Body)
+
+	buf := make([]byte, _downloadBuf)
 	var downloaded int64
 	startTime := time.Now()
 	lastUpdate := startTime
 
 	for {
-		n, readErr := resp.Body.Read(buf)
-		if n > 0 {
-			if _, writeErr := outFile.Write(buf[:n]); writeErr != nil {
+		nr, readErr := fullBody.Read(buf)
+		if nr > 0 {
+			if _, writeErr := outFile.Write(buf[:nr]); writeErr != nil {
 				c.updateStatus(dl.id, download.StatusFailed, fmt.Sprintf("write error: %v", writeErr))
 				return
 			}
-			downloaded += int64(n)
+			downloaded += int64(nr)
 
-			// Update progress periodically
 			if time.Since(lastUpdate) > 500*time.Millisecond {
 				c.mu.Lock()
 				dl.downloaded = downloaded
@@ -120,3 +206,4 @@ func (c *Client) downloadFile(ctx context.Context, dl *downloadItem, headers map
 	dl.completedAt = &now
 	c.mu.Unlock()
 }
+

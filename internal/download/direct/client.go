@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/woliveiras/bookaneer/internal/bypass"
 	"github.com/woliveiras/bookaneer/internal/download"
 )
 
@@ -23,6 +24,7 @@ func init() {
 		return New(Config{
 			Name:        cfg.Name,
 			DownloadDir: cfg.DownloadDir,
+			Bypasser:    cfg.Bypasser,
 		}), nil
 	})
 }
@@ -30,7 +32,8 @@ func init() {
 // Config holds Direct downloader configuration.
 type Config struct {
 	Name        string
-	DownloadDir string // Directory to save downloaded files
+	DownloadDir string          // Directory to save downloaded files
+	Bypasser    bypass.Bypasser // Optional; nil means no bypass
 }
 
 // downloadItem tracks an active download.

@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/woliveiras/bookaneer/internal/bypass"
 	"github.com/woliveiras/bookaneer/internal/download"
 	_ "github.com/woliveiras/bookaneer/internal/download/direct"
 	"github.com/woliveiras/bookaneer/internal/testutil"
@@ -15,7 +16,7 @@ import (
 // GetDirectClient returns it (exercising getClientByType → getClientByTypes → getOrCreateClient).
 func TestGetDirectClient_ConfiguredInDB(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	dir := t.TempDir()
@@ -39,7 +40,7 @@ func TestGetDirectClient_ConfiguredInDB(t *testing.T) {
 // repeated calls (exercises getOrCreateClient double-check locking).
 func TestGetOrCreateClient_CachesClient(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	dir := t.TempDir()
@@ -65,7 +66,7 @@ func TestGetOrCreateClient_CachesClient(t *testing.T) {
 // path (GetClient → getOrCreateClient → GetQueue).
 func TestGetClientQueue_WithDirectClient(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	dir := t.TempDir()
@@ -86,7 +87,7 @@ func TestGetClientQueue_WithDirectClient(t *testing.T) {
 // enabled clients (exercises getOrCreateClient via the GetQueue loop).
 func TestGetQueue_WithEnabledDirectClient(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	dir := t.TempDir()
@@ -105,7 +106,7 @@ func TestGetQueue_WithEnabledDirectClient(t *testing.T) {
 // TestGetClientByTypes_DisabledClientSkipped verifies that GetQueue skips disabled clients.
 func TestGetClientByTypes_DisabledClientSkipped(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	dir := t.TempDir()
@@ -127,7 +128,7 @@ func TestGetClientByTypes_DisabledClientSkipped(t *testing.T) {
 // GetClientQueue propagates that error.
 func TestGetClientByTypes_WithUnknownFactoryType(t *testing.T) {
 	db := testutil.OpenTestDB(t)
-	svc := download.NewService(db)
+	svc := download.NewService(db, bypass.Noop{})
 	ctx := context.Background()
 
 	cfg := &download.ClientConfig{

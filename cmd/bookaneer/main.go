@@ -23,6 +23,8 @@ import (
 	"github.com/woliveiras/bookaneer/api/v1/handler"
 	apimw "github.com/woliveiras/bookaneer/api/v1/middleware"
 	"github.com/woliveiras/bookaneer/internal/auth"
+	"github.com/woliveiras/bookaneer/internal/bypass"
+	bypassflare "github.com/woliveiras/bookaneer/internal/bypass/flaresolverr"
 	"github.com/woliveiras/bookaneer/internal/config"
 	"github.com/woliveiras/bookaneer/internal/core/author"
 	"github.com/woliveiras/bookaneer/internal/core/book"
@@ -347,8 +349,13 @@ func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Confi
 	libAggregator := digitallibrary.NewAggregator(providers...)
 	handler.NewDigitalLibraryHandler(libAggregator).Register(protected)
 
-	// Download service
-	downloadSvc := download.NewService(db)
+	// Download service — wire bypass if FlareSolverr is configured.
+	var downloadBypasser bypass.Bypasser = bypass.Noop{}
+	if cfg.FlareSolverrURL != "" {
+		downloadBypasser = bypassflare.New(cfg.FlareSolverrURL)
+		slog.Info("bypass enabled for direct downloads", "url", cfg.FlareSolverrURL)
+	}
+	downloadSvc := download.NewService(db, downloadBypasser)
 	handler.NewDownloadHandler(downloadSvc).Register(protected)
 
 	// Wanted service

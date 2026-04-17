@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/woliveiras/bookaneer/internal/bypass"
 )
 
 // parseTimestamp parses a timestamp string, trying RFC3339 first then the
@@ -22,6 +24,7 @@ func parseTimestamp(s string) time.Time {
 // Service manages download clients and queue operations.
 type Service struct {
 	db                   *sql.DB
+	bypasser             bypass.Bypasser
 	mu                   sync.RWMutex
 	clients              map[int64]Client
 	embeddedClient       Client        // Auto-configured direct downloader
@@ -29,10 +32,12 @@ type Service struct {
 }
 
 // NewService creates a new download service.
-func NewService(db *sql.DB) *Service {
+// b is an optional bypass service; pass bypass.Noop{} when not configured.
+func NewService(db *sql.DB, b bypass.Bypasser) *Service {
 	return &Service{
-		db:      db,
-		clients: make(map[int64]Client),
+		db:       db,
+		bypasser: b,
+		clients:  make(map[int64]Client),
 	}
 }
 

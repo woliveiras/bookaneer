@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/woliveiras/bookaneer/internal/core/book"
+	"github.com/woliveiras/bookaneer/internal/bypass"
 	"github.com/woliveiras/bookaneer/internal/download"
 	"github.com/woliveiras/bookaneer/internal/testutil"
 	"github.com/woliveiras/bookaneer/internal/core/naming"
@@ -39,7 +40,7 @@ func TestGetHistory_WithEvents(t *testing.T) {
 	require.NoError(t, err)
 
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
@@ -64,7 +65,7 @@ func TestGetHistory_FilterByEventType(t *testing.T) {
 		VALUES (?, ?, 'bookImported', 'R2', 'epub', '{}')`, bookID, authorID)
 
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
@@ -85,7 +86,7 @@ func TestGetHistory_Limit(t *testing.T) {
 	}
 
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
@@ -108,7 +109,7 @@ func TestAddAndRemoveBlocklist(t *testing.T) {
 	bookID := testutil.SeedBook(t, db, authorID, "Book")
 
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
@@ -144,7 +145,7 @@ func TestGetHistory_ZeroLimitUsesDefault(t *testing.T) {
 	}
 
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
@@ -169,7 +170,7 @@ func TestGetHistory_NullBookAndAuthor(t *testing.T) {
 	require.NoError(t, err)
 
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 

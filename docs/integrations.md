@@ -312,6 +312,79 @@ Authorization: Basic base64(admin:password)
 }
 ```
 
+### Embedded Downloader (no setup required)
+
+When no download client is configured, Bookaneer falls back to the **Embedded Downloader** — a built-in HTTP client that downloads files directly from digital library sources (Anna's Archive, LibGen, Internet Archive) and saves them to your root library folder.
+
+No configuration is needed. The download appears in the activity queue as `"Embedded Downloader"`.
+
+**Limitation:** Many digital library sources protect download pages with Cloudflare or DDoS-Guard challenges. A plain HTTP request will receive a challenge page instead of the file, and the download will fail with a message like:
+
+```
+Cloudflare challenge detected — configure FlareSolverr in Settings → Download
+```
+
+See [FlareSolverr bypass](#flaresolverr-optional-bypass-for-digital-libraries) below to resolve this.
+
+---
+
+### FlareSolverr — optional bypass for digital libraries
+
+[FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) is a headless-browser sidecar that solves Cloudflare Turnstile and DDoS-Guard challenges so Bookaneer can download files from protected sources.
+
+**How it works:**
+
+```
+Embedded Downloader
+  │
+  ├─ 1. Plain HTTP GET → receives HTML challenge page
+  │
+  ├─ 2. Challenge detected (Cloudflare / DDoS-Guard)
+  │
+  ├─ 3. POST to FlareSolverr: { "cmd": "request.get", "url": "..." }
+  │       FlareSolverr starts headless Chromium, solves challenge
+  │       Returns: cookies (cf_clearance, etc) + user-agent
+  │
+  └─ 4. Retry HTTP GET with cookies → receives actual file ✓
+```
+
+**Setup:**
+
+1. Add FlareSolverr to your Docker Compose:
+
+```yaml
+flaresolverr:
+  image: ghcr.io/flaresolverr/flaresolverr:latest
+  container_name: bookaneer-flaresolverr
+  environment:
+    - LOG_LEVEL=info
+  restart: unless-stopped
+  # No port mapping needed unless you want external access
+```
+
+2. Add `flareSolverrUrl` to `config.yaml`:
+
+```yaml
+flareSolverrUrl: http://flaresolverr:8191
+```
+
+Or set the environment variable:
+
+```bash
+BOOKANEER_FLARESOLVERR_URL=http://flaresolverr:8191
+```
+
+When configured, FlareSolverr is used for:
+- The **Embedded Downloader** (automatic, on challenge detection)
+- The **Anna's Archive** digital library provider (search + download page resolution)
+- The **LibGen** digital library provider
+
+FlareSolverr is **not required** — without it, downloads from protected sources will fail with a descriptive error in the activity queue. Public-domain sources (Internet Archive, Project Gutenberg, Wikisource) work without bypass.
+
+**Resource requirements:** FlareSolverr runs a headless Chromium instance (~300–500 MB RAM). It is not suitable for devices with less than 1 GB RAM. On a Raspberry Pi 4 (4 GB) it works fine.
+
+---
+
 ### Blackhole (any client)
 
 For clients not directly supported. Bookaneer saves the .torrent or .nzb file to a folder monitored by the client.

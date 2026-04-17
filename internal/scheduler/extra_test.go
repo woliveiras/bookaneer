@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/woliveiras/bookaneer/internal/core/book"
 	"github.com/woliveiras/bookaneer/internal/core/naming"
+	"github.com/woliveiras/bookaneer/internal/bypass"
 	"github.com/woliveiras/bookaneer/internal/download"
 	"github.com/woliveiras/bookaneer/internal/library"
 	"github.com/woliveiras/bookaneer/internal/search"
@@ -37,7 +38,7 @@ func newTestWantedSvc(t *testing.T) (*wanted.Service, *sql.DB) {
 		book.New(db),
 		library.NewAggregator(), // zero providers → searchDigitalLibraries returns (nil, nil)
 		search.NewService(db),
-		download.NewService(db),
+		download.NewService(db, bypass.Noop{}),
 		naming.New(db),
 		nil, // scanner not needed for these tests
 		nil, // pathMapper not needed for these tests

@@ -3,6 +3,8 @@ package download
 import (
 	"context"
 	"time"
+
+	"github.com/woliveiras/bookaneer/internal/bypass"
 )
 
 // Client defines the interface for download clients.
@@ -94,6 +96,8 @@ type ClientConfig struct {
 	DownloadDir          string   `json:"downloadDir,omitempty"` // For direct downloads
 	CreatedAt            string   `json:"createdAt"`
 	UpdatedAt            string   `json:"updatedAt"`
+	// Bypasser is an optional bypass service injected at runtime. Not persisted.
+	Bypasser bypass.Bypasser `json:"-"`
 }
 
 // ClientType values.

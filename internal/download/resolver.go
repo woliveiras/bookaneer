@@ -24,6 +24,9 @@ func (s *Service) getOrCreateClient(cfg ClientConfig) (Client, error) {
 		return client, nil
 	}
 
+	// Inject the bypass service so direct clients can resolve challenges.
+	cfg.Bypasser = s.bypasser
+
 	client, err := NewClient(cfg)
 	if err != nil {
 		return nil, err
@@ -87,6 +90,7 @@ func (s *Service) getEmbeddedDirectClient(ctx context.Context) (Client, *ClientC
 		Type:        ClientTypeDirect,
 		DownloadDir: rootPath,
 		Enabled:     true,
+		Bypasser:    s.bypasser,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("create embedded client: %w", err)
@@ -99,6 +103,7 @@ func (s *Service) getEmbeddedDirectClient(ctx context.Context) (Client, *ClientC
 		Type:        ClientTypeDirect,
 		DownloadDir: rootPath,
 		Enabled:     true,
+		Bypasser:    s.bypasser,
 	}
 
 	return client, s.embeddedClientConfig, nil

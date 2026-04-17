@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/woliveiras/bookaneer/internal/core/book"
 	"github.com/woliveiras/bookaneer/internal/core/naming"
+	"github.com/woliveiras/bookaneer/internal/bypass"
 	"github.com/woliveiras/bookaneer/internal/download"
 	_ "github.com/woliveiras/bookaneer/internal/download/direct" // register embedded downloader factory
 	"github.com/woliveiras/bookaneer/internal/testutil"
@@ -41,7 +42,7 @@ func TestProcessDownloads_ImportsCompletedFile(t *testing.T) {
 	require.NoError(t, db.QueryRow(`SELECT id FROM download_queue WHERE external_id = 'ext-done'`).Scan(&queueID))
 
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
@@ -87,7 +88,7 @@ func TestProcessDownloads_MarksFailedWhenFileGone(t *testing.T) {
 	require.NoError(t, db.QueryRow(`SELECT id FROM download_queue WHERE external_id = 'ext-gone'`).Scan(&queueID))
 
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 

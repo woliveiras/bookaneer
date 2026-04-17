@@ -121,6 +121,7 @@ make dev    # Starts backend (air) + frontend (vite) in parallel
 | `BOOKANEER_PORT` | `9090` | HTTP port |
 | `BOOKANEER_DATA_DIR` | `./data` | Data directory (DB, logs, backups) |
 | `BOOKANEER_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
+| `BOOKANEER_FLARESOLVERR_URL` | _(empty)_ | FlareSolverr URL for Cloudflare/DDoS-Guard bypass (e.g. `http://flaresolverr:8191`) |
 
 The main config file lives at `$BOOKANEER_DATA_DIR/config.yaml`. If it doesn't exist, it is created with defaults on first boot.
 

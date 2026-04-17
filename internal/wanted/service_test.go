@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/woliveiras/bookaneer/internal/core/book"
 	"github.com/woliveiras/bookaneer/internal/core/naming"
+	"github.com/woliveiras/bookaneer/internal/bypass"
 	"github.com/woliveiras/bookaneer/internal/download"
 	"github.com/woliveiras/bookaneer/internal/testutil"
 	"github.com/woliveiras/bookaneer/internal/wanted"
@@ -16,7 +17,7 @@ import (
 func TestGetBookInfo(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 

@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/woliveiras/bookaneer/internal/core/book"
 	"github.com/woliveiras/bookaneer/internal/core/naming"
+	"github.com/woliveiras/bookaneer/internal/bypass"
 	"github.com/woliveiras/bookaneer/internal/download"
 	"github.com/woliveiras/bookaneer/internal/testutil"
 	"github.com/woliveiras/bookaneer/internal/wanted"
@@ -17,7 +18,7 @@ func newTestService(t *testing.T) (*wanted.Service, context.Context) {
 	t.Helper()
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	return svc, context.Background()
 }
@@ -25,7 +26,7 @@ func newTestService(t *testing.T) (*wanted.Service, context.Context) {
 func TestRemoveFromQueue_ItemExists(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
@@ -61,7 +62,7 @@ func TestGetDownloadQueue_Empty(t *testing.T) {
 func TestGetDownloadQueue_WithItems(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
@@ -86,7 +87,7 @@ func TestGetDownloadQueue_WithItems(t *testing.T) {
 func TestGetDownloadQueue_NullJoins(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
@@ -111,7 +112,7 @@ func TestGetDownloadQueue_NullJoins(t *testing.T) {
 func TestUpdateQueueItemStatus(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
@@ -135,7 +136,7 @@ func TestUpdateQueueItemStatus(t *testing.T) {
 func TestGetDownloadQueue_WithCompletedAndFailedItems(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
@@ -170,7 +171,7 @@ func TestGrabRelease_RecordsDownloadAndHistory(t *testing.T) {
 	bookID := testutil.SeedBook(t, db, authorID, "The Hobbit")
 
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
@@ -219,7 +220,7 @@ func TestProcessDownloads_RestartsLostDownload(t *testing.T) {
 	require.NoError(t, db.QueryRow(`SELECT id FROM download_queue WHERE external_id = 'ext-lost'`).Scan(&queueID))
 
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
@@ -237,7 +238,7 @@ func TestProcessDownloads_RestartsLostDownload(t *testing.T) {
 func TestUpdateQueueItemStatusWithPath(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
@@ -260,7 +261,7 @@ func TestUpdateQueueItemStatusWithPath(t *testing.T) {
 func TestRemoveFromQueue_DBError(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db)
+	downloadSvc := download.NewService(db, bypass.Noop{})
 	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
