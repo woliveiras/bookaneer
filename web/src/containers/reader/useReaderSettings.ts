@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from "react"
+import { useShallow } from "zustand/react/shallow"
 import {
   type FoliateView,
   THEMES,
@@ -10,12 +11,14 @@ import { useReaderSettingsStore } from "../../store/reader/reader-settings.store
  * them to the foliate-view renderer whenever they change.
  */
 export function useReaderSettings(viewRef: React.RefObject<FoliateView | null>) {
-  const settings = useReaderSettingsStore((s) => ({
-    theme: s.theme,
-    fontSize: s.fontSize,
-    fontFamily: s.fontFamily,
-    lineHeight: s.lineHeight,
-  }))
+  const settings = useReaderSettingsStore(
+    useShallow((s) => ({
+      theme: s.theme,
+      fontSize: s.fontSize,
+      fontFamily: s.fontFamily,
+      lineHeight: s.lineHeight,
+    })),
+  )
   const updateSettings = useReaderSettingsStore((s) => s.updateSettings)
 
   const applyStyles = useCallback(() => {
