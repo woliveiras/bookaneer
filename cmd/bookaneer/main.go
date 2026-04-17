@@ -34,7 +34,6 @@ import (
 	"github.com/woliveiras/bookaneer/internal/core/qualityprofile"
 	"github.com/woliveiras/bookaneer/internal/core/reader"
 	"github.com/woliveiras/bookaneer/internal/core/rootfolder"
-	"github.com/woliveiras/bookaneer/internal/core/series"
 	"github.com/woliveiras/bookaneer/internal/database"
 	"github.com/woliveiras/bookaneer/internal/download"
 	_ "github.com/woliveiras/bookaneer/internal/download/blackhole"
@@ -259,7 +258,6 @@ func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Confi
 	// Core domain services + handlers
 	authorSvc := author.New(database.OpenX(db))
 	bookSvc := book.New(db)
-	seriesSvc := series.New(db)
 	rootFolderSvc := rootfolder.New(db)
 	qualityProfileSvc := qualityprofile.New(db)
 	libraryScanner := library.NewScanner(db)
@@ -272,7 +270,6 @@ func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Confi
 
 	handler.NewAuthorHandler(authorSvc).Register(protected)
 	handler.NewBookHandler(bookSvc, authorSvc).Register(protected)
-	handler.NewSeriesHandler(seriesSvc).Register(protected)
 	handler.NewRootFolderHandler(rootFolderSvc, libraryScanner).Register(protected)
 	handler.NewQualityProfileHandler(qualityProfileSvc).Register(protected)
 	handler.NewLibraryHandler(libraryScanner).Register(protected)
