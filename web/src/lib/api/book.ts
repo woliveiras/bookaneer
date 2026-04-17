@@ -9,7 +9,7 @@ import type {
   CreateBookInput,
   ListBooksParams,
   PaginatedResponse,
-} from "../types"
+} from "../schemas"
 import { fetchAPI } from "./client"
 
 export const bookApi = {

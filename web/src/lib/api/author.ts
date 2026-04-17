@@ -5,7 +5,7 @@ import type {
   ListAuthorsParams,
   PaginatedResponse,
   UpdateAuthorInput,
-} from "../types"
+} from "../schemas"
 import { fetchAPI } from "./client"
 
 export const authorApi = {

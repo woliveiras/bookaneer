@@ -1,4 +1,4 @@
-import type { Book, PaginatedResponse } from "../types"
+import type { Book, PaginatedResponse } from "../schemas"
 import { fetchAPI } from "./client"
 
 export const wishlistApi = {

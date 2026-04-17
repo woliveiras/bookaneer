@@ -5,7 +5,7 @@ import type {
   MetadataBook,
   MetadataBookResult,
   MetadataSearchResponse,
-} from "../types"
+} from "../schemas"
 import { fetchAPI } from "./client"
 
 export const metadataApi = {

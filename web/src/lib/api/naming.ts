@@ -4,7 +4,7 @@ import type {
   NamingSettings,
   NamingSettingsInput,
   RenameResult,
-} from "../types"
+} from "../schemas"
 import { fetchAPI } from "./client"
 
 export const namingApi = {

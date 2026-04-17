@@ -5,7 +5,7 @@ import type {
   GrabResult,
   HistoryEventType,
   HistoryItem,
-} from "../types"
+} from "../schemas"
 import { fetchAPI } from "./client"
 
 export const wantedApi = {

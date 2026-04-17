@@ -4,7 +4,7 @@ import type {
   ReaderBookFile,
   ReadingProgress,
   SaveProgressInput,
-} from "../types"
+} from "../schemas"
 import { API_BASE, fetchAPI, getStoredApiKey } from "./client"
 
 export const readerApi = {

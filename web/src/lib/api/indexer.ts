@@ -6,7 +6,7 @@ import type {
   TestIndexerResponse,
   UpdateIndexerInput,
   UpdateIndexerOptionsInput,
-} from "../types"
+} from "../schemas"
 import { API_BASE, fetchAPI, getStoredApiKey } from "./client"
 
 export const indexerApi = {

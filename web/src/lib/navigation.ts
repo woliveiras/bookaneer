@@ -1,5 +1,5 @@
 import type { NavigateFn } from "@tanstack/react-router"
-import type { Book } from "./types/book"
+import type { Book } from "./schemas"
 
 /**
  * Navigates to the book search page pre-filled with the given book's metadata.

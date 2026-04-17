@@ -6,7 +6,7 @@ import type {
   GrabStatus,
   QueueItem,
   TestDownloadClientResponse,
-} from "../types"
+} from "../schemas"
 import { API_BASE, fetchAPI, getStoredApiKey } from "./client"
 
 export const downloadClientApi = {

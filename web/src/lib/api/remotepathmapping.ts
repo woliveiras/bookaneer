@@ -2,7 +2,7 @@ import type {
   CreateRemotePathMappingInput,
   RemotePathMapping,
   UpdateRemotePathMappingInput,
-} from "../types"
+} from "../schemas"
 import { fetchAPI } from "./client"
 
 export const remotePathMappingApi = {
