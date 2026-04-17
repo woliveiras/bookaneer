@@ -163,7 +163,7 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
           <Button
             variant="ghost"
             size="sm"
-            className="reader-btn shrink-0 min-h-[44px] min-w-[44px]"
+            className="reader-btn shrink-0 min-h-11 min-w-11"
             onClick={onClose}
             aria-label="Close reader"
           >
@@ -194,7 +194,7 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
             onClick={() => setShowToc((prev) => !prev)}
             aria-label="Table of contents"
             aria-pressed={showToc}
-            className="reader-btn min-h-[44px] min-w-[44px]"
+            className="reader-btn min-h-11 min-w-11"
           >
             <BookOpen className="h-5 w-5" aria-hidden="true" />
             <span className="hidden sm:inline ml-1">TOC</span>
@@ -205,7 +205,7 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
             onClick={() => setShowBookmarks((prev) => !prev)}
             aria-label="Bookmarks"
             aria-pressed={showBookmarks}
-            className="reader-btn min-h-[44px] min-w-[44px]"
+            className="reader-btn min-h-11 min-w-11"
           >
             <Bookmark className="h-5 w-5" aria-hidden="true" />
             <span className="hidden sm:inline ml-1">Bookmarks</span>
@@ -216,7 +216,7 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
             onClick={() => setShowSettings((prev) => !prev)}
             aria-label="Reader settings"
             aria-pressed={showSettings}
-            className="reader-btn min-h-[44px] min-w-[44px]"
+            className="reader-btn min-h-11 min-w-11"
           >
             <Settings className="h-5 w-5" aria-hidden="true" />
             <span className="hidden sm:inline ml-1">Settings</span>
@@ -290,7 +290,7 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
                   size="sm"
                   onClick={() => setShowToc(false)}
                   aria-label="Close TOC"
-                  className="reader-btn min-h-[44px] min-w-[44px]"
+                  className="reader-btn min-h-11 min-w-11"
                 >
                   <X className="h-5 w-5" aria-hidden="true" />
                 </Button>
@@ -334,7 +334,7 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
         <Button
           variant="ghost"
           size="sm"
-          className="reader-btn min-h-[44px] min-w-[44px]"
+          className="reader-btn min-h-11 min-w-11"
           onClick={handlePrev}
           aria-label="Previous page"
         >
@@ -371,7 +371,7 @@ export function Reader({ bookFileId, onClose }: ReaderProps) {
         <Button
           variant="ghost"
           size="sm"
-          className="reader-btn min-h-[44px] min-w-[44px]"
+          className="reader-btn min-h-11 min-w-11"
           onClick={handleNext}
           aria-label="Next page"
         >

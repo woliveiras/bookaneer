@@ -211,7 +211,7 @@ function MobileBottomNav() {
             <li key={to} className="flex-1" role="presentation">
               <Link
                 to={to}
-                className="flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] w-full text-xs font-medium transition-colors text-muted-foreground"
+                className="flex flex-col items-center justify-center gap-0.5 py-2 min-h-14 w-full text-xs font-medium transition-colors text-muted-foreground"
                 activeProps={{ className: "text-primary" }}
                 inactiveProps={{ className: "text-muted-foreground" }}
                 activeOptions={{ exact: to === "/" }}
@@ -226,7 +226,7 @@ function MobileBottomNav() {
             <button
               type="button"
               onClick={() => setDrawerOpen((v) => !v)}
-              className="flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] w-full text-xs font-medium transition-colors text-muted-foreground"
+              className="flex flex-col items-center justify-center gap-0.5 py-2 min-h-14 w-full text-xs font-medium transition-colors text-muted-foreground"
               aria-expanded={drawerOpen}
               aria-haspopup="dialog"
             >
