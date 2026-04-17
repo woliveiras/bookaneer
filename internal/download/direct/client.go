@@ -287,17 +287,3 @@ func (c *Client) itemToStatus(dl *downloadItem) *download.ItemStatus {
 	}
 }
 
-// CompletedDownloads returns paths of completed downloads and removes them from tracking.
-func (c *Client) CompletedDownloads() []string {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	var paths []string
-	for id, dl := range c.downloads {
-		if dl.status == download.StatusCompleted && dl.savePath != "" {
-			paths = append(paths, dl.savePath)
-			delete(c.downloads, id)
-		}
-	}
-	return paths
-}
