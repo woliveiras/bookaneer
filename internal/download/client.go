@@ -98,6 +98,9 @@ type ClientConfig struct {
 	UpdatedAt            string   `json:"updatedAt"`
 	// Bypasser is an optional bypass service injected at runtime. Not persisted.
 	Bypasser bypass.Bypasser `json:"-"`
+	// CertificateValidation controls TLS verification for direct downloads.
+	// "enabled" (default), "disabled_local", "disabled". Not persisted.
+	CertificateValidation string `json:"-"`
 }
 
 // ClientType values.

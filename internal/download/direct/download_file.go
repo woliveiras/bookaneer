@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/woliveiras/bookaneer/internal/bypass"
@@ -42,7 +44,59 @@ func (c *Client) fetchURL(ctx context.Context, url string, headers map[string]st
 		req.AddCookie(ck)
 	}
 
-	return c.httpClient.Do(req)
+	// Pick the HTTP client based on certificate validation mode.
+	httpClient := c.httpClient
+	if c.httpClientNoTLS != nil {
+		if c.cfg.CertificateValidation == "disabled" ||
+			(c.cfg.CertificateValidation == "disabled_local" && isLocalURL(url)) {
+			httpClient = c.httpClientNoTLS
+		}
+	}
+
+	return httpClient.Do(req)
+}
+
+// reLibgenGetLink extracts the get.php download link from a LibGen ads.php page.
+// The link has the form: get.php?md5={MD5}&key={KEY} (relative or absolute).
+var reLibgenGetLink = regexp.MustCompile(
+	`(?i)<a[^>]+href=["']([^"']*get\.php\?[^"']*md5=[^"']+&(?:amp;)?key=[^"']+)["']`,
+)
+
+// resolveURL checks if the URL is a LibGen intermediate page (ads.php) and
+// resolves it to the actual file download URL (get.php). Returns the original
+// URL unchanged for all other sources.
+func (c *Client) resolveURL(ctx context.Context, rawURL string) (string, error) {
+	if !strings.Contains(rawURL, "ads.php?md5=") {
+		return rawURL, nil
+	}
+
+	resp, err := c.fetchURL(ctx, rawURL, nil, nil, "")
+	if err != nil {
+		return "", fmt.Errorf("resolve ads.php: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("resolve ads.php: HTTP %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 512*1024))
+	if err != nil {
+		return "", fmt.Errorf("resolve ads.php: read body: %w", err)
+	}
+
+	m := reLibgenGetLink.FindSubmatch(body)
+	if m == nil {
+		return "", fmt.Errorf("resolve ads.php: get.php link not found — source may require a different mirror")
+	}
+
+	link := strings.ReplaceAll(string(m[1]), "&amp;", "&")
+	if !strings.HasPrefix(link, "http") {
+		// Relative URL — combine with base from rawURL
+		u := rawURL[:strings.LastIndex(rawURL, "/")+1]
+		link = u + strings.TrimPrefix(link, "/")
+	}
+	return link, nil
 }
 
 // challengeMessage returns a human-readable failure message for a given challenge reason.
@@ -60,6 +114,14 @@ func challengeMessage(reason string) string {
 // downloadFile performs the actual HTTP download with optional bypass support.
 func (c *Client) downloadFile(ctx context.Context, dl *downloadItem, headers map[string]string) {
 	c.updateStatus(dl.id, download.StatusDownloading, "")
+
+	// Resolve intermediate pages (e.g. LibGen ads.php → get.php).
+	resolvedURL, err := c.resolveURL(ctx, dl.url)
+	if err != nil {
+		c.updateStatus(dl.id, download.StatusFailed, fmt.Sprintf("resolve URL: %v", err))
+		return
+	}
+	dl.url = resolvedURL
 
 	// --- Attempt 1: plain HTTP GET ---
 	resp, err := c.fetchURL(ctx, dl.url, headers, nil, "")

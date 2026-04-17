@@ -25,6 +25,7 @@ func parseTimestamp(s string) time.Time {
 type Service struct {
 	db                   *sql.DB
 	bypasser             bypass.Bypasser
+	certValidation       string        // "enabled" | "disabled_local" | "disabled"
 	mu                   sync.RWMutex
 	clients              map[int64]Client
 	embeddedClient       Client        // Auto-configured direct downloader
@@ -35,10 +36,20 @@ type Service struct {
 // b is an optional bypass service; pass bypass.Noop{} when not configured.
 func NewService(db *sql.DB, b bypass.Bypasser) *Service {
 	return &Service{
-		db:       db,
-		bypasser: b,
-		clients:  make(map[int64]Client),
+		db:             db,
+		bypasser:       b,
+		certValidation: "enabled",
+		clients:        make(map[int64]Client),
 	}
+}
+
+// SetCertValidation sets TLS certificate validation mode for the embedded downloader.
+// Valid values: "enabled" (default), "disabled_local", "disabled".
+// Must be called before any downloads are started.
+func (s *Service) SetCertValidation(mode string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.certValidation = mode
 }
 
 // TestClient tests connection to a download client.

@@ -229,7 +229,7 @@ func parseCells(cells []*html.Node, baseURL string) (library.SearchResult, bool)
 		Format:      ext,
 		Size:        size,
 		InfoURL:     fmt.Sprintf("%s/ads.php?md5=%s", baseURL, md5),
-		DownloadURL: fmt.Sprintf("https://library.lol/main/%s", md5),
+		DownloadURL: fmt.Sprintf("%s/ads.php?md5=%s", baseURL, md5),
 		Provider:    "libgen",
 	}, true
 }
@@ -335,7 +335,7 @@ func parseSize(s string) int64 {
 }
 
 func (p *Provider) GetDownloadLink(_ context.Context, id string) (string, error) {
-	return fmt.Sprintf("https://library.lol/main/%s", id), nil
+	return fmt.Sprintf("%s/ads.php?md5=%s", htmlMirrors[0], id), nil
 }
 
 var _ library.Provider = (*Provider)(nil)

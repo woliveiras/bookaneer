@@ -356,6 +356,10 @@ func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Confi
 		slog.Info("bypass enabled for direct downloads", "url", cfg.FlareSolverrURL)
 	}
 	downloadSvc := download.NewService(db, downloadBypasser)
+	if cfg.CertificateValidation != "" && cfg.CertificateValidation != "enabled" {
+		downloadSvc.SetCertValidation(cfg.CertificateValidation)
+		slog.Info("TLS certificate validation", "mode", cfg.CertificateValidation)
+	}
 	handler.NewDownloadHandler(downloadSvc).Register(protected)
 
 	// Wanted service

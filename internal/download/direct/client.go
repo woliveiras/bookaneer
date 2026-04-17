@@ -7,9 +7,12 @@ package direct
 import (
 	"context"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/hex"
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sync"
@@ -22,18 +25,21 @@ import (
 func init() {
 	download.RegisterFactory(download.ClientTypeDirect, func(cfg download.ClientConfig) (download.Client, error) {
 		return New(Config{
-			Name:        cfg.Name,
-			DownloadDir: cfg.DownloadDir,
-			Bypasser:    cfg.Bypasser,
+			Name:                  cfg.Name,
+			DownloadDir:           cfg.DownloadDir,
+			Bypasser:              cfg.Bypasser,
+			CertificateValidation: cfg.CertificateValidation,
 		}), nil
 	})
 }
 
 // Config holds Direct downloader configuration.
 type Config struct {
-	Name        string
-	DownloadDir string          // Directory to save downloaded files
-	Bypasser    bypass.Bypasser // Optional; nil means no bypass
+	Name                  string
+	DownloadDir           string          // Directory to save downloaded files
+	Bypasser              bypass.Bypasser // Optional; nil means no bypass
+	// CertificateValidation controls TLS verification: "enabled" (default), "disabled_local", "disabled".
+	CertificateValidation string
 }
 
 // downloadItem tracks an active download.
@@ -54,8 +60,9 @@ type downloadItem struct {
 
 // Client is a direct HTTP download client.
 type Client struct {
-	cfg        Config
-	httpClient *http.Client
+	cfg             Config
+	httpClient      *http.Client // TLS-verified client
+	httpClientNoTLS *http.Client // TLS-skipped client (nil when not needed)
 
 	mu        sync.RWMutex
 	downloads map[string]*downloadItem
@@ -63,18 +70,77 @@ type Client struct {
 
 // New creates a new Direct download client.
 func New(cfg Config) *Client {
-	return &Client{
+	newTransport := func(skipTLS bool) *http.Transport {
+		t := &http.Transport{
+			MaxIdleConns:        10,
+			MaxIdleConnsPerHost: 5,
+			IdleConnTimeout:     90 * time.Second,
+		}
+		if skipTLS {
+			t.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec // user-configured opt-in
+		}
+		return t
+	}
+
+	c := &Client{
 		cfg: cfg,
 		httpClient: &http.Client{
-			Timeout: 30 * time.Minute, // Long timeout for large files
-			Transport: &http.Transport{
-				MaxIdleConns:        10,
-				MaxIdleConnsPerHost: 5,
-				IdleConnTimeout:     90 * time.Second,
-			},
+			Timeout:   30 * time.Minute,
+			Transport: newTransport(false),
 		},
 		downloads: make(map[string]*downloadItem),
 	}
+
+	if cfg.CertificateValidation == "disabled" || cfg.CertificateValidation == "disabled_local" {
+		c.httpClientNoTLS = &http.Client{
+			Timeout:   30 * time.Minute,
+			Transport: newTransport(true),
+		}
+	}
+
+	return c
+}
+
+// isLocalURL reports whether the URL's host resolves to a private/local address.
+func isLocalURL(rawURL string) bool {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	host := u.Hostname()
+	ip := net.ParseIP(host)
+	if ip == nil {
+		// Treat common local hostnames as local.
+		if host == "localhost" {
+			return true
+		}
+		addrs, err := net.LookupHost(host)
+		if err != nil || len(addrs) == 0 {
+			return false
+		}
+		ip = net.ParseIP(addrs[0])
+		if ip == nil {
+			return false
+		}
+	}
+	privateRanges := []string{
+		"10.0.0.0/8",
+		"172.16.0.0/12",
+		"192.168.0.0/16",
+		"127.0.0.0/8",
+		"::1/128",
+		"fc00::/7",
+	}
+	for _, cidr := range privateRanges {
+		_, network, err := net.ParseCIDR(cidr)
+		if err != nil {
+			continue
+		}
+		if network.Contains(ip) {
+			return true
+		}
+	}
+	return false
 }
 
 // Name returns the client name.

@@ -23,6 +23,11 @@ type Config struct {
 	// FlareSolverr is an optional external service that solves Cloudflare challenges.
 	// When set, the Anna's Archive and LibGen providers route requests through it.
 	FlareSolverrURL string `yaml:"flareSolverrUrl"`
+	// CertificateValidation controls TLS certificate verification for the embedded downloader.
+	// "enabled" (default): verify all certificates.
+	// "disabled_local": skip verification for private/local addresses only.
+	// "disabled": skip verification for all addresses.
+	CertificateValidation string `yaml:"certificateValidation"`
 }
 
 type CustomProviderConfig struct {
@@ -41,6 +46,7 @@ func DefaultConfig() *Config {
 		AuthMethod:            "forms",
 		LibraryDir:            "/library",
 		CustomProvidersEnable: false,
+		CertificateValidation: "enabled",
 	}
 }
 
@@ -90,6 +96,9 @@ func Load(dataDir, configPath string) (*Config, error) {
 	}
 	if v := os.Getenv("BOOKANEER_FLARESOLVERR_URL"); v != "" {
 		cfg.FlareSolverrURL = v
+	}
+	if v := os.Getenv("BOOKANEER_CERTIFICATE_VALIDATION"); v != "" {
+		cfg.CertificateValidation = v
 	}
 
 	return cfg, nil

@@ -26,6 +26,7 @@ func (s *Service) getOrCreateClient(cfg ClientConfig) (Client, error) {
 
 	// Inject the bypass service so direct clients can resolve challenges.
 	cfg.Bypasser = s.bypasser
+	cfg.CertificateValidation = s.certValidation
 
 	client, err := NewClient(cfg)
 	if err != nil {
@@ -86,11 +87,12 @@ func (s *Service) getEmbeddedDirectClient(ctx context.Context) (Client, *ClientC
 
 	// Create embedded direct client
 	client, err := NewClient(ClientConfig{
-		Name:        "Embedded Downloader",
-		Type:        ClientTypeDirect,
-		DownloadDir: rootPath,
-		Enabled:     true,
-		Bypasser:    s.bypasser,
+		Name:                  "Embedded Downloader",
+		Type:                  ClientTypeDirect,
+		DownloadDir:           rootPath,
+		Enabled:               true,
+		Bypasser:              s.bypasser,
+		CertificateValidation: s.certValidation,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("create embedded client: %w", err)
@@ -98,12 +100,13 @@ func (s *Service) getEmbeddedDirectClient(ctx context.Context) (Client, *ClientC
 
 	s.embeddedClient = client
 	s.embeddedClientConfig = &ClientConfig{
-		ID:          0,
-		Name:        "Embedded Downloader",
-		Type:        ClientTypeDirect,
-		DownloadDir: rootPath,
-		Enabled:     true,
-		Bypasser:    s.bypasser,
+		ID:                    0,
+		Name:                  "Embedded Downloader",
+		Type:                  ClientTypeDirect,
+		DownloadDir:           rootPath,
+		Enabled:               true,
+		Bypasser:              s.bypasser,
+		CertificateValidation: s.certValidation,
 	}
 
 	return client, s.embeddedClientConfig, nil
