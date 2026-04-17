@@ -50,9 +50,6 @@ type StatusResponse struct {
 
 // Status returns system status information.
 func (h *SystemHandler) Status(c *echo.Context) error {
-	hostname, _ := os.Hostname()
-	_ = hostname
-
 	return c.JSON(http.StatusOK, StatusResponse{
 		Version:        h.version,
 		BuildTime:      h.buildTime,
@@ -283,10 +280,8 @@ func (h *SystemHandler) Restore(c *echo.Context) error {
 }
 
 func checkDiskSpace(name, dir string) HealthCheck {
-	info, err := os.Stat(dir)
-	if err != nil {
+	if _, err := os.Stat(dir); err != nil {
 		return HealthCheck{Name: name, Status: "degraded", Message: "directory not accessible"}
 	}
-	_ = info
 	return HealthCheck{Name: name, Status: "ok"}
 }
