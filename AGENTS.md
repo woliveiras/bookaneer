@@ -19,7 +19,10 @@ Bookaneer is a self-hosted ebook collection manager written in Go. It combines f
 Detailed rules live in the instruction files — see links below. Key references:
 
 - **Go**: [.github/instructions/golang.instructions.md](.github/instructions/golang.instructions.md) — Effective Go + Uber Go Style Guide
-- **Frontend**: [.github/instructions/react-frontend.instructions.md](.github/instructions/react-frontend.instructions.md) — TypeScript strict, TanStack, shadcn/ui, a11y
+- **Frontend**: [.github/instructions/react-frontend.instructions.md](.github/instructions/react-frontend.instructions.md) — TypeScript strict, TanStack, shadcn/ui, a11y, state management
+- **XState**: [.github/instructions/xstate.instructions.md](.github/instructions/xstate.instructions.md) — XState v5 machines, `createMachine` patterns, testing with `createActor`
+- **Zustand**: [.github/instructions/zustand.instructions.md](.github/instructions/zustand.instructions.md) — Zustand v5 stores, middleware, immer, persistence
+- **Zod**: [.github/instructions/zod.instructions.md](.github/instructions/zod.instructions.md) — Zod v4 schemas, type inference, runtime validation in `fetchAPI`
 - **Architecture**: [.github/instructions/architecture.instructions.md](.github/instructions/architecture.instructions.md) — Layered architecture, dependency rules, service patterns
 - **SQLite**: [.github/instructions/sqlite.instructions.md](.github/instructions/sqlite.instructions.md) — WAL mode, parameterized queries, migrations
 - **Docker**: [.github/instructions/docker.instructions.md](.github/instructions/docker.instructions.md) — Multi-stage build, scratch base, security

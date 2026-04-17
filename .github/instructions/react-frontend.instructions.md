@@ -115,11 +115,32 @@ applyTo: "web/**/*.ts, web/**/*.tsx, web/**/*.css"
 
 ## State Management
 
-- **Server state**: TanStack Query exclusively (books, authors, config, queue)
-- **UI state**: React `useState` / `useReducer` (modals, filters, sidebar toggle)
-- **URL state**: TanStack Router search params (pagination, sort, active tab)
-- **Form state**: controlled components with validation
-- No global state library (Redux, Zustand) unless complexity demands it — keep it simple
+Choose the right tool for each type of state:
+
+| State type | Tool |
+|---|---|
+| Server state | TanStack Query (books, authors, config, queue) |
+| Multi-step flow with loading/error/success | XState v5 (`features/<domain>/<domain>.machine.ts`) |
+| Shared UI state across components | Zustand v5 (`store/<domain>/<domain>.store.ts`) |
+| Local component state | `useState` / `useReducer` |
+| URL state | TanStack Router search params |
+| Form state | Controlled components + Zod `safeParse` for validation |
+
+### XState for flows
+Use XState when a feature has multiple lifecycle states and side effects:
+auth (`checking → authenticated`), reader lifecycle (`idle → loading → ready / failed`),
+multi-step wizards, or anything that can be in multiple exclusive states.
+See `xstate.instructions.md` for patterns.
+
+### Zustand for shared UI state
+Use Zustand when multiple components at different tree levels need to read the same
+client-side state: auth credentials, reader preferences, UI configuration.
+See `zustand.instructions.md` for patterns.
+
+### XState + Zustand together
+XState owns the logic (transitions, guards, side effects).
+Zustand is the read cache for components that only need to read the current value.
+Sync them in the Provider via `actorRef.subscribe()` — see `AuthProvider.tsx` as reference.
 
 ## Styling
 
