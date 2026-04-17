@@ -16,22 +16,9 @@ import (
 type CommandName string
 
 const (
-	// Book-related commands.
-	CommandRefreshBook CommandName = "RefreshBook"
-
-	// Library commands.
-	CommandLibraryScan  CommandName = "LibraryScan"
-	CommandRenameFiles  CommandName = "RenameFiles"
-	CommandManualImport CommandName = "ManualImport"
-	CommandDeleteFiles  CommandName = "DeleteFiles"
-
 	// Download commands.
 	CommandDownloadGrab    CommandName = "DownloadGrab"
 	CommandDownloadMonitor CommandName = "DownloadMonitor"
-
-	// System commands.
-	CommandBackup       CommandName = "Backup"
-	CommandHousekeeping CommandName = "Housekeeping"
 )
 
 // CommandStatus represents the status of a command.
