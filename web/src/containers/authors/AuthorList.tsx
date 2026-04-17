@@ -49,7 +49,6 @@ export function AuthorList() {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </div>
-        <Button>Add Author</Button>
       </div>
 
       {isLoading ? (
