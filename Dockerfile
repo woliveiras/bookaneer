@@ -14,7 +14,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 COPY --from=frontend /src/web/dist /src/web/dist
-RUN CGO_ENABLED=0 go build -ldflags="-s -w -X main.version=$(cat VERSION 2>/dev/null || echo dev) -X main.buildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o /app ./cmd/bookaneer
+RUN CGO_ENABLED=0 go build -tags embedweb -ldflags="-s -w -X main.version=$(cat VERSION 2>/dev/null || echo dev) -X main.buildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o /app ./cmd/bookaneer
 
 # Runtime — scratch for zero attack surface
 FROM scratch
