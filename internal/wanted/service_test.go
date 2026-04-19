@@ -15,14 +15,14 @@ import (
 )
 
 func TestGetBookInfo(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db, bypass.Noop{})
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
+	downloadSvc := download.NewService(db.DB, bypass.Noop{})
+	svc := wanted.New(db.DB, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Tolkien")
-	bookID := testutil.SeedBook(t, db, authorID, "The Hobbit")
+	authorID := testutil.SeedAuthor(t, db.DB, "Tolkien")
+	bookID := testutil.SeedBook(t, db.DB, authorID, "The Hobbit")
 
 	title, authorName, err := svc.GetBookInfo(ctx, bookID)
 	require.NoError(t, err)

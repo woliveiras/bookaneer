@@ -2,16 +2,16 @@ package author
 
 // Author represents a book author in the library.
 type Author struct {
-	ID        int64  `json:"id"        db:"id"`
-	Name      string `json:"name"      db:"name"`
-	SortName  string `json:"sortName"  db:"sort_name"`  // "Tolkien, J.R.R."
+	ID        int64  `json:"id" db:"id"`
+	Name      string `json:"name" db:"name"`
+	SortName  string `json:"sortName" db:"sort_name"`   // "Tolkien, J.R.R."
 	ForeignID string `json:"foreignId" db:"foreign_id"` // OpenLibrary author key
-	Overview  string `json:"overview"  db:"overview"`
-	ImageURL  string `json:"imageUrl"  db:"image_url"`
-	Status    string `json:"status"    db:"status"` // active, paused, ended
+	Overview  string `json:"overview" db:"overview"`
+	ImageURL  string `json:"imageUrl" db:"image_url"`
+	Status    string `json:"status" db:"status"` // active, paused, ended
 	Monitored bool   `json:"monitored" db:"monitored"`
-	Path      string `json:"path"      db:"path"` // /library/J.R.R. Tolkien
-	AddedAt   string `json:"addedAt"   db:"added_at"`
+	Path      string `json:"path" db:"path"` // /library/J.R.R. Tolkien
+	AddedAt   string `json:"addedAt" db:"added_at"`
 	UpdatedAt string `json:"updatedAt" db:"updated_at"`
 
 	// Computed fields (not stored in DB)
@@ -56,8 +56,8 @@ type ListAuthorsFilter struct {
 
 // AuthorStats holds statistics for an author.
 type AuthorStats struct {
-	BookCount      int `json:"bookCount"`
-	BookFileCount  int `json:"bookFileCount"`
-	MissingBooks   int `json:"missingBooks"`
-	TotalSizeBytes int `json:"totalSizeBytes"`
+	BookCount      int `json:"bookCount" db:"book_count"`
+	BookFileCount  int `json:"bookFileCount" db:"file_count"`
+	MissingBooks   int `json:"missingBooks" db:"missing"`
+	TotalSizeBytes int `json:"totalSizeBytes" db:"total_size"`
 }

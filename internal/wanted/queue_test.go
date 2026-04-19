@@ -16,23 +16,23 @@ import (
 
 func newTestService(t *testing.T) (*wanted.Service, context.Context) {
 	t.Helper()
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db, bypass.Noop{})
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
+	downloadSvc := download.NewService(db.DB, bypass.Noop{})
+	svc := wanted.New(db.DB, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	return svc, context.Background()
 }
 
 func TestRemoveFromQueue_ItemExists(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db, bypass.Noop{})
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
+	downloadSvc := download.NewService(db.DB, bypass.Noop{})
+	svc := wanted.New(db.DB, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "J.R.R. Tolkien")
-	bookID := testutil.SeedBook(t, db, authorID, "The Hobbit")
-	queueID := testutil.SeedQueueItem(t, db, bookID, "The Hobbit EPUB", "queued")
+	authorID := testutil.SeedAuthor(t, db.DB, "J.R.R. Tolkien")
+	bookID := testutil.SeedBook(t, db.DB, authorID, "The Hobbit")
+	queueID := testutil.SeedQueueItem(t, db.DB, bookID, "The Hobbit EPUB", "queued")
 
 	err := svc.RemoveFromQueue(ctx, queueID)
 	require.NoError(t, err)
@@ -60,16 +60,16 @@ func TestGetDownloadQueue_Empty(t *testing.T) {
 }
 
 func TestGetDownloadQueue_WithItems(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db, bypass.Noop{})
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
+	downloadSvc := download.NewService(db.DB, bypass.Noop{})
+	svc := wanted.New(db.DB, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "J.R.R. Tolkien")
-	bookID := testutil.SeedBook(t, db, authorID, "The Hobbit")
-	testutil.SeedQueueItem(t, db, bookID, "The Hobbit EPUB", "queued")
-	testutil.SeedQueueItem(t, db, bookID, "The Hobbit PDF", "downloading")
+	authorID := testutil.SeedAuthor(t, db.DB, "J.R.R. Tolkien")
+	bookID := testutil.SeedBook(t, db.DB, authorID, "The Hobbit")
+	testutil.SeedQueueItem(t, db.DB, bookID, "The Hobbit EPUB", "queued")
+	testutil.SeedQueueItem(t, db.DB, bookID, "The Hobbit PDF", "downloading")
 
 	queue, err := svc.GetDownloadQueue(ctx)
 	require.NoError(t, err)
@@ -85,14 +85,14 @@ func TestGetDownloadQueue_WithItems(t *testing.T) {
 }
 
 func TestGetDownloadQueue_NullJoins(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db, bypass.Noop{})
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
+	downloadSvc := download.NewService(db.DB, bypass.Noop{})
+	svc := wanted.New(db.DB, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
-	bookID := testutil.SeedBook(t, db, authorID, "Book")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
+	bookID := testutil.SeedBook(t, db.DB, authorID, "Book")
 
 	// Insert queue item with NULL download_client_id and NULL indexer_id
 	_, err := db.Exec(`
@@ -110,15 +110,15 @@ func TestGetDownloadQueue_NullJoins(t *testing.T) {
 }
 
 func TestUpdateQueueItemStatus(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db, bypass.Noop{})
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
+	downloadSvc := download.NewService(db.DB, bypass.Noop{})
+	svc := wanted.New(db.DB, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
-	bookID := testutil.SeedBook(t, db, authorID, "Book")
-	queueID := testutil.SeedQueueItem(t, db, bookID, "Release", "queued")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
+	bookID := testutil.SeedBook(t, db.DB, authorID, "Book")
+	queueID := testutil.SeedQueueItem(t, db.DB, bookID, "Release", "queued")
 
 	err := svc.UpdateQueueItemStatus(ctx, queueID, "downloading", 42.5)
 	require.NoError(t, err)
@@ -134,17 +134,17 @@ func TestUpdateQueueItemStatus(t *testing.T) {
 // TestGetDownloadQueue_WithCompletedAndFailedItems verifies that GetDownloadQueue
 // returns items regardless of their status (completed, failed, imported).
 func TestGetDownloadQueue_WithCompletedAndFailedItems(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db, bypass.Noop{})
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
+	downloadSvc := download.NewService(db.DB, bypass.Noop{})
+	svc := wanted.New(db.DB, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
-	bookID := testutil.SeedBook(t, db, authorID, "Book")
-	testutil.SeedQueueItem(t, db, bookID, "Completed Release", "completed")
-	testutil.SeedQueueItem(t, db, bookID, "Failed Release", "failed")
-	testutil.SeedQueueItem(t, db, bookID, "Imported Release", "imported")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
+	bookID := testutil.SeedBook(t, db.DB, authorID, "Book")
+	testutil.SeedQueueItem(t, db.DB, bookID, "Completed Release", "completed")
+	testutil.SeedQueueItem(t, db.DB, bookID, "Failed Release", "failed")
+	testutil.SeedQueueItem(t, db.DB, bookID, "Imported Release", "imported")
 
 	queue, err := svc.GetDownloadQueue(ctx)
 	require.NoError(t, err)
@@ -163,16 +163,16 @@ func TestGetDownloadQueue_WithCompletedAndFailedItems(t *testing.T) {
 // exercise recordDownload (inserts into download_queue) and recordHistory.
 // Requires the embedded direct client factory (imported via import_test.go).
 func TestGrabRelease_RecordsDownloadAndHistory(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	dir := t.TempDir()
-	testutil.SeedRootFolder(t, db, dir, "Library")
+	testutil.SeedRootFolder(t, db.DB, dir, "Library")
 
-	authorID := testutil.SeedAuthor(t, db, "Tolkien")
-	bookID := testutil.SeedBook(t, db, authorID, "The Hobbit")
+	authorID := testutil.SeedAuthor(t, db.DB, "Tolkien")
+	bookID := testutil.SeedBook(t, db.DB, authorID, "The Hobbit")
 
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db, bypass.Noop{})
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
+	downloadSvc := download.NewService(db.DB, bypass.Noop{})
+	svc := wanted.New(db.DB, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	// Port 1 is always refused — the background download fails fast, but
@@ -202,12 +202,12 @@ func TestGrabRelease_RecordsDownloadAndHistory(t *testing.T) {
 // client's in-memory map, so ProcessDownloads restarts it.
 // Requires the embedded direct client factory (imported via import_test.go).
 func TestProcessDownloads_RestartsLostDownload(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	dir := t.TempDir()
-	testutil.SeedRootFolder(t, db, dir, "Library")
+	testutil.SeedRootFolder(t, db.DB, dir, "Library")
 
-	authorID := testutil.SeedAuthor(t, db, "Tolkien")
-	bookID := testutil.SeedBook(t, db, authorID, "The Hobbit")
+	authorID := testutil.SeedAuthor(t, db.DB, "Tolkien")
+	bookID := testutil.SeedBook(t, db.DB, authorID, "The Hobbit")
 
 	// Use a URL that fails fast (port 1 always refused) to avoid slow goroutines.
 	_, err := db.Exec(`
@@ -220,8 +220,8 @@ func TestProcessDownloads_RestartsLostDownload(t *testing.T) {
 	require.NoError(t, db.QueryRow(`SELECT id FROM download_queue WHERE external_id = 'ext-lost'`).Scan(&queueID))
 
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db, bypass.Noop{})
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
+	downloadSvc := download.NewService(db.DB, bypass.Noop{})
+	svc := wanted.New(db.DB, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	result, err := svc.ProcessDownloads(ctx)
@@ -236,15 +236,15 @@ func TestProcessDownloads_RestartsLostDownload(t *testing.T) {
 }
 
 func TestUpdateQueueItemStatusWithPath(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db, bypass.Noop{})
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
+	downloadSvc := download.NewService(db.DB, bypass.Noop{})
+	svc := wanted.New(db.DB, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
-	bookID := testutil.SeedBook(t, db, authorID, "Book")
-	queueID := testutil.SeedQueueItem(t, db, bookID, "Release", "downloading")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
+	bookID := testutil.SeedBook(t, db.DB, authorID, "Book")
+	queueID := testutil.SeedQueueItem(t, db.DB, bookID, "Release", "downloading")
 
 	err := svc.UpdateQueueItemStatusWithPath(ctx, queueID, "completed", 100.0, "/library/Author/Book.epub")
 	require.NoError(t, err)
@@ -259,15 +259,15 @@ func TestUpdateQueueItemStatusWithPath(t *testing.T) {
 }
 
 func TestRemoveFromQueue_DBError(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db, bypass.Noop{})
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
+	downloadSvc := download.NewService(db.DB, bypass.Noop{})
+	svc := wanted.New(db.DB, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
-	bookID := testutil.SeedBook(t, db, authorID, "Book")
-	queueID := testutil.SeedQueueItem(t, db, bookID, "Release", "queued")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
+	bookID := testutil.SeedBook(t, db.DB, authorID, "Book")
+	queueID := testutil.SeedQueueItem(t, db.DB, bookID, "Release", "queued")
 
 	_ = db.Close()
 

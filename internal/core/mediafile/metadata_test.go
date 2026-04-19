@@ -18,7 +18,7 @@ func TestExtractMetadata_UnsupportedFormat(t *testing.T) {
 
 func TestExtractMetadata_InvalidFile(t *testing.T) {
 	tmp := filepath.Join(t.TempDir(), "invalid.epub")
-	require.NoError(t, os.WriteFile(tmp, []byte("not a zip"), 0644))
+	require.NoError(t, os.WriteFile(tmp, []byte("not a zip"), 0o644))
 
 	_, err := ExtractMetadata(tmp)
 	assert.Error(t, err)

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"flag"
 	"fmt"
@@ -34,6 +33,8 @@ import (
 	"github.com/woliveiras/bookaneer/internal/core/qualityprofile"
 	"github.com/woliveiras/bookaneer/internal/core/reader"
 	"github.com/woliveiras/bookaneer/internal/core/rootfolder"
+	"github.com/jmoiron/sqlx"
+
 	"github.com/woliveiras/bookaneer/internal/database"
 	"github.com/woliveiras/bookaneer/internal/download"
 	_ "github.com/woliveiras/bookaneer/internal/download/blackhole"
@@ -151,22 +152,22 @@ func run() error {
 }
 
 // setupDatabase opens the database and runs migrations.
-func setupDatabase(cfg *config.Config) (*sql.DB, error) {
-	db, err := database.Open(cfg.DatabasePath())
+func setupDatabase(cfg *config.Config) (*sqlx.DB, error) {
+	rawDB, err := database.Open(cfg.DatabasePath())
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
-	if err := database.Migrate(db, bookaneer.MigrationsFS, "migrations"); err != nil {
-		_ = db.Close()
+	if err := database.Migrate(rawDB, bookaneer.MigrationsFS, "migrations"); err != nil {
+		_ = rawDB.Close()
 		return nil, fmt.Errorf("run migrations: %w", err)
 	}
-	return db, nil
+	return database.OpenX(rawDB), nil
 }
 
 // setupAuth initialises the auth service, ensures the API key and default admin exist.
-func setupAuth(db *sql.DB, cfg *config.Config) (*auth.Service, error) {
+func setupAuth(db *sqlx.DB, cfg *config.Config) (*auth.Service, error) {
 	ctx := context.Background()
-	authSvc := auth.New(db)
+	authSvc := auth.New(db.DB)
 
 	if err := authSvc.EnsureAPIKey(ctx); err != nil {
 		return nil, fmt.Errorf("ensure api key: %w", err)
@@ -230,12 +231,12 @@ func setupEcho(authSvc *auth.Service) *echo.Echo {
 }
 
 // registerRoutes wires all API handlers to the given router group.
-func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Config, authSvc *auth.Service) error {
+func registerRoutes(e *echo.Echo, api *echo.Group, db *sqlx.DB, cfg *config.Config, authSvc *auth.Service) error {
 	ctx := context.Background()
 
 	// Public endpoints (registered on Echo, not on api group, to avoid
 	// group-middleware leaking from the protected subgroup).
-	systemHandler := handler.NewSystemHandler(version, buildTime, cfg, db)
+	systemHandler := handler.NewSystemHandler(version, buildTime, cfg, db.DB)
 	e.GET("/api/v1/system/status", systemHandler.Status)
 	e.GET("/api/v1/system/health", systemHandler.Health)
 	api.GET("/tag", func(c *echo.Context) error {
@@ -256,7 +257,7 @@ func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Confi
 	settingsHandler.Register(protected)
 
 	// Core domain services + handlers
-	authorSvc := author.New(database.OpenX(db))
+	authorSvc := author.New(db)
 	bookSvc := book.New(db)
 	rootFolderSvc := rootfolder.New(db)
 	qualityProfileSvc := qualityprofile.New(db)
@@ -266,7 +267,7 @@ func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Confi
 		slog.Warn("could not ensure default quality profile", "error", err)
 	}
 
-	jobScheduler := scheduler.New(db, 3)
+	jobScheduler := scheduler.New(db.DB, 3)
 
 	handler.NewAuthorHandler(authorSvc).Register(protected)
 	handler.NewBookHandler(bookSvc, authorSvc).Register(protected)
@@ -295,7 +296,7 @@ func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Confi
 	protected.GET("/metadata/providers", metadataHandler.ListProviders)
 
 	// Search service (Newznab/Torznab indexers)
-	searchSvc := search.NewService(db)
+	searchSvc := search.NewService(db.DB)
 	if err := searchSvc.LoadIndexers(ctx); err != nil {
 		slog.Warn("could not load indexers", "error", err)
 	}
@@ -352,7 +353,7 @@ func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Confi
 		downloadBypasser = bypassflare.New(cfg.FlareSolverrURL)
 		slog.Info("bypass enabled for direct downloads", "url", cfg.FlareSolverrURL)
 	}
-	downloadSvc := download.NewService(db, downloadBypasser)
+	downloadSvc := download.NewService(db.DB, downloadBypasser)
 	if cfg.CertificateValidation != "" && cfg.CertificateValidation != "enabled" {
 		downloadSvc.SetCertValidation(cfg.CertificateValidation)
 		slog.Info("TLS certificate validation", "mode", cfg.CertificateValidation)
@@ -362,14 +363,14 @@ func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Confi
 	// Wanted service
 	namingEngine := naming.New(db)
 	handler.NewNamingHandler(namingEngine).Register(protected)
-	wantedSvc := wanted.New(db, bookSvc, libAggregator, searchSvc, downloadSvc, namingEngine, libraryScanner, pathMappingSvc)
+	wantedSvc := wanted.New(db.DB, bookSvc, libAggregator, searchSvc, downloadSvc, namingEngine, libraryScanner, pathMappingSvc)
 	jobScheduler.RegisterWantedHandlers(wantedSvc)
 	jobScheduler.Start(ctx)
 
 	handler.NewWantedHandler(wantedSvc, jobScheduler).Register(protected)
 
 	// Notification service
-	notifSvc := notification.New(db)
+	notifSvc := notification.New(db.DB)
 	notifSvc.RegisterFactory("webhook", func(cfg notification.Config) (notification.Channel, error) {
 		return webhook.New(cfg)
 	})
@@ -384,7 +385,7 @@ func registerRoutes(e *echo.Echo, api *echo.Group, db *sql.DB, cfg *config.Confi
 	protected.POST("/system/restore", systemHandler.Restore)
 
 	// OPDS catalog (public, uses API key auth via query param)
-	opdsServer := opds.New(db)
+	opdsServer := opds.New(db.DB)
 	opdsServer.Register(e)
 
 	// API documentation

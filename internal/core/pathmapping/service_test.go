@@ -6,18 +6,19 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/woliveiras/bookaneer/internal/core/pathmapping"
 	"github.com/woliveiras/bookaneer/internal/testutil"
 )
 
 func TestNew(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := pathmapping.New(db)
 	assert.NotNil(t, svc)
 }
 
 func TestCreate_Success(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := pathmapping.New(db)
 	ctx := context.Background()
 
@@ -35,7 +36,7 @@ func TestCreate_Success(t *testing.T) {
 }
 
 func TestCreate_EmptyRemotePath(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := pathmapping.New(db)
 
 	_, err := svc.Create(context.Background(), pathmapping.CreateInput{
@@ -46,7 +47,7 @@ func TestCreate_EmptyRemotePath(t *testing.T) {
 }
 
 func TestCreate_EmptyLocalPath(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := pathmapping.New(db)
 
 	_, err := svc.Create(context.Background(), pathmapping.CreateInput{
@@ -57,7 +58,7 @@ func TestCreate_EmptyLocalPath(t *testing.T) {
 }
 
 func TestFindByID(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := pathmapping.New(db)
 	ctx := context.Background()
 
@@ -73,7 +74,7 @@ func TestFindByID(t *testing.T) {
 }
 
 func TestFindByID_NotFound(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := pathmapping.New(db)
 
 	_, err := svc.FindByID(context.Background(), 9999)
@@ -81,7 +82,7 @@ func TestFindByID_NotFound(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := pathmapping.New(db)
 	ctx := context.Background()
 
@@ -100,7 +101,7 @@ func TestList(t *testing.T) {
 }
 
 func TestList_Empty(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := pathmapping.New(db)
 
 	mappings, err := svc.List(context.Background())
@@ -109,7 +110,7 @@ func TestList_Empty(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := pathmapping.New(db)
 	ctx := context.Background()
 
@@ -131,7 +132,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestUpdate_NotFound(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := pathmapping.New(db)
 
 	_, err := svc.Update(context.Background(), 9999, pathmapping.UpdateInput{})
@@ -139,7 +140,7 @@ func TestUpdate_NotFound(t *testing.T) {
 }
 
 func TestUpdate_ClearsRequiredField(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := pathmapping.New(db)
 	ctx := context.Background()
 
@@ -154,7 +155,7 @@ func TestUpdate_ClearsRequiredField(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := pathmapping.New(db)
 	ctx := context.Background()
 
@@ -171,7 +172,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestDelete_NotFound(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := pathmapping.New(db)
 
 	err := svc.Delete(context.Background(), 9999)
@@ -179,7 +180,7 @@ func TestDelete_NotFound(t *testing.T) {
 }
 
 func TestMapPath_Match(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := pathmapping.New(db)
 	ctx := context.Background()
 
@@ -195,7 +196,7 @@ func TestMapPath_Match(t *testing.T) {
 }
 
 func TestMapPath_NoMatch(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := pathmapping.New(db)
 	ctx := context.Background()
 
@@ -211,7 +212,7 @@ func TestMapPath_NoMatch(t *testing.T) {
 }
 
 func TestMapPath_NoMappings(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := pathmapping.New(db)
 
 	got := svc.MapPath(context.Background(), "/any/path")

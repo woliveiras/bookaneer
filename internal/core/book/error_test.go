@@ -5,16 +5,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
 	"github.com/woliveiras/bookaneer/internal/core/book"
 	"github.com/woliveiras/bookaneer/internal/testutil"
 )
 
 func TestGetWithEditions_DBClosed(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	b, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "T", ForeignID: "err-gwe"})
 	require.NoError(t, err)
 
@@ -25,7 +26,7 @@ func TestGetWithEditions_DBClosed(t *testing.T) {
 }
 
 func TestCreateEdition_DBClosed(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
@@ -36,7 +37,7 @@ func TestCreateEdition_DBClosed(t *testing.T) {
 }
 
 func TestDeleteEdition_DBClosed(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
@@ -47,7 +48,7 @@ func TestDeleteEdition_DBClosed(t *testing.T) {
 }
 
 func TestFindByForeignID_DBClosed(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
@@ -59,7 +60,7 @@ func TestFindByForeignID_DBClosed(t *testing.T) {
 }
 
 func TestList_CountQueryError(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
@@ -70,7 +71,7 @@ func TestList_CountQueryError(t *testing.T) {
 }
 
 func TestCreate_ForeignIDCheckError(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
@@ -87,7 +88,7 @@ func TestCreate_ForeignIDCheckError(t *testing.T) {
 }
 
 func TestDelete_DBClosed(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 

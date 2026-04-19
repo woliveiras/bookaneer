@@ -20,12 +20,12 @@ import (
 // TestProcessDownloads_ImportsCompletedFile exercises importPendingCompletedDownloads,
 // importCompletedDownload, and recordHistory through the ProcessDownloads public API.
 func TestProcessDownloads_ImportsCompletedFile(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	libDir := t.TempDir()
-	testutil.SeedRootFolder(t, db, libDir, "Library")
+	testutil.SeedRootFolder(t, db.DB, libDir, "Library")
 
-	authorID := testutil.SeedAuthor(t, db, "Tolkien")
-	bookID := testutil.SeedBook(t, db, authorID, "The Hobbit")
+	authorID := testutil.SeedAuthor(t, db.DB, "Tolkien")
+	bookID := testutil.SeedBook(t, db.DB, authorID, "The Hobbit")
 
 	// Create a fake epub file in a download staging directory.
 	srcFile := filepath.Join(t.TempDir(), "hobbit.epub")
@@ -42,8 +42,8 @@ func TestProcessDownloads_ImportsCompletedFile(t *testing.T) {
 	require.NoError(t, db.QueryRow(`SELECT id FROM download_queue WHERE external_id = 'ext-done'`).Scan(&queueID))
 
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db, bypass.Noop{})
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
+	downloadSvc := download.NewService(db.DB, bypass.Noop{})
+	svc := wanted.New(db.DB, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	result, err := svc.ProcessDownloads(ctx)
@@ -72,10 +72,10 @@ func TestProcessDownloads_ImportsCompletedFile(t *testing.T) {
 // importPendingCompletedDownloads that marks a queue item 'failed' when the
 // saved file no longer exists on disk.
 func TestProcessDownloads_MarksFailedWhenFileGone(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 
-	authorID := testutil.SeedAuthor(t, db, "Tolkien")
-	bookID := testutil.SeedBook(t, db, authorID, "The Hobbit")
+	authorID := testutil.SeedAuthor(t, db.DB, "Tolkien")
+	bookID := testutil.SeedBook(t, db.DB, authorID, "The Hobbit")
 
 	// Seed a completed item pointing to a path that does not exist.
 	_, err := db.Exec(`
@@ -88,8 +88,8 @@ func TestProcessDownloads_MarksFailedWhenFileGone(t *testing.T) {
 	require.NoError(t, db.QueryRow(`SELECT id FROM download_queue WHERE external_id = 'ext-gone'`).Scan(&queueID))
 
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db, bypass.Noop{})
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
+	downloadSvc := download.NewService(db.DB, bypass.Noop{})
+	svc := wanted.New(db.DB, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	result, err := svc.ProcessDownloads(ctx)

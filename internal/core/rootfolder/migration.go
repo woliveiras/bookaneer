@@ -36,15 +36,18 @@ func (s *Service) MoveRootFolder(ctx context.Context, id int64, newPath string) 
 	slog.Info("Starting root folder migration", "id", id, "oldPath", oldPath, "newPath", newPath)
 
 	// Step 1: Create new directory if it doesn't exist
-	if err := os.MkdirAll(newPath, 0755); err != nil {
+	if err := os.MkdirAll(newPath, 0o755); err != nil {
 		return nil, fmt.Errorf("create new directory: %w", err)
 	}
 
 	// Step 2: Get all authors in this root folder
-	rows, err := s.db.QueryContext(ctx, `
+	var authorRows []struct {
+		ID   int64  `db:"id"`
+		Path string `db:"path"`
+	}
+	if err := s.db.SelectContext(ctx, &authorRows, `
 		SELECT id, path FROM authors WHERE path LIKE ?
-	`, oldPath+"%")
-	if err != nil {
+	`, oldPath+"%"); err != nil {
 		return nil, fmt.Errorf("query authors: %w", err)
 	}
 
@@ -54,19 +57,10 @@ func (s *Service) MoveRootFolder(ctx context.Context, id int64, newPath string) 
 		newPath string
 	}
 	var authors []authorPath
-
-	for rows.Next() {
-		var id int64
-		var path string
-		if err := rows.Scan(&id, &path); err != nil {
-			_ = rows.Close()
-			return nil, fmt.Errorf("scan author: %w", err)
-		}
-		// Calculate new path by replacing the root folder prefix
-		newAuthorPath := strings.Replace(path, oldPath, newPath, 1)
-		authors = append(authors, authorPath{id: id, oldPath: path, newPath: newAuthorPath})
+	for _, a := range authorRows {
+		newAuthorPath := strings.Replace(a.Path, oldPath, newPath, 1)
+		authors = append(authors, authorPath{id: a.ID, oldPath: a.Path, newPath: newAuthorPath})
 	}
-	_ = rows.Close()
 
 	slog.Info("Found authors to migrate", "count", len(authors))
 
@@ -79,7 +73,7 @@ func (s *Service) MoveRootFolder(ctx context.Context, id int64, newPath string) 
 		}
 
 		// Create parent directory for new path
-		if err := os.MkdirAll(filepath.Dir(author.newPath), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(author.newPath), 0o755); err != nil {
 			return nil, fmt.Errorf("create author directory: %w", err)
 		}
 

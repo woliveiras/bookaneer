@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/woliveiras/bookaneer/internal/core/author"
 	"github.com/woliveiras/bookaneer/internal/testutil"
 )
@@ -174,8 +175,8 @@ func TestDelete_WithFiles_FolderExists(t *testing.T) {
 
 	// "Author With Books" contains no special chars so sanitizeFolderName is a no-op.
 	authorDir := filepath.Join(dir, "Author With Books")
-	require.NoError(t, os.MkdirAll(authorDir, 0755))
-	require.NoError(t, os.WriteFile(filepath.Join(authorDir, "book.epub"), []byte("data"), 0644))
+	require.NoError(t, os.MkdirAll(authorDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(authorDir, "book.epub"), []byte("data"), 0o644))
 
 	err := svc.Delete(ctx, authorID, true)
 	require.NoError(t, err)
