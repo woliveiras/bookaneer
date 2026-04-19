@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/woliveiras/bookaneer/internal/testutil"
 )
 
@@ -75,8 +76,8 @@ func TestDeleteAuthorFiles_RemovesFolder(t *testing.T) {
 	// Create the author folder with a file inside
 	authorFolderName := sanitizeFolderName("Brandon Sanderson")
 	authorPath := filepath.Join(dir, authorFolderName)
-	require.NoError(t, os.MkdirAll(authorPath, 0755))
-	require.NoError(t, os.WriteFile(filepath.Join(authorPath, "book.epub"), []byte("data"), 0644))
+	require.NoError(t, os.MkdirAll(authorPath, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(authorPath, "book.epub"), []byte("data"), 0o644))
 
 	a := &Author{ID: 1, Name: "Brandon Sanderson"}
 	err := svc.deleteAuthorFiles(ctx, a)
@@ -114,12 +115,12 @@ func TestDeleteAuthorFiles_RemoveAllError(t *testing.T) {
 
 	authorFolderName := sanitizeFolderName("Protected Author")
 	authorPath := filepath.Join(dir, authorFolderName)
-	require.NoError(t, os.MkdirAll(authorPath, 0755))
-	require.NoError(t, os.WriteFile(filepath.Join(authorPath, "book.epub"), []byte("data"), 0644))
+	require.NoError(t, os.MkdirAll(authorPath, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(authorPath, "book.epub"), []byte("data"), 0o644))
 
 	// Remove write permission from parent dir so RemoveAll cannot unlink authorPath.
-	require.NoError(t, os.Chmod(dir, 0555))
-	t.Cleanup(func() { _ = os.Chmod(dir, 0755) })
+	require.NoError(t, os.Chmod(dir, 0o555))
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o755) })
 
 	a := &Author{ID: 1, Name: "Protected Author"}
 	err := svc.deleteAuthorFiles(ctx, a)

@@ -6,16 +6,18 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jmoiron/sqlx"
+
 	"github.com/woliveiras/bookaneer/internal/database"
 )
 
 // Service provides book-related operations.
 type Service struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
 // New creates a new book service.
-func New(db *sql.DB) *Service {
+func New(db *sqlx.DB) *Service {
 	return &Service{db: db}
 }
 
@@ -58,18 +60,16 @@ func (s *Service) FindByID(ctx context.Context, id int64) (*Book, error) {
 // FindByForeignID returns a book by foreign ID.
 func (s *Service) FindByForeignID(ctx context.Context, foreignID string) (*Book, error) {
 	var b Book
-	err := s.db.QueryRowContext(ctx, `
-		SELECT b.id, b.author_id, b.title, COALESCE(b.sort_title,''), COALESCE(b.foreign_id,''), COALESCE(b.isbn,''), COALESCE(b.isbn13,''),
-		       COALESCE(b.release_date,''), COALESCE(b.overview,''), COALESCE(b.image_url,''), b.page_count, b.added_at, b.updated_at,
-		       a.name
+	err := s.db.GetContext(ctx, &b, `
+		SELECT b.id, b.author_id, b.title, COALESCE(b.sort_title,'') AS sort_title, COALESCE(b.foreign_id,'') AS foreign_id,
+		       COALESCE(b.isbn,'') AS isbn, COALESCE(b.isbn13,'') AS isbn13,
+		       COALESCE(b.release_date,'') AS release_date, COALESCE(b.overview,'') AS overview,
+		       COALESCE(b.image_url,'') AS image_url, b.page_count, b.added_at, b.updated_at,
+		       a.name AS author_name
 		FROM books b
 		JOIN authors a ON b.author_id = a.id
 		WHERE b.foreign_id = ?
-	`, foreignID).Scan(
-		&b.ID, &b.AuthorID, &b.Title, &b.SortTitle, &b.ForeignID, &b.ISBN, &b.ISBN13,
-		&b.ReleaseDate, &b.Overview, &b.ImageURL, &b.PageCount, &b.AddedAt, &b.UpdatedAt,
-		&b.AuthorName,
-	)
+	`, foreignID)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
 	}
@@ -105,7 +105,7 @@ func (s *Service) List(ctx context.Context, filter ListBooksFilter) ([]Book, int
 	// Count total
 	var total int
 	countQuery := "SELECT COUNT(*) FROM books b " + where
-	if err := s.db.QueryRowContext(ctx, countQuery, args...).Scan(&total); err != nil {
+	if err := s.db.GetContext(ctx, &total, countQuery, args...); err != nil {
 		return nil, 0, fmt.Errorf("count books: %w", err)
 	}
 
@@ -209,7 +209,7 @@ func (s *Service) Create(ctx context.Context, input CreateBookInput) (*Book, err
 
 	// Check author exists
 	var authorExists int
-	err := s.db.QueryRowContext(ctx, "SELECT 1 FROM authors WHERE id = ?", input.AuthorID).Scan(&authorExists)
+	err := s.db.GetContext(ctx, &authorExists, "SELECT 1 FROM authors WHERE id = ?", input.AuthorID)
 	if err == sql.ErrNoRows {
 		return nil, ErrAuthorNotFound
 	}
@@ -217,10 +217,10 @@ func (s *Service) Create(ctx context.Context, input CreateBookInput) (*Book, err
 		return nil, fmt.Errorf("check author: %w", err)
 	}
 
-	result, err := s.db.ExecContext(ctx, `
+	result, err := s.db.NamedExecContext(ctx, `
 		INSERT INTO books (author_id, title, sort_title, foreign_id, isbn, isbn13, release_date, overview, image_url, page_count, in_wishlist)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, input.AuthorID, input.Title, input.SortTitle, input.ForeignID, input.ISBN, input.ISBN13, input.ReleaseDate, input.Overview, input.ImageURL, input.PageCount, input.InWishlist)
+		VALUES (:author_id, :title, :sort_title, :foreign_id, :isbn, :isbn13, :release_date, :overview, :image_url, :page_count, :in_wishlist)
+	`, input)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 			return nil, ErrDuplicate
@@ -249,7 +249,7 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateBookInput) (
 	if input.AuthorID != nil {
 		// Check author exists
 		var authorExists int
-		err := s.db.QueryRowContext(ctx, "SELECT 1 FROM authors WHERE id = ?", *input.AuthorID).Scan(&authorExists)
+		err := s.db.GetContext(ctx, &authorExists, "SELECT 1 FROM authors WHERE id = ?", *input.AuthorID)
 		if err == sql.ErrNoRows {
 			return nil, ErrAuthorNotFound
 		}

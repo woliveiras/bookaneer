@@ -6,16 +6,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/woliveiras/bookaneer/internal/core/book"
 	"github.com/woliveiras/bookaneer/internal/testutil"
 )
 
 func TestCreate_Success(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Tolkien")
+	authorID := testutil.SeedAuthor(t, db.DB, "Tolkien")
 
 	b, err := svc.Create(ctx, book.CreateBookInput{
 		AuthorID: authorID,
@@ -30,7 +31,7 @@ func TestCreate_Success(t *testing.T) {
 }
 
 func TestCreate_EmptyTitle(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
@@ -39,7 +40,7 @@ func TestCreate_EmptyTitle(t *testing.T) {
 }
 
 func TestCreate_NoAuthorID(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
@@ -48,7 +49,7 @@ func TestCreate_NoAuthorID(t *testing.T) {
 }
 
 func TestCreate_AuthorNotFound(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
@@ -57,11 +58,11 @@ func TestCreate_AuthorNotFound(t *testing.T) {
 }
 
 func TestCreate_DuplicateForeignID(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Tolkien")
+	authorID := testutil.SeedAuthor(t, db.DB, "Tolkien")
 
 	_, err := svc.Create(ctx, book.CreateBookInput{
 		AuthorID:  authorID,
@@ -82,11 +83,11 @@ func TestCreate_DuplicateForeignID(t *testing.T) {
 }
 
 func TestFindByID(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Sanderson")
+	authorID := testutil.SeedAuthor(t, db.DB, "Sanderson")
 	created, err := svc.Create(ctx, book.CreateBookInput{
 		AuthorID: authorID,
 		Title:    "Mistborn",
@@ -103,7 +104,7 @@ func TestFindByID(t *testing.T) {
 }
 
 func TestFindByID_NotFound(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
@@ -112,11 +113,11 @@ func TestFindByID_NotFound(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	created, err := svc.Create(ctx, book.CreateBookInput{
 		AuthorID: authorID,
 		Title:    "Original Title",
@@ -132,7 +133,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestUpdate_NotFound(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
@@ -141,11 +142,11 @@ func TestUpdate_NotFound(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	created, err := svc.Create(ctx, book.CreateBookInput{
 		AuthorID: authorID,
 		Title:    "To Delete",
@@ -160,7 +161,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestDelete_NotFound(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
@@ -169,7 +170,7 @@ func TestDelete_NotFound(t *testing.T) {
 }
 
 func TestList_Empty(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
@@ -180,12 +181,12 @@ func TestList_Empty(t *testing.T) {
 }
 
 func TestList_ByAuthor(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	a1 := testutil.SeedAuthor(t, db, "Author A")
-	a2 := testutil.SeedAuthor(t, db, "Author B")
+	a1 := testutil.SeedAuthor(t, db.DB, "Author A")
+	a2 := testutil.SeedAuthor(t, db.DB, "Author B")
 
 	_, _ = svc.Create(ctx, book.CreateBookInput{AuthorID: a1, Title: "Book A1", ForeignID: "fid-a1"})
 	_, _ = svc.Create(ctx, book.CreateBookInput{AuthorID: a1, Title: "Book A2", ForeignID: "fid-a2"})
@@ -198,11 +199,11 @@ func TestList_ByAuthor(t *testing.T) {
 }
 
 func TestGetWithEditions(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Tolkien")
+	authorID := testutil.SeedAuthor(t, db.DB, "Tolkien")
 	created, err := svc.Create(ctx, book.CreateBookInput{
 		AuthorID: authorID,
 		Title:    "The Hobbit",
@@ -217,11 +218,11 @@ func TestGetWithEditions(t *testing.T) {
 }
 
 func TestCreateEdition(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Tolkien")
+	authorID := testutil.SeedAuthor(t, db.DB, "Tolkien")
 	created, err := svc.Create(ctx, book.CreateBookInput{
 		AuthorID: authorID,
 		Title:    "The Hobbit",
@@ -247,11 +248,11 @@ func TestCreateEdition(t *testing.T) {
 }
 
 func TestDeleteEdition(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Tolkien")
+	authorID := testutil.SeedAuthor(t, db.DB, "Tolkien")
 	created, err := svc.Create(ctx, book.CreateBookInput{
 		AuthorID: authorID,
 		Title:    "The Hobbit",
@@ -272,11 +273,11 @@ func TestDeleteEdition(t *testing.T) {
 }
 
 func TestDeleteAuthor_CascadesBooks(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	bookSvc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Tolkien")
+	authorID := testutil.SeedAuthor(t, db.DB, "Tolkien")
 	b, err := bookSvc.Create(ctx, book.CreateBookInput{
 		AuthorID: authorID,
 		Title:    "The Hobbit",

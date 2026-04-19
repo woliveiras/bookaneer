@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/woliveiras/bookaneer/internal/testutil"
 )
 
@@ -19,7 +20,7 @@ func TestCopyFile_Success(t *testing.T) {
 	src := filepath.Join(t.TempDir(), "src.epub")
 	dst := filepath.Join(t.TempDir(), "dst.epub")
 	content := []byte("ebook content")
-	require.NoError(t, os.WriteFile(src, content, 0644))
+	require.NoError(t, os.WriteFile(src, content, 0o644))
 
 	require.NoError(t, copyFile(src, dst))
 
@@ -33,13 +34,13 @@ func TestCopyFile_PreservesPermissions(t *testing.T) {
 
 	src := filepath.Join(t.TempDir(), "src.epub")
 	dst := filepath.Join(t.TempDir(), "dst.epub")
-	require.NoError(t, os.WriteFile(src, []byte("data"), 0600))
+	require.NoError(t, os.WriteFile(src, []byte("data"), 0o600))
 
 	require.NoError(t, copyFile(src, dst))
 
 	info, err := os.Stat(dst)
 	require.NoError(t, err)
-	assert.Equal(t, os.FileMode(0600), info.Mode().Perm())
+	assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
 }
 
 func TestCopyFile_SourceNotExist(t *testing.T) {
@@ -56,7 +57,7 @@ func TestCopyFile_DestDirNotExist(t *testing.T) {
 	t.Parallel()
 
 	src := filepath.Join(t.TempDir(), "src.epub")
-	require.NoError(t, os.WriteFile(src, []byte("data"), 0644))
+	require.NoError(t, os.WriteFile(src, []byte("data"), 0o644))
 
 	dst := filepath.Join(t.TempDir(), "missing_dir", "dst.epub")
 
@@ -72,8 +73,8 @@ func TestCopyDir_WithFiles(t *testing.T) {
 	src := t.TempDir()
 	dst := filepath.Join(t.TempDir(), "dst")
 
-	require.NoError(t, os.WriteFile(filepath.Join(src, "book1.epub"), []byte("ebook1"), 0644))
-	require.NoError(t, os.WriteFile(filepath.Join(src, "book2.epub"), []byte("ebook2"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(src, "book1.epub"), []byte("ebook1"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(src, "book2.epub"), []byte("ebook2"), 0o644))
 
 	require.NoError(t, copyDir(src, dst))
 
@@ -93,8 +94,8 @@ func TestCopyDir_Nested(t *testing.T) {
 	dst := filepath.Join(t.TempDir(), "dst")
 
 	subdir := filepath.Join(src, "subdir")
-	require.NoError(t, os.MkdirAll(subdir, 0755))
-	require.NoError(t, os.WriteFile(filepath.Join(subdir, "nested.epub"), []byte("nested"), 0644))
+	require.NoError(t, os.MkdirAll(subdir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(subdir, "nested.epub"), []byte("nested"), 0o644))
 
 	require.NoError(t, copyDir(src, dst))
 
@@ -136,8 +137,8 @@ func TestCopyDir_DstMkdirFails(t *testing.T) {
 	src := t.TempDir()
 	base := t.TempDir()
 	readOnly := filepath.Join(base, "readonly")
-	require.NoError(t, os.Mkdir(readOnly, 0555))
-	t.Cleanup(func() { _ = os.Chmod(readOnly, 0755) })
+	require.NoError(t, os.Mkdir(readOnly, 0o555))
+	t.Cleanup(func() { _ = os.Chmod(readOnly, 0o755) })
 
 	dst := filepath.Join(readOnly, "dst")
 	err := copyDir(src, dst)
@@ -149,7 +150,7 @@ func TestCopyDir_DstMkdirFails(t *testing.T) {
 // TestMoveRootFolder_AuthorPathMissing covers the warn-and-continue branch
 // inside MoveRootFolder when an author's directory does not exist on disk.
 func TestMoveRootFolder_AuthorPathMissing(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := New(db)
 	ctx := context.Background()
 
@@ -181,7 +182,7 @@ func TestMoveRootFolder_AuthorPathMissing(t *testing.T) {
 // TestMoveRootFolder_UpdatesBookFilePaths verifies that book_files rows with
 // paths inside the old root folder are rewritten to the new location.
 func TestMoveRootFolder_UpdatesBookFilePaths(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := New(db)
 	ctx := context.Background()
 
@@ -189,7 +190,7 @@ func TestMoveRootFolder_UpdatesBookFilePaths(t *testing.T) {
 	newDir := filepath.Join(t.TempDir(), "new_library")
 
 	authorDir := filepath.Join(oldDir, "Tolkien")
-	require.NoError(t, os.MkdirAll(authorDir, 0755))
+	require.NoError(t, os.MkdirAll(authorDir, 0o755))
 
 	rf, err := svc.Create(ctx, CreateRootFolderInput{Path: oldDir, Name: "Library"})
 	require.NoError(t, err)
@@ -203,9 +204,9 @@ func TestMoveRootFolder_UpdatesBookFilePaths(t *testing.T) {
 	var authorID int64
 	require.NoError(t, db.QueryRowContext(ctx, "SELECT id FROM authors WHERE name = 'Tolkien'").Scan(&authorID))
 
-	bookID := testutil.SeedBook(t, db, authorID, "The Hobbit")
+	bookID := testutil.SeedBook(t, db.DB, authorID, "The Hobbit")
 	bookFilePath := filepath.Join(authorDir, "hobbit.epub")
-	require.NoError(t, os.WriteFile(bookFilePath, []byte("epub"), 0644))
+	require.NoError(t, os.WriteFile(bookFilePath, []byte("epub"), 0o644))
 
 	_, err = db.ExecContext(ctx,
 		"INSERT INTO book_files (book_id, path, relative_path, format, size) VALUES (?, ?, ?, 'epub', 100)",
@@ -234,7 +235,7 @@ func TestCopyFile_Unreadable(t *testing.T) {
 
 	src := filepath.Join(t.TempDir(), "secret.epub")
 	dst := filepath.Join(t.TempDir(), "dst.epub")
-	require.NoError(t, os.WriteFile(src, []byte("data"), 0000))
+	require.NoError(t, os.WriteFile(src, []byte("data"), 0o000))
 
 	err := copyFile(src, dst)
 	require.Error(t, err)
@@ -251,7 +252,7 @@ func TestCopyDir_FileUnreadable(t *testing.T) {
 
 	src := t.TempDir()
 	dst := filepath.Join(t.TempDir(), "dst")
-	require.NoError(t, os.WriteFile(filepath.Join(src, "secret.epub"), []byte("data"), 0000))
+	require.NoError(t, os.WriteFile(filepath.Join(src, "secret.epub"), []byte("data"), 0o000))
 
 	err := copyDir(src, dst)
 	require.Error(t, err)
@@ -268,8 +269,8 @@ func TestCopyDir_NestedFileUnreadable(t *testing.T) {
 	dst := filepath.Join(t.TempDir(), "dst")
 
 	subdir := filepath.Join(src, "subdir")
-	require.NoError(t, os.MkdirAll(subdir, 0755))
-	require.NoError(t, os.WriteFile(filepath.Join(subdir, "secret.epub"), []byte("data"), 0000))
+	require.NoError(t, os.MkdirAll(subdir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(subdir, "secret.epub"), []byte("data"), 0o000))
 
 	err := copyDir(src, dst)
 	require.Error(t, err)
@@ -282,7 +283,7 @@ func TestMoveRootFolder_NewDirCreateFails(t *testing.T) {
 		t.Skip("root can write anywhere; skipping")
 	}
 
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := New(db)
 	ctx := context.Background()
 
@@ -292,8 +293,8 @@ func TestMoveRootFolder_NewDirCreateFails(t *testing.T) {
 
 	base := t.TempDir()
 	readOnly := filepath.Join(base, "readonly")
-	require.NoError(t, os.Mkdir(readOnly, 0555))
-	t.Cleanup(func() { _ = os.Chmod(readOnly, 0755) })
+	require.NoError(t, os.Mkdir(readOnly, 0o555))
+	t.Cleanup(func() { _ = os.Chmod(readOnly, 0o755) })
 
 	newPath := filepath.Join(readOnly, "newlibrary")
 	_, err = svc.MoveRootFolder(ctx, rf.ID, newPath)
@@ -304,7 +305,7 @@ func TestMoveRootFolder_NewDirCreateFails(t *testing.T) {
 // MoveRootFolder by setting the SQLite connection to query-only mode after
 // the read-phase succeeds.
 func TestMoveRootFolder_DBWritesFail(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := New(db)
 	ctx := context.Background()
 
@@ -327,7 +328,7 @@ func TestMoveRootFolder_DBWritesFail(t *testing.T) {
 // ── Service DB-error paths ────────────────────────────────────────────────────
 
 func TestList_DBError(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	_ = db.Close()
 	_, err := s.List(context.Background())
@@ -335,7 +336,7 @@ func TestList_DBError(t *testing.T) {
 }
 
 func TestFindByID_DBError(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	_ = db.Close()
 	_, err := s.FindByID(context.Background(), 1)
@@ -343,7 +344,7 @@ func TestFindByID_DBError(t *testing.T) {
 }
 
 func TestCreate_DBError(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	dir := t.TempDir() // path exists, so os.Stat succeeds
 	_ = db.Close()
@@ -352,7 +353,7 @@ func TestCreate_DBError(t *testing.T) {
 }
 
 func TestDelete_DBError(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	_ = db.Close()
 	err := s.Delete(context.Background(), 1)
@@ -362,7 +363,7 @@ func TestDelete_DBError(t *testing.T) {
 // TestUpdate_DBWritesFail covers the general "update root folder" error branch
 // by switching the connection to query-only mode after the initial read.
 func TestUpdate_DBWritesFail(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	ctx := context.Background()
 
@@ -381,7 +382,7 @@ func TestUpdate_DBWritesFail(t *testing.T) {
 // TestMoveRootFolder_QueryAuthorsFails covers the "query authors" error branch
 // by renaming the authors table so the SELECT inside MoveRootFolder fails.
 func TestMoveRootFolder_QueryAuthorsFails(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := New(db)
 	ctx := context.Background()
 
@@ -412,8 +413,8 @@ func TestCopyDir_ReadDirFails(t *testing.T) {
 	src := t.TempDir()
 	// mode 0100 (execute only, no read): os.Stat still succeeds (uses parent's
 	// execute bit), but os.ReadDir fails because it needs the read bit.
-	require.NoError(t, os.Chmod(src, 0100))
-	t.Cleanup(func() { _ = os.Chmod(src, 0755) }) // restore so t.TempDir cleanup works
+	require.NoError(t, os.Chmod(src, 0o100))
+	t.Cleanup(func() { _ = os.Chmod(src, 0o755) }) // restore so t.TempDir cleanup works
 
 	dst := filepath.Join(t.TempDir(), "dst")
 	err := copyDir(src, dst)

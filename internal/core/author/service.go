@@ -96,7 +96,7 @@ func (s *Service) List(ctx context.Context, filter ListAuthorsFilter) ([]Author,
 	// Count total
 	var total int
 	countQuery := "SELECT COUNT(*) FROM authors " + where
-	if err := s.db.QueryRowContext(ctx, countQuery, args...).Scan(&total); err != nil {
+	if err := s.db.GetContext(ctx, &total, countQuery, args...); err != nil {
 		return nil, 0, fmt.Errorf("count authors: %w", err)
 	}
 
@@ -177,10 +177,19 @@ func (s *Service) Create(ctx context.Context, input CreateAuthorInput) (*Author,
 		foreignID = nil
 	}
 
-	result, err := s.db.ExecContext(ctx, `
+	result, err := s.db.NamedExecContext(ctx, `
 		INSERT INTO authors (name, sort_name, foreign_id, overview, image_url, status, monitored, path)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`, input.Name, input.SortName, foreignID, input.Overview, input.ImageURL, input.Status, monitored, input.Path)
+		VALUES (:name, :sort_name, :foreign_id, :overview, :image_url, :status, :monitored, :path)
+	`, map[string]any{
+		"name":       input.Name,
+		"sort_name":  input.SortName,
+		"foreign_id": foreignID,
+		"overview":   input.Overview,
+		"image_url":  input.ImageURL,
+		"status":     input.Status,
+		"monitored":  monitored,
+		"path":       input.Path,
+	})
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 			// Race condition - author was created between our check and insert

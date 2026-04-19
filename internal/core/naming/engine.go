@@ -2,21 +2,21 @@ package naming
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/jmoiron/sqlx"
 )
 
 // Engine formats file and folder paths using configurable naming templates.
 type Engine struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
 // New creates a new naming Engine.
-func New(db *sql.DB) *Engine {
+func New(db *sqlx.DB) *Engine {
 	return &Engine{db: db}
 }
 
@@ -60,34 +60,30 @@ var defaultSettings = Settings{
 
 // LoadSettings reads naming settings from the config table.
 func (e *Engine) LoadSettings(ctx context.Context) (*Settings, error) {
-	rows, err := e.db.QueryContext(ctx, `
-		SELECT key, value FROM config WHERE key LIKE 'naming.%'
-	`)
-	if err != nil {
+	var cfgRows []struct {
+		Key   string `db:"key"`
+		Value string `db:"value"`
+	}
+	if err := e.db.SelectContext(ctx, &cfgRows, `SELECT key, value FROM config WHERE key LIKE 'naming.%'`); err != nil {
 		return nil, fmt.Errorf("query naming settings: %w", err)
 	}
-	defer func() { _ = rows.Close() }()
 
 	s := defaultSettings
-	for rows.Next() {
-		var key, value string
-		if err := rows.Scan(&key, &value); err != nil {
-			return nil, fmt.Errorf("scan naming setting: %w", err)
-		}
-		switch key {
+	for _, row := range cfgRows {
+		switch row.Key {
 		case "naming.enabled":
-			s.Enabled = value == "1"
+			s.Enabled = row.Value == "1"
 		case "naming.authorFolderFormat":
-			s.AuthorFolderFormat = value
+			s.AuthorFolderFormat = row.Value
 		case "naming.bookFileFormat":
-			s.BookFileFormat = value
+			s.BookFileFormat = row.Value
 		case "naming.replaceSpaces":
-			s.ReplaceSpaces = value == "1"
+			s.ReplaceSpaces = row.Value == "1"
 		case "naming.colonReplacement":
-			s.ColonReplacement = value
+			s.ColonReplacement = row.Value
 		}
 	}
-	return &s, rows.Err()
+	return &s, nil
 }
 
 // SaveSettings persists naming settings to the config table.
@@ -107,12 +103,14 @@ func (e *Engine) SaveSettings(ctx context.Context, s *Settings) error {
 		{"naming.colonReplacement", s.ColonReplacement},
 	}
 
+	stmt, err := e.db.PrepareContext(ctx, `INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)`)
+	if err != nil {
+		return fmt.Errorf("prepare save naming setting: %w", err)
+	}
+	defer func() { _ = stmt.Close() }()
+
 	for _, p := range pairs {
-		_, err := e.db.ExecContext(ctx,
-			`INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)`,
-			p.key, p.value,
-		)
-		if err != nil {
+		if _, err := stmt.ExecContext(ctx, p.key, p.value); err != nil {
 			return fmt.Errorf("save naming setting %s: %w", p.key, err)
 		}
 	}
@@ -361,12 +359,26 @@ func (e *Engine) renameAll(ctx context.Context, dryRun bool) (*RenameResult, err
 		return nil, fmt.Errorf("load naming settings: %w", err)
 	}
 
-	rows, err := e.db.QueryContext(ctx, `
+	type fileRow struct {
+		ID          int64  `db:"id"`
+		BookID      int64  `db:"book_id"`
+		Path        string `db:"path"`
+		Format      string `db:"format"`
+		Title       string `db:"title"`
+		ReleaseDate string `db:"release_date"`
+		AuthorName  string `db:"author_name"`
+		SortAuthor  string `db:"sort_author"`
+		SeriesTitle string `db:"series_title"`
+		SeriesPos   string `db:"series_pos"`
+		RootPath    string `db:"root_path"`
+	}
+	var fileRows []fileRow
+	if err := e.db.SelectContext(ctx, &fileRows, `
 		SELECT bf.id, bf.book_id, bf.path, bf.format,
-		       b.title, COALESCE(b.release_date, ''),
-		       a.name, COALESCE(a.sort_name, ''),
-		       COALESCE(s.title, ''), COALESCE(sb.position, ''),
-		       rf.path as root_path
+		       b.title, COALESCE(b.release_date, '') AS release_date,
+		       a.name AS author_name, COALESCE(a.sort_name, '') AS sort_author,
+		       COALESCE(s.title, '') AS series_title, COALESCE(sb.position, '') AS series_pos,
+		       rf.path AS root_path
 		FROM book_files bf
 		JOIN books b ON bf.book_id = b.id
 		JOIN authors a ON b.author_id = a.id
@@ -374,8 +386,7 @@ func (e *Engine) renameAll(ctx context.Context, dryRun bool) (*RenameResult, err
 		LEFT JOIN series s ON sb.series_id = s.id
 		JOIN root_folders rf ON bf.path LIKE rf.path || '%'
 		ORDER BY bf.id
-	`)
-	if err != nil {
+	`); err != nil {
 		return nil, fmt.Errorf("query book files: %w", err)
 	}
 
@@ -388,42 +399,28 @@ func (e *Engine) renameAll(ctx context.Context, dryRun bool) (*RenameResult, err
 	}
 
 	var files []fileInfo
-	for rows.Next() {
-		var fi fileInfo
-		var format, title, releaseDate, authorName, sortAuthor, seriesTitle, seriesPos string
-		if err := rows.Scan(
-			&fi.id, &fi.bookID, &fi.path, &format,
-			&title, &releaseDate,
-			&authorName, &sortAuthor,
-			&seriesTitle, &seriesPos,
-			&fi.rootPath,
-		); err != nil {
-			slog.Warn("Failed to scan book file for rename", "error", err)
-			continue
-		}
-
+	for _, fr := range fileRows {
 		year := ""
-		if len(releaseDate) >= 4 {
-			year = releaseDate[:4]
+		if len(fr.ReleaseDate) >= 4 {
+			year = fr.ReleaseDate[:4]
 		}
-
-		fi.nc = Context{
-			Author:         authorName,
-			SortAuthor:     sortAuthor,
-			Title:          title,
-			Series:         seriesTitle,
-			SeriesPosition: seriesPos,
-			Year:           year,
-			Format:         format,
-			OriginalName:   filepath.Base(fi.path),
-		}
-		files = append(files, fi)
+		files = append(files, fileInfo{
+			id:       fr.ID,
+			bookID:   fr.BookID,
+			path:     fr.Path,
+			rootPath: fr.RootPath,
+			nc: Context{
+				Author:         fr.AuthorName,
+				SortAuthor:     fr.SortAuthor,
+				Title:          fr.Title,
+				Series:         fr.SeriesTitle,
+				SeriesPosition: fr.SeriesPos,
+				Year:           year,
+				Format:         fr.Format,
+				OriginalName:   filepath.Base(fr.Path),
+			},
+		})
 	}
-	if err := rows.Err(); err != nil {
-		_ = rows.Close()
-		return nil, fmt.Errorf("iterate book files: %w", err)
-	}
-	_ = rows.Close()
 
 	result := &RenameResult{Total: len(files)}
 
@@ -448,7 +445,7 @@ func (e *Engine) renameAll(ctx context.Context, dryRun bool) (*RenameResult, err
 
 		// Create destination directory
 		destDir := filepath.Dir(named.FullPath)
-		if err := os.MkdirAll(destDir, 0755); err != nil {
+		if err := os.MkdirAll(destDir, 0o755); err != nil {
 			result.Errors = append(result.Errors, fmt.Sprintf("create dir for file %d: %v", fi.id, err))
 			continue
 		}

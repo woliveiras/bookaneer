@@ -6,18 +6,19 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/woliveiras/bookaneer/internal/core/qualityprofile"
 	"github.com/woliveiras/bookaneer/internal/testutil"
 )
 
 func TestNew(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 	assert.NotNil(t, svc)
 }
 
 func TestCreate_Success(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 	ctx := context.Background()
 
@@ -34,14 +35,14 @@ func TestCreate_Success(t *testing.T) {
 }
 
 func TestCreate_EmptyName(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 	_, err := svc.Create(context.Background(), qualityprofile.CreateQualityProfileInput{Cutoff: "epub"})
 	require.ErrorIs(t, err, qualityprofile.ErrInvalidInput)
 }
 
 func TestFindByID(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 	ctx := context.Background()
 
@@ -57,14 +58,14 @@ func TestFindByID(t *testing.T) {
 }
 
 func TestFindByID_NotFound(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 	_, err := svc.FindByID(context.Background(), 9999)
 	require.ErrorIs(t, err, qualityprofile.ErrNotFound)
 }
 
 func TestList(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 	ctx := context.Background()
 
@@ -79,7 +80,7 @@ func TestList(t *testing.T) {
 }
 
 func TestUpdate_Name(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 	ctx := context.Background()
 
@@ -93,7 +94,7 @@ func TestUpdate_Name(t *testing.T) {
 }
 
 func TestUpdate_Cutoff(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 	ctx := context.Background()
 
@@ -107,7 +108,7 @@ func TestUpdate_Cutoff(t *testing.T) {
 }
 
 func TestUpdate_Items(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 	ctx := context.Background()
 
@@ -123,7 +124,7 @@ func TestUpdate_Items(t *testing.T) {
 }
 
 func TestUpdate_NotFound(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 	name := "X"
 	_, err := svc.Update(context.Background(), 9999, qualityprofile.UpdateQualityProfileInput{Name: &name})
@@ -131,7 +132,7 @@ func TestUpdate_NotFound(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 	ctx := context.Background()
 
@@ -146,14 +147,14 @@ func TestDelete(t *testing.T) {
 }
 
 func TestDelete_NotFound(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 	err := svc.Delete(context.Background(), 9999)
 	require.ErrorIs(t, err, qualityprofile.ErrNotFound)
 }
 
 func TestEnsureDefault(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 	ctx := context.Background()
 
@@ -214,7 +215,7 @@ func TestAllQualities(t *testing.T) {
 }
 
 func TestCreate_WithEmptyItems(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 	ctx := context.Background()
 
@@ -227,7 +228,7 @@ func TestCreate_WithEmptyItems(t *testing.T) {
 }
 
 func TestDelete_InUse(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 	ctx := context.Background()
 
@@ -245,7 +246,7 @@ func TestDelete_InUse(t *testing.T) {
 }
 
 func TestUpdate_EmptyInput(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 	ctx := context.Background()
 
@@ -260,7 +261,7 @@ func TestUpdate_EmptyInput(t *testing.T) {
 }
 
 func TestList_Empty(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 
 	profiles, err := svc.List(context.Background())
@@ -269,7 +270,7 @@ func TestList_Empty(t *testing.T) {
 }
 
 func TestFindByID_DBClosed(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 	_ = db.Close()
 
@@ -279,7 +280,7 @@ func TestFindByID_DBClosed(t *testing.T) {
 }
 
 func TestList_DBClosed(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 	_ = db.Close()
 
@@ -288,7 +289,7 @@ func TestList_DBClosed(t *testing.T) {
 }
 
 func TestCreate_DBClosed(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 	_ = db.Close()
 
@@ -297,7 +298,7 @@ func TestCreate_DBClosed(t *testing.T) {
 }
 
 func TestDelete_DBClosed(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 	_ = db.Close()
 
@@ -308,7 +309,7 @@ func TestDelete_DBClosed(t *testing.T) {
 }
 
 func TestEnsureDefault_DBClosed(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 	_ = db.Close()
 
@@ -317,7 +318,7 @@ func TestEnsureDefault_DBClosed(t *testing.T) {
 }
 
 func TestEnsureDefault_WhenDefaultExists(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := qualityprofile.New(db)
 	ctx := context.Background()
 

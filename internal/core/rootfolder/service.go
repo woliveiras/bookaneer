@@ -7,26 +7,27 @@ import (
 	"os"
 	"strings"
 
+	"github.com/jmoiron/sqlx"
 	"golang.org/x/sys/unix"
 )
 
 // Service provides root folder-related operations.
 type Service struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
 // New creates a new root folder service.
-func New(db *sql.DB) *Service {
+func New(db *sqlx.DB) *Service {
 	return &Service{db: db}
 }
 
 // FindByID returns a root folder by ID.
 func (s *Service) FindByID(ctx context.Context, id int64) (*RootFolder, error) {
 	var rf RootFolder
-	err := s.db.QueryRowContext(ctx, `
+	err := s.db.GetContext(ctx, &rf, `
 		SELECT id, path, name, default_quality_profile_id
 		FROM root_folders WHERE id = ?
-	`, id).Scan(&rf.ID, &rf.Path, &rf.Name, &rf.DefaultQualityProfileID)
+	`, id)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
 	}
@@ -42,28 +43,14 @@ func (s *Service) FindByID(ctx context.Context, id int64) (*RootFolder, error) {
 
 // List returns all root folders.
 func (s *Service) List(ctx context.Context) ([]RootFolder, error) {
-	rows, err := s.db.QueryContext(ctx, `
+	var folders []RootFolder
+	if err := s.db.SelectContext(ctx, &folders, `
 		SELECT id, path, name, default_quality_profile_id
 		FROM root_folders ORDER BY name
-	`)
-	if err != nil {
+	`); err != nil {
 		return nil, fmt.Errorf("list root folders: %w", err)
 	}
-	defer func() { _ = rows.Close() }()
 
-	var folders []RootFolder
-	for rows.Next() {
-		var rf RootFolder
-		if err := rows.Scan(&rf.ID, &rf.Path, &rf.Name, &rf.DefaultQualityProfileID); err != nil {
-			return nil, fmt.Errorf("scan root folder: %w", err)
-		}
-		folders = append(folders, rf)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate root folders: %w", err)
-	}
-
-	// Enrich after closing rows to avoid SQLite connection contention
 	for i := range folders {
 		s.enrichWithDiskInfo(&folders[i])
 		s.enrichWithAuthorCount(ctx, &folders[i])
@@ -82,7 +69,7 @@ func (s *Service) Create(ctx context.Context, input CreateRootFolderInput) (*Roo
 	info, err := os.Stat(input.Path)
 	if os.IsNotExist(err) {
 		// Create the directory with appropriate permissions
-		if err := os.MkdirAll(input.Path, 0755); err != nil {
+		if err := os.MkdirAll(input.Path, 0o755); err != nil {
 			return nil, fmt.Errorf("create directory: %w", err)
 		}
 	} else if err != nil {
@@ -91,10 +78,10 @@ func (s *Service) Create(ctx context.Context, input CreateRootFolderInput) (*Roo
 		return nil, ErrPathNotAccessible
 	}
 
-	result, err := s.db.ExecContext(ctx, `
+	result, err := s.db.NamedExecContext(ctx, `
 		INSERT INTO root_folders (path, name, default_quality_profile_id)
-		VALUES (?, ?, ?)
-	`, input.Path, input.Name, input.DefaultQualityProfileID)
+		VALUES (:path, :name, :default_quality_profile_id)
+	`, input)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 			return nil, ErrDuplicate
@@ -134,7 +121,7 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateRootFolderIn
 		}
 		// Create if doesn't exist
 		if os.IsNotExist(err) {
-			if err := os.MkdirAll(*input.Path, 0755); err != nil {
+			if err := os.MkdirAll(*input.Path, 0o755); err != nil {
 				return nil, fmt.Errorf("create directory: %w", err)
 			}
 		} else if !info.IsDir() {
@@ -203,9 +190,6 @@ func (s *Service) enrichWithDiskInfo(rf *RootFolder) {
 // enrichWithAuthorCount adds the count of authors in this root folder.
 func (s *Service) enrichWithAuthorCount(ctx context.Context, rf *RootFolder) {
 	var count int
-	// Count authors whose path starts with this root folder path
-	_ = s.db.QueryRowContext(ctx, `
-		SELECT COUNT(*) FROM authors WHERE path LIKE ?
-	`, rf.Path+"%").Scan(&count)
+	_ = s.db.GetContext(ctx, &count, `SELECT COUNT(*) FROM authors WHERE path LIKE ?`, rf.Path+"%")
 	rf.AuthorCount = count
 }

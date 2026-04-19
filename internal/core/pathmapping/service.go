@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+
+	"github.com/jmoiron/sqlx"
 )
 
 var (
@@ -16,48 +18,34 @@ var (
 
 // Service provides remote path mapping operations.
 type Service struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
 // New creates a new path mapping service.
-func New(db *sql.DB) *Service {
+func New(db *sqlx.DB) *Service {
 	return &Service{db: db}
 }
 
 // List returns all remote path mappings.
 func (s *Service) List(ctx context.Context) ([]RemotePathMapping, error) {
-	rows, err := s.db.QueryContext(ctx, `
+	var mappings []RemotePathMapping
+	if err := s.db.SelectContext(ctx, &mappings, `
 		SELECT id, host, remote_path, local_path, created_at
 		FROM remote_path_mappings
 		ORDER BY id
-	`)
-	if err != nil {
+	`); err != nil {
 		return nil, fmt.Errorf("list remote path mappings: %w", err)
 	}
-	defer func() { _ = rows.Close() }()
-
-	var mappings []RemotePathMapping
-	for rows.Next() {
-		var m RemotePathMapping
-		if err := rows.Scan(&m.ID, &m.Host, &m.RemotePath, &m.LocalPath, &m.CreatedAt); err != nil {
-			return nil, fmt.Errorf("scan remote path mapping: %w", err)
-		}
-		mappings = append(mappings, m)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate remote path mappings: %w", err)
-	}
-
 	return mappings, nil
 }
 
 // FindByID returns a mapping by ID.
 func (s *Service) FindByID(ctx context.Context, id int64) (*RemotePathMapping, error) {
 	var m RemotePathMapping
-	err := s.db.QueryRowContext(ctx, `
+	err := s.db.GetContext(ctx, &m, `
 		SELECT id, host, remote_path, local_path, created_at
 		FROM remote_path_mappings WHERE id = ?
-	`, id).Scan(&m.ID, &m.Host, &m.RemotePath, &m.LocalPath, &m.CreatedAt)
+	`, id)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
 	}
@@ -77,10 +65,10 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*RemotePathMap
 	input.RemotePath = normalizePath(input.RemotePath)
 	input.LocalPath = normalizePath(input.LocalPath)
 
-	result, err := s.db.ExecContext(ctx, `
+	result, err := s.db.NamedExecContext(ctx, `
 		INSERT INTO remote_path_mappings (host, remote_path, local_path)
-		VALUES (?, ?, ?)
-	`, input.Host, input.RemotePath, input.LocalPath)
+		VALUES (:host, :remote_path, :local_path)
+	`, input)
 	if err != nil {
 		return nil, fmt.Errorf("create remote path mapping: %w", err)
 	}

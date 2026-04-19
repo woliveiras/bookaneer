@@ -8,12 +8,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/woliveiras/bookaneer/internal/core/rootfolder"
 	"github.com/woliveiras/bookaneer/internal/testutil"
 )
 
 func TestMoveRootFolder_SamePath(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := rootfolder.New(db)
 	ctx := context.Background()
 
@@ -27,7 +28,7 @@ func TestMoveRootFolder_SamePath(t *testing.T) {
 }
 
 func TestMoveRootFolder_WithFiles(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := rootfolder.New(db)
 	ctx := context.Background()
 
@@ -35,8 +36,8 @@ func TestMoveRootFolder_WithFiles(t *testing.T) {
 	newDir := filepath.Join(t.TempDir(), "new_library")
 
 	authorDir := filepath.Join(oldDir, "Tolkien")
-	require.NoError(t, os.MkdirAll(authorDir, 0755))
-	require.NoError(t, os.WriteFile(filepath.Join(authorDir, "hobbit.epub"), []byte("ebook data"), 0644))
+	require.NoError(t, os.MkdirAll(authorDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(authorDir, "hobbit.epub"), []byte("ebook data"), 0o644))
 
 	rf, err := svc.Create(ctx, rootfolder.CreateRootFolderInput{Path: oldDir, Name: "Library"})
 	require.NoError(t, err)
@@ -53,7 +54,7 @@ func TestMoveRootFolder_WithFiles(t *testing.T) {
 }
 
 func TestMoveRootFolder_NotFound(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := rootfolder.New(db)
 
 	_, err := svc.MoveRootFolder(context.Background(), 9999, "/tmp/new")
@@ -61,7 +62,7 @@ func TestMoveRootFolder_NotFound(t *testing.T) {
 }
 
 func TestUpdate_WithPath(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := rootfolder.New(db)
 	ctx := context.Background()
 
@@ -76,7 +77,7 @@ func TestUpdate_WithPath(t *testing.T) {
 }
 
 func TestUpdate_MoveFiles(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := rootfolder.New(db)
 	ctx := context.Background()
 
@@ -95,7 +96,7 @@ func TestUpdate_MoveFiles(t *testing.T) {
 }
 
 func TestUpdate_NameOnly(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := rootfolder.New(db)
 	ctx := context.Background()
 
@@ -110,7 +111,7 @@ func TestUpdate_NameOnly(t *testing.T) {
 }
 
 func TestUpdate_NoChanges(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := rootfolder.New(db)
 	ctx := context.Background()
 
@@ -124,7 +125,7 @@ func TestUpdate_NoChanges(t *testing.T) {
 }
 
 func TestCreate_PathNotExist_CreatesDir(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := rootfolder.New(db)
 	ctx := context.Background()
 

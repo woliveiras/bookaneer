@@ -12,7 +12,7 @@ import (
 )
 
 func TestCreate(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	ctx := context.Background()
 
@@ -28,7 +28,7 @@ func TestCreate(t *testing.T) {
 }
 
 func TestCreate_MissingFields(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	ctx := context.Background()
 
@@ -37,7 +37,7 @@ func TestCreate_MissingFields(t *testing.T) {
 }
 
 func TestCreate_DuplicatePath(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	ctx := context.Background()
 
@@ -50,7 +50,7 @@ func TestCreate_DuplicatePath(t *testing.T) {
 }
 
 func TestCreate_CreatesDirectory(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	ctx := context.Background()
 
@@ -64,7 +64,7 @@ func TestCreate_CreatesDirectory(t *testing.T) {
 }
 
 func TestFindByID(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	ctx := context.Background()
 
@@ -79,7 +79,7 @@ func TestFindByID(t *testing.T) {
 }
 
 func TestFindByID_NotFound(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	ctx := context.Background()
 
@@ -88,7 +88,7 @@ func TestFindByID_NotFound(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	ctx := context.Background()
 
@@ -110,7 +110,7 @@ func TestList(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	ctx := context.Background()
 
@@ -125,7 +125,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestUpdate_NotFound(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	ctx := context.Background()
 
@@ -135,7 +135,7 @@ func TestUpdate_NotFound(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	ctx := context.Background()
 
@@ -151,7 +151,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestDelete_NotFound(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	ctx := context.Background()
 
@@ -160,20 +160,20 @@ func TestDelete_NotFound(t *testing.T) {
 }
 
 func TestCreate_PathIsFile(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	ctx := context.Background()
 
 	// Create a file (not a directory)
 	filePath := filepath.Join(t.TempDir(), "notadir")
-	require.NoError(t, os.WriteFile(filePath, []byte("data"), 0644))
+	require.NoError(t, os.WriteFile(filePath, []byte("data"), 0o644))
 
 	_, err := s.Create(ctx, CreateRootFolderInput{Path: filePath, Name: "Bad"})
 	require.ErrorIs(t, err, ErrPathNotAccessible)
 }
 
 func TestUpdate_PathUpdate(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	ctx := context.Background()
 
@@ -188,7 +188,7 @@ func TestUpdate_PathUpdate(t *testing.T) {
 }
 
 func TestUpdate_PathIsFile(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	ctx := context.Background()
 
@@ -197,14 +197,14 @@ func TestUpdate_PathIsFile(t *testing.T) {
 	require.NoError(t, err)
 
 	filePath := filepath.Join(t.TempDir(), "notadir")
-	require.NoError(t, os.WriteFile(filePath, []byte("data"), 0644))
+	require.NoError(t, os.WriteFile(filePath, []byte("data"), 0o644))
 
 	_, err = s.Update(ctx, created.ID, UpdateRootFolderInput{Path: &filePath})
 	require.ErrorIs(t, err, ErrPathNotAccessible)
 }
 
 func TestUpdate_DefaultQualityProfileID(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	ctx := context.Background()
 
@@ -225,7 +225,7 @@ func TestUpdate_DefaultQualityProfileID(t *testing.T) {
 }
 
 func TestUpdate_EmptyNoChanges(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	ctx := context.Background()
 
@@ -239,7 +239,7 @@ func TestUpdate_EmptyNoChanges(t *testing.T) {
 }
 
 func TestUpdate_DuplicatePath(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	ctx := context.Background()
 
@@ -256,7 +256,7 @@ func TestUpdate_DuplicatePath(t *testing.T) {
 }
 
 func TestEnrichWithDiskInfo_Inaccessible(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 
 	rf := &RootFolder{Path: "/nonexistent/path/that/does/not/exist"}
@@ -265,7 +265,7 @@ func TestEnrichWithDiskInfo_Inaccessible(t *testing.T) {
 }
 
 func TestEnrichWithDiskInfo_Accessible(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 
 	rf := &RootFolder{Path: t.TempDir()}
@@ -279,14 +279,14 @@ func TestEnrichWithDiskInfo_Accessible(t *testing.T) {
 // TestCreate_StatError covers the branch where os.Stat returns an error that
 // is not os.IsNotExist (e.g., ENOTDIR when a path component is a file).
 func TestCreate_StatError(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	ctx := context.Background()
 
 	// Make a regular file, then use it as a path prefix so os.Stat on the
 	// child path gets ENOTDIR — not a "not found" error.
 	fileAsDir := filepath.Join(t.TempDir(), "notadir")
-	require.NoError(t, os.WriteFile(fileAsDir, []byte("data"), 0644))
+	require.NoError(t, os.WriteFile(fileAsDir, []byte("data"), 0o644))
 
 	path := filepath.Join(fileAsDir, "subdir")
 	_, err := s.Create(ctx, CreateRootFolderInput{Path: path, Name: "Test"})
@@ -300,14 +300,14 @@ func TestCreate_MkdirAllFails(t *testing.T) {
 		t.Skip("root can write anywhere; skipping")
 	}
 
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	ctx := context.Background()
 
 	base := t.TempDir()
 	readOnly := filepath.Join(base, "readonly")
-	require.NoError(t, os.Mkdir(readOnly, 0555))
-	t.Cleanup(func() { _ = os.Chmod(readOnly, 0755) }) // restore for cleanup
+	require.NoError(t, os.Mkdir(readOnly, 0o555))
+	t.Cleanup(func() { _ = os.Chmod(readOnly, 0o755) }) // restore for cleanup
 
 	path := filepath.Join(readOnly, "newlib")
 	_, err := s.Create(ctx, CreateRootFolderInput{Path: path, Name: "Test"})
@@ -321,7 +321,7 @@ func TestUpdate_MkdirAllFails(t *testing.T) {
 		t.Skip("root can write anywhere; skipping")
 	}
 
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	s := New(db)
 	ctx := context.Background()
 
@@ -331,8 +331,8 @@ func TestUpdate_MkdirAllFails(t *testing.T) {
 
 	base := t.TempDir()
 	readOnly := filepath.Join(base, "readonly")
-	require.NoError(t, os.Mkdir(readOnly, 0555))
-	t.Cleanup(func() { _ = os.Chmod(readOnly, 0755) })
+	require.NoError(t, os.Mkdir(readOnly, 0o555))
+	t.Cleanup(func() { _ = os.Chmod(readOnly, 0o755) })
 
 	newPath := filepath.Join(readOnly, "newlib")
 	_, err = s.Update(ctx, created.ID, UpdateRootFolderInput{Path: &newPath})

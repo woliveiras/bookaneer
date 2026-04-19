@@ -6,16 +6,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/woliveiras/bookaneer/internal/core/book"
 	"github.com/woliveiras/bookaneer/internal/testutil"
 )
 
 func TestFindByForeignID_Success(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	_, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Foreign Book", ForeignID: "OL123W"})
 	require.NoError(t, err)
 
@@ -25,18 +26,18 @@ func TestFindByForeignID_Success(t *testing.T) {
 }
 
 func TestFindByForeignID_NotFound(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	_, err := svc.FindByForeignID(context.Background(), "nonexistent")
 	require.ErrorIs(t, err, book.ErrNotFound)
 }
 
 func TestList_SortByTitle(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	_, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Zebra Book", ForeignID: "sort-z"})
 	require.NoError(t, err)
 	_, err = svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Alpha Book", ForeignID: "sort-a"})
@@ -53,11 +54,11 @@ func TestList_SortByTitle(t *testing.T) {
 }
 
 func TestList_SortByReleaseDate(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	_, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Old", ReleaseDate: "2000-01-01", ForeignID: "date-old"})
 	require.NoError(t, err)
 	_, err = svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "New", ReleaseDate: "2024-01-01", ForeignID: "date-new"})
@@ -70,11 +71,11 @@ func TestList_SortByReleaseDate(t *testing.T) {
 }
 
 func TestList_SearchFilter(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	_, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "The Hobbit", ForeignID: "search-hobbit"})
 	require.NoError(t, err)
 	_, err = svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Silmarillion", ForeignID: "search-silm"})
@@ -88,11 +89,11 @@ func TestList_SearchFilter(t *testing.T) {
 }
 
 func TestList_MissingFilter(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	b, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Has File", ForeignID: "miss-has"})
 	require.NoError(t, err)
 	_, err = svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "No File", ForeignID: "miss-no"})
@@ -109,11 +110,11 @@ func TestList_MissingFilter(t *testing.T) {
 }
 
 func TestUpdate_InWishlist(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	created, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Test", InWishlist: true})
 	require.NoError(t, err)
 
@@ -124,11 +125,11 @@ func TestUpdate_InWishlist(t *testing.T) {
 }
 
 func TestUpdate_Title(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	created, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Old"})
 	require.NoError(t, err)
 
@@ -139,11 +140,11 @@ func TestUpdate_Title(t *testing.T) {
 }
 
 func TestUpdate_ForeignID(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	created, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Book"})
 	require.NoError(t, err)
 
@@ -154,12 +155,12 @@ func TestUpdate_ForeignID(t *testing.T) {
 }
 
 func TestUpdate_ChangeAuthor(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	author1 := testutil.SeedAuthor(t, db, "Author1")
-	author2 := testutil.SeedAuthor(t, db, "Author2")
+	author1 := testutil.SeedAuthor(t, db.DB, "Author1")
+	author2 := testutil.SeedAuthor(t, db.DB, "Author2")
 	created, err := svc.Create(ctx, book.CreateBookInput{AuthorID: author1, Title: "Book"})
 	require.NoError(t, err)
 
@@ -169,11 +170,11 @@ func TestUpdate_ChangeAuthor(t *testing.T) {
 }
 
 func TestUpdate_AuthorNotFound(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	created, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Book"})
 	require.NoError(t, err)
 
@@ -183,11 +184,11 @@ func TestUpdate_AuthorNotFound(t *testing.T) {
 }
 
 func TestUpdate_NoChanges(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	created, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Book"})
 	require.NoError(t, err)
 
@@ -197,11 +198,11 @@ func TestUpdate_NoChanges(t *testing.T) {
 }
 
 func TestCreateEdition_WithBook(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	b, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Book"})
 	require.NoError(t, err)
 
@@ -214,11 +215,11 @@ func TestCreateEdition_WithBook(t *testing.T) {
 }
 
 func TestCreateEdition_MissingTitle(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	b, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Book"})
 	require.NoError(t, err)
 
@@ -227,11 +228,11 @@ func TestCreateEdition_MissingTitle(t *testing.T) {
 }
 
 func TestGetWithEditions_WithFiles(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	b, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Book"})
 	require.NoError(t, err)
 
@@ -245,11 +246,11 @@ func TestGetWithEditions_WithFiles(t *testing.T) {
 }
 
 func TestCreate_ExistingForeignID_UpdatesWishlist(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	created, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Book", ForeignID: "OL1W", InWishlist: false})
 	require.NoError(t, err)
 	assert.False(t, created.InWishlist)
@@ -261,11 +262,11 @@ func TestCreate_ExistingForeignID_UpdatesWishlist(t *testing.T) {
 }
 
 func TestList_InWishlistFilter(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	_, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Wishlisted", InWishlist: true, ForeignID: "wl-yes"})
 	require.NoError(t, err)
 	_, err = svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Not Wishlisted", InWishlist: false, ForeignID: "wl-no"})
@@ -278,11 +279,11 @@ func TestList_InWishlistFilter(t *testing.T) {
 }
 
 func TestList_Pagination(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	names := []string{"Alpha", "Beta", "Gamma", "Delta", "Epsilon"}
 	for i, name := range names {
 		_, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Book " + name, ForeignID: "pag-" + string(rune('A'+i))})
@@ -296,11 +297,11 @@ func TestList_Pagination(t *testing.T) {
 }
 
 func TestList_Offset(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	for i := range 3 {
 		_, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Book " + string(rune('A'+i)), ForeignID: "off-" + string(rune('A'+i))})
 		require.NoError(t, err)
@@ -313,11 +314,11 @@ func TestList_Offset(t *testing.T) {
 }
 
 func TestDelete_BookRemoves(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	created, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "To Delete", ForeignID: "del-1"})
 	require.NoError(t, err)
 
@@ -329,18 +330,18 @@ func TestDelete_BookRemoves(t *testing.T) {
 }
 
 func TestDelete_BookNotFound(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	err := svc.Delete(context.Background(), 9999)
 	require.ErrorIs(t, err, book.ErrNotFound)
 }
 
 func TestDeleteEdition_Exists(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	b, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Book", ForeignID: "ed-del"})
 	require.NoError(t, err)
 
@@ -352,25 +353,25 @@ func TestDeleteEdition_Exists(t *testing.T) {
 }
 
 func TestDeleteEdition_NotFound(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	err := svc.DeleteEdition(context.Background(), 9999)
 	require.ErrorIs(t, err, book.ErrEditionNotFound)
 }
 
 func TestCreateEdition_BookNotFound(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	_, err := svc.CreateEdition(context.Background(), book.CreateEditionInput{BookID: 9999, Title: "Ed"})
 	require.ErrorIs(t, err, book.ErrNotFound)
 }
 
 func TestCreateEdition_WithAllFields(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	b, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Book", ForeignID: "ed-all"})
 	require.NoError(t, err)
 
@@ -386,11 +387,11 @@ func TestCreateEdition_WithAllFields(t *testing.T) {
 }
 
 func TestUpdate_AllBookFields(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	created, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Old", ForeignID: "upd-all"})
 	require.NoError(t, err)
 
@@ -405,11 +406,11 @@ func TestUpdate_AllBookFields(t *testing.T) {
 }
 
 func TestUpdate_DuplicateForeignID(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	_, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "A", ForeignID: "dup-fid-book"})
 	require.NoError(t, err)
 	b2, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "B", ForeignID: "other-book-fid"})
@@ -421,11 +422,11 @@ func TestUpdate_DuplicateForeignID(t *testing.T) {
 }
 
 func TestUpdate_RemoveFromWishlistCleansQueue(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	created, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Mon", ForeignID: "unmon-q", InWishlist: true})
 	require.NoError(t, err)
 
@@ -440,11 +441,11 @@ func TestUpdate_RemoveFromWishlistCleansQueue(t *testing.T) {
 }
 
 func TestUpdate_MultipleFields(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	created, err := svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "Multi", ForeignID: "multi-upd"})
 	require.NoError(t, err)
 
@@ -473,11 +474,11 @@ func TestUpdate_MultipleFields(t *testing.T) {
 }
 
 func TestList_SortDesc(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	svc := book.New(db)
 	ctx := context.Background()
 
-	authorID := testutil.SeedAuthor(t, db, "Author")
+	authorID := testutil.SeedAuthor(t, db.DB, "Author")
 	_, _ = svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "AAA Book", ForeignID: "sd-a"})
 	_, _ = svc.Create(ctx, book.CreateBookInput{AuthorID: authorID, Title: "ZZZ Book", ForeignID: "sd-z"})
 

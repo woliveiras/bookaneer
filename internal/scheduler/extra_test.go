@@ -32,17 +32,17 @@ func closedDB() *sql.DB {
 // SearchAllWanted / ProcessDownloads succeed but find nothing.
 func newTestWantedSvc(t *testing.T) (*wanted.Service, *sql.DB) {
 	t.Helper()
-	db := testutil.OpenTestDB(t)
+	dbx := testutil.OpenTestDBX(t)
 	return wanted.New(
-		db,
-		book.New(db),
+		dbx.DB,
+		book.New(dbx),
 		library.NewAggregator(), // zero providers → searchDigitalLibraries returns (nil, nil)
-		search.NewService(db),
-		download.NewService(db, bypass.Noop{}),
-		naming.New(db),
+		search.NewService(dbx.DB),
+		download.NewService(dbx.DB, bypass.Noop{}),
+		naming.New(dbx),
 		nil, // scanner not needed for these tests
 		nil, // pathMapper not needed for these tests
-	), db
+	), dbx.DB
 }
 
 // ── QueueCommand ─────────────────────────────────────────────────────────────
@@ -77,8 +77,8 @@ func TestGetActiveCommands_DBError(t *testing.T) {
 // TestCancelCommand_WithRunningCommand covers the cancel() call inside CancelCommand
 // when the command ID is present in s.running (the running-command branch).
 func TestCancelCommand_WithRunningCommand(t *testing.T) {
-	db := testutil.OpenTestDB(t)
-	s := New(db, 3)
+	db := testutil.OpenTestDBX(t)
+	s := New(db.DB, 3)
 	ctx := context.Background()
 
 	id, err := s.QueueCommand(ctx, CommandDownloadGrab, TriggerManual, nil)
@@ -98,8 +98,8 @@ func TestCancelCommand_WithRunningCommand(t *testing.T) {
 // TestStop_CancelsRunningCommands covers the loop body inside Stop that iterates
 // s.running and calls each cancel function.
 func TestStop_CancelsRunningCommands(t *testing.T) {
-	db := testutil.OpenTestDB(t)
-	s := New(db, 3)
+	db := testutil.OpenTestDBX(t)
+	s := New(db.DB, 3)
 	ctx := context.Background()
 
 	cancelCalled := false
@@ -118,8 +118,8 @@ func TestStop_CancelsRunningCommands(t *testing.T) {
 // TestRun_TickerFires covers the ticker.C branch inside run(), which calls
 // dispatchPendingCommands and checkScheduledTasks.
 func TestRun_TickerFires(t *testing.T) {
-	db := testutil.OpenTestDB(t)
-	s := New(db, 3)
+	db := testutil.OpenTestDBX(t)
+	s := New(db.DB, 3)
 	ctx := context.Background()
 
 	s.Start(ctx)
@@ -276,8 +276,8 @@ func TestRegisterWantedHandlers_DownloadMonitor_Error(t *testing.T) {
 // error branch in checkScheduledTasks: a task is due but the commands table is gone so
 // QueueCommand fails, triggering the slog.Error + continue path.
 func TestCheckScheduledTasks_QueueCommandError(t *testing.T) {
-	db := testutil.OpenTestDB(t)
-	s := New(db, 3)
+	db := testutil.OpenTestDBX(t)
+	s := New(db.DB, 3)
 	ctx := context.Background()
 
 	// Make one task immediately due.

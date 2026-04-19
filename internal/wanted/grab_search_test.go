@@ -21,16 +21,16 @@ import (
 // TestGrabRelease_EmptyTitle covers the branch in GrabRelease where
 // releaseTitle is "" and the filename is derived from AuthorName + BookTitle.
 func TestGrabRelease_EmptyTitle(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	libDir := t.TempDir()
-	testutil.SeedRootFolder(t, db, libDir, "Library")
+	testutil.SeedRootFolder(t, db.DB, libDir, "Library")
 
-	authorID := testutil.SeedAuthor(t, db, "Tolkien")
-	bookID := testutil.SeedBook(t, db, authorID, "The Hobbit")
+	authorID := testutil.SeedAuthor(t, db.DB, "Tolkien")
+	bookID := testutil.SeedBook(t, db.DB, authorID, "The Hobbit")
 
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db, bypass.Noop{})
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
+	downloadSvc := download.NewService(db.DB, bypass.Noop{})
+	svc := wanted.New(db.DB, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	// Empty releaseTitle → filename built from "Tolkien - The Hobbit"
@@ -44,14 +44,14 @@ func TestGrabRelease_EmptyTitle(t *testing.T) {
 // TestGrabRelease_NoRootFolder covers the GetDirectClient error path in
 // GrabRelease when no root folder is configured.
 func TestGrabRelease_NoRootFolder(t *testing.T) {
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	// No root folder → GetDirectClient errors.
-	authorID := testutil.SeedAuthor(t, db, "Tolkien")
-	bookID := testutil.SeedBook(t, db, authorID, "The Hobbit")
+	authorID := testutil.SeedAuthor(t, db.DB, "Tolkien")
+	bookID := testutil.SeedBook(t, db.DB, authorID, "The Hobbit")
 
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db, bypass.Noop{})
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
+	downloadSvc := download.NewService(db.DB, bypass.Noop{})
+	svc := wanted.New(db.DB, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	_, err := svc.GrabRelease(ctx, bookID, "http://127.0.0.1:1/test.epub", "Test.epub", 1024)
@@ -73,9 +73,9 @@ func TestGrabRelease_BookNotFound(t *testing.T) {
 func TestGrabRelease_ConfiguredDirectClient(t *testing.T) {
 	dlDir := t.TempDir()
 
-	db := testutil.OpenTestDB(t)
-	authorID := testutil.SeedAuthor(t, db, "Tolkien")
-	bookID := testutil.SeedBook(t, db, authorID, "The Hobbit")
+	db := testutil.OpenTestDBX(t)
+	authorID := testutil.SeedAuthor(t, db.DB, "Tolkien")
+	bookID := testutil.SeedBook(t, db.DB, authorID, "The Hobbit")
 
 	_, err := db.Exec(`
 INSERT INTO download_clients (name, type, host, port, enabled, priority, download_dir)
@@ -84,8 +84,8 @@ VALUES ('DirectClient', 'direct', '', 0, 1, 0, ?)
 	require.NoError(t, err)
 
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db, bypass.Noop{})
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
+	downloadSvc := download.NewService(db.DB, bypass.Noop{})
+	svc := wanted.New(db.DB, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	result, err := svc.GrabRelease(ctx, bookID, "http://127.0.0.1:1/test.epub", "Test.epub", 1024)
@@ -111,16 +111,16 @@ func TestProcessDownloads_ImportFailsNoRootFolder(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	db := testutil.OpenTestDB(t)
+	db := testutil.OpenTestDBX(t)
 	libDir := t.TempDir()
-	folderID := testutil.SeedRootFolder(t, db, libDir, "Library")
+	folderID := testutil.SeedRootFolder(t, db.DB, libDir, "Library")
 
-	authorID := testutil.SeedAuthor(t, db, "Tolkien")
-	bookID := testutil.SeedBook(t, db, authorID, "The Hobbit")
+	authorID := testutil.SeedAuthor(t, db.DB, "Tolkien")
+	bookID := testutil.SeedBook(t, db.DB, authorID, "The Hobbit")
 
 	bookSvc := book.New(db)
-	downloadSvc := download.NewService(db, bypass.Noop{})
-	svc := wanted.New(db, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
+	downloadSvc := download.NewService(db.DB, bypass.Noop{})
+	svc := wanted.New(db.DB, bookSvc, nil, nil, downloadSvc, naming.New(db), nil, nil)
 	ctx := context.Background()
 
 	_, err := svc.GrabRelease(ctx, bookID, srv.URL+"/hobbit.epub", "The Hobbit.epub", 1024)
