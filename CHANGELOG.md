@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/woliveiras/bookaneer/compare/v0.2.0...v0.2.1) (2026-04-19)
+
+
+### Bug Fixes
+
+* **system:** remove hostname no-op and dead info var in checkDiskSpace ([538fd44](https://github.com/woliveiras/bookaneer/commit/538fd4498278b1409ccf63c26d52d37d11b37bba))
+
 ## [0.2.0](https://github.com/woliveiras/bookaneer/compare/v0.1.1...v0.2.0) (2026-04-17)
 
 
