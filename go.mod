@@ -13,7 +13,7 @@ require (
 	modernc.org/sqlite v1.48.1
 )
 
-require github.com/labstack/echo/v5 v5.1.0
+require github.com/labstack/echo/v5 v5.2.0
 
 require github.com/jmoiron/sqlx v1.4.0
 
@@ -28,7 +28,7 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.51.0 // indirect
+	golang.org/x/net v0.51.0
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	modernc.org/libc v1.70.0 // indirect
