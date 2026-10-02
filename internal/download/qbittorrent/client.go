@@ -1,3 +1,4 @@
+// Package qbittorrent integrates with the qBittorrent Web API.
 package qbittorrent
 
 import (
@@ -214,8 +215,20 @@ func (c *Client) login(ctx context.Context) error {
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	body, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode != http.StatusOK || !strings.Contains(string(body), "Ok") {
+	// qBittorrent 5.2+ returns 204 with no body after a successful login.
+	if resp.StatusCode == http.StatusNoContent {
+		return nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		return download.ErrAuthFailed
+	}
+
+	// Older versions return 200 with "Ok." or "Fails." in the body.
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("read login response: %w", err)
+	}
+	if strings.TrimSpace(string(body)) != "Ok." {
 		return download.ErrAuthFailed
 	}
 
