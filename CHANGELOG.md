@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.2.1](https://github.com/woliveiras/bookaneer/compare/v0.2.0...v0.2.1) (2026-10-02)
+
+
+### Bug Fixes
+
+* **qbittorrent:** accept successful logins from qBittorrent 5.2 ([db36158](https://github.com/woliveiras/bookaneer/commit/db36158d21e31529880553eb672c645d396668cd))
+* **release:** publish Docker images from Release Please ([4a15f0b](https://github.com/woliveiras/bookaneer/commit/4a15f0baeb8e2da750e5558ab32d21a9d42a7ff5))
+* **system:** remove hostname no-op and dead info var in checkDiskSpace ([538fd44](https://github.com/woliveiras/bookaneer/commit/538fd4498278b1409ccf63c26d52d37d11b37bba))
+
+
+### Refactoring
+
+* **api:** remove unused API client functions ([0e54a01](https://github.com/woliveiras/bookaneer/commit/0e54a01755c5d6d3ee2b0682eb40750d2d4ff789))
+* **download:** remove dead CompletedDownloads method ([46750dc](https://github.com/woliveiras/bookaneer/commit/46750dc2f383d840e22715fdce077e22d50a8a01))
+* **download:** remove unused New() constructors from client packages ([303add8](https://github.com/woliveiras/bookaneer/commit/303add8196d4d593f75816e08038cc52632af0a8))
+* **handler:** remove ScanAll stub and dead grab endpoints ([40cd3da](https://github.com/woliveiras/bookaneer/commit/40cd3dab3679e5430732c060be18588abf31a4b4))
+* **hooks:** remove dead grab and client-queue hooks ([3887f42](https://github.com/woliveiras/bookaneer/commit/3887f427f86e4c10102b8674f20e68d8912fbb9e))
+* **hooks:** remove dead metadata hooks ([0274ee1](https://github.com/woliveiras/bookaneer/commit/0274ee193001cbafc8f9932bda739bf69f21502f))
+* **hooks:** remove unused singular fetch hooks ([053ee14](https://github.com/woliveiras/bookaneer/commit/053ee14ca17324c4d09eae1803022b5f02778b6b))
+* **pages:** delete BookPages duplicate file ([9220ab6](https://github.com/woliveiras/bookaneer/commit/9220ab6cedcbe6c7418b4f2826460ba889eec9db))
+* **pages:** delete WantedPage component ([37f22a9](https://github.com/woliveiras/bookaneer/commit/37f22a9508045f1d1a131e925be9f84824a74f39))
+* **release:** delete unused release package ([0b01a55](https://github.com/woliveiras/bookaneer/commit/0b01a55e4dd644f0c688b3b70ddc4e425de21133))
+* remove RTK CLI instructions from copilot-instructions.md ([1e4d2c0](https://github.com/woliveiras/bookaneer/commit/1e4d2c01e1d7960a035dc3c1f9d32051d566befb))
+* **rootfolder:** remove dead migrate endpoint and hook ([1d1298a](https://github.com/woliveiras/bookaneer/commit/1d1298aa8f870348e96f0b2ae8faf3fbf400f18f))
+* **scheduler:** remove orphaned CommandName constants ([75059ed](https://github.com/woliveiras/bookaneer/commit/75059ed979f80f9bf908b5ce4cc012d3e5e0079a))
+* **schemas:** remove unused grab and wanted response types ([bed9115](https://github.com/woliveiras/bookaneer/commit/bed9115140e13b20a439dc025b555e78a2de8f5a))
+* **series:** delete entire series feature ([b7599f5](https://github.com/woliveiras/bookaneer/commit/b7599f5598b2cf756e0083e0e9822dfb3d832802))
+* **wanted:** delete WantedList container component ([ceedc4d](https://github.com/woliveiras/bookaneer/commit/ceedc4dcdfedce5ff31f180f86308eaaff087fad))
+
 ## [0.2.0](https://github.com/woliveiras/bookaneer/compare/v0.1.1...v0.2.0) (2026-04-17)
 
 
